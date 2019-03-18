@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3a0f6eed-07c0-4b01-9f5e-fffeb774f39a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run-GA.py" beforeDir="false" afterPath="$PROJECT_DIR$/run-GA.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -24,23 +23,23 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="4" />
+          <entry key="py" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="4" />
+          <entry key="Python" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="Python Console" value="14" />
-          <entry key="py" value="5730" />
+          <entry key="py" value="9226" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="5744" />
+          <entry key="Python" value="9240" />
         </counts>
       </usages-collector>
     </session>
@@ -50,22 +49,19 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/run-GA.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="400">
-              <caret line="20" column="35" lean-forward="true" selection-start-line="20" selection-start-column="35" selection-end-line="20" selection-end-column="35" />
+            <state relative-caret-position="133">
+              <caret line="216" column="45" lean-forward="true" selection-start-line="216" selection-start-column="45" selection-end-line="216" selection-end-column="45" />
               <folding>
                 <element signature="e#164#174#0" expanded="true" />
-                <marker date="1552853205003" expanded="true" signature="299:1447" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="585:628" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="1327:1422" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="2135:2312" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="2419:3311" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="2419:3312" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="2419:3341" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="3461:3462" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="3979:3980" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="4041:4042" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="4041:4047" ph="..." />
-                <marker date="1552853205003" expanded="true" signature="4041:4062" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="2907:3812" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="2977:3020" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="3719:3812" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="4673:4674" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="4673:4913" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="5011:7166" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="7227:7228" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="7227:7233" ph="..." />
+                <marker date="1552867271615" expanded="true" signature="7227:7248" ph="..." />
               </folding>
             </state>
           </provider>
@@ -79,6 +75,13 @@
         <option value="Python Script" />
       </list>
     </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>random</find>
+      <find>ran</find>
+      <find>randrange</find>
+    </findStrings>
   </component>
   <component name="Git.Settings">
     <option name="ROOT_SYNC" value="DONT_SYNC" />
@@ -177,8 +180,8 @@
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.32907802" />
-      <window_info anchor="bottom" auto_hide="true" x="53" y="309" width="1490" height="369" id="Debug" order="3" side_tool="true" weight="0.18156028" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49932885" weight="0.77304965" />
+      <window_info anchor="bottom" auto_hide="true" x="53" y="309" width="1490" height="369" id="Debug" order="3" sideWeight="0.50067115" side_tool="true" weight="0.13333334" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -197,31 +200,35 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://C:/Anaconda3/Lib/random.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="271">
+          <caret line="198" selection-start-line="198" selection-end-line="198" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_imps/_pydev_execfile.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="338">
+        <state relative-caret-position="340">
           <caret line="17" selection-start-line="17" selection-end-line="17" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/run-GA.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="400">
-          <caret line="20" column="35" lean-forward="true" selection-start-line="20" selection-start-column="35" selection-end-line="20" selection-end-column="35" />
+        <state relative-caret-position="133">
+          <caret line="216" column="45" lean-forward="true" selection-start-line="216" selection-start-column="45" selection-end-line="216" selection-end-column="45" />
           <folding>
             <element signature="e#164#174#0" expanded="true" />
-            <marker date="1552853205003" expanded="true" signature="299:1447" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="585:628" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="1327:1422" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="2135:2312" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="2419:3311" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="2419:3312" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="2419:3341" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="3461:3462" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="3979:3980" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="4041:4042" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="4041:4047" ph="..." />
-            <marker date="1552853205003" expanded="true" signature="4041:4062" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="2907:3812" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="2977:3020" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="3719:3812" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="4673:4674" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="4673:4913" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="5011:7166" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="7227:7228" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="7227:7233" ph="..." />
+            <marker date="1552867271615" expanded="true" signature="7227:7248" ph="..." />
           </folding>
         </state>
       </provider>
