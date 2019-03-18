@@ -8,8 +8,6 @@ import sys
 import random
 import pandas as pd
 
-#random.seed(0)
-
 #single boolean function class
 #inputs are connected with and AND
 class SingleFunction:
@@ -224,12 +222,7 @@ def evaluate_individuals(population, dataset, negatives, positives):
     error_rates = {"tp": 0, "tn": 0, "fp": 0, "fn": 0}
     bacc = 0.0
 
-    i = 1
-
     for classifier in population:  # evaluating every classfier
-        print("C" + str(i))
-        i = i + 1
-
         true_positives = 0
         true_negatives = 0
         false_positives = 0
@@ -269,8 +262,38 @@ def evaluate_individuals(population, dataset, negatives, positives):
         classifier.error_rates["fn"] = false_negatives
         classifier.bacc = calculate_balanced_accuracy(true_positives, true_negatives, positives, negatives)
 
-def run_genetic_algorithm(dataset_filename, population_size, iterations):
+def select_parent(population, tournament_size):
 
+    tournament = []
+
+    #drawing parents from a population without replacement
+    for i in range(0, tournament_size):
+        candidate = random.randrange(0, len(population))
+        while candidate in tournament:
+            candidate = random.randrange(0, len(population))
+        else:
+            tournament.append(candidate)
+
+    #choosing the best parent for crossover
+    for candidate in tournament:
+        best_candidate = tournament[0]
+        if population[candidate].bacc > population[best_candidate].bacc:
+            best_candidate = candidate
+    parent = best_candidate
+
+    return parent
+
+#tournament selection of parents for crossover
+def selection(population, tournament_size):
+
+    first_parent = select_parent(population, tournament_size)
+    second_parent = select_parent(population, tournament_size)
+
+    return first_parent, second_parent
+
+def run_genetic_algorithm(dataset_filename, population_size):
+
+    #starting log message
     log_message = "A genetic algorithm (GA) optimizing a set of miRNA-based cell classifiers for in situ cancer " \
                   "classification. Written by Melania Nowicka, FU Berlin, 2019.\n\n"
 
@@ -280,10 +303,12 @@ def run_genetic_algorithm(dataset_filename, population_size, iterations):
     datasetR, mirnas, log_message = remove_irrelevant_mirna(data, log_message)
     #population initialization
     population, log_message = initialize_population(population_size, mirnas, log_message)
+    #evaluation of individuals
     evaluate_individuals(population, datasetR, negatives, positives)
-
+    #selection of parents for crossover
+    first_parent, second_parent = selection(population, tournament_size=5)
+    #writing the log message to file
     log_message = write_generation_to_log(population, log_message)
-
     log_file_name = "log_" + str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + ".txt"
     log_file = open(log_file_name, "w")
     log_file.write(log_message)
@@ -292,4 +317,4 @@ def run_genetic_algorithm(dataset_filename, population_size, iterations):
 if __name__ == "__main__":
 
     dataset_filename = sys.argv[1]
-    run_genetic_algorithm(dataset_filename, 1)
+    run_genetic_algorithm(dataset_filename, 100)
