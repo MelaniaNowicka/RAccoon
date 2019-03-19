@@ -8,6 +8,8 @@ import sys
 import random
 import pandas as pd
 
+#random.seed(0)
+
 #single boolean function class
 #inputs are connected with and AND
 class SingleFunction:
@@ -21,8 +23,7 @@ class SingleFunction:
 #classifier (individual)
 class Classifier:
 
-    def __init__(self, size, rule_set, error_rates, bacc):
-        self.size = size #size of a classifier
+    def __init__(self, rule_set, error_rates, bacc):
         self.rule_set = rule_set #list of rules
         self.error_rates = error_rates #dictionary of error rates (tp, tn, fp, fn)
         self.bacc = bacc #balanced accuracy
@@ -133,10 +134,10 @@ def initialize_single_rule(temp_mirnas):
 
 
 #initialization of a new classifier
-def initialize_classifier(mirnas, log_message):
+def initialize_classifier(classifier_size, mirnas, log_message):
 
     #size of a classifier
-    size = random.randrange(1, 5)
+    size = random.randrange(1, classifier_size+1)
 
     #rules
     rule_set = []
@@ -149,21 +150,20 @@ def initialize_classifier(mirnas, log_message):
         rule, temp_mirnas = initialize_single_rule(temp_mirnas)
         rule_set.append(rule)
 
-
     #initialization of a new classifier
-    classifier = Classifier(size, rule_set, error_rates={}, bacc={})
+    classifier = Classifier(rule_set, error_rates={}, bacc={})
 
     return classifier, log_message
 
 
 #population initialization
-def initialize_population(population_size, mirnas, log_message):
+def initialize_population(population_size, mirnas, classifier_size, log_message):
 
     population = []
 
     #initialization of n=population_size classifiers
     for i in range(0, population_size):
-        classifier, log_message = initialize_classifier(mirnas, log_message)
+        classifier, log_message = initialize_classifier(classifier_size, mirnas, log_message)
         population.append(classifier)
 
     return population, log_message
@@ -182,8 +182,9 @@ def calculate_balanced_accuracy(tp, tn, p, n):
 def write_generation_to_log(population, log_message):
 
     id = 1
-
+    log_message = log_message + "\n\n"
     for classifier in population:
+
         log_message = log_message + "C" + str(id) + ": "
         id = id + 1
         classifier_message = ""
@@ -214,13 +215,12 @@ def write_generation_to_log(population, log_message):
     return log_message
 
 #evaluation of the population
-def evaluate_individuals(population, dataset, negatives, positives):
+def evaluate_individuals(population, dataset, negatives, positives, best_bacc):
 
     #a list of rule results
     rule_outputs = []
 
     error_rates = {"tp": 0, "tn": 0, "fp": 0, "fn": 0}
-    bacc = 0.0
 
     for classifier in population:  # evaluating every classfier
         true_positives = 0
@@ -262,23 +262,30 @@ def evaluate_individuals(population, dataset, negatives, positives):
         classifier.error_rates["fn"] = false_negatives
         classifier.bacc = calculate_balanced_accuracy(true_positives, true_negatives, positives, negatives)
 
-def select_parent(population, tournament_size):
+        if best_bacc < classifier.bacc:
+            best_bacc = classifier.bacc
+
+    return best_bacc
+
+#one parent selection function
+def select_parent(population, tournament_size, first_parent_id):
 
     tournament = []
 
     #drawing parents from a population without replacement
-    for i in range(0, tournament_size):
+    for i in range(0, int(tournament_size/100*len(population))):
         candidate = random.randrange(0, len(population))
-        while candidate in tournament:
+        while candidate in tournament or candidate == first_parent_id:
             candidate = random.randrange(0, len(population))
         else:
             tournament.append(candidate)
 
     #choosing the best parent for crossover
+    best_candidate = tournament[0]
     for candidate in tournament:
-        best_candidate = tournament[0]
         if population[candidate].bacc > population[best_candidate].bacc:
             best_candidate = candidate
+
     parent = best_candidate
 
     return parent
@@ -286,12 +293,69 @@ def select_parent(population, tournament_size):
 #tournament selection of parents for crossover
 def selection(population, tournament_size):
 
-    first_parent = select_parent(population, tournament_size)
-    second_parent = select_parent(population, tournament_size)
+    first_parent_id = select_parent(population, tournament_size, -1)
+    second_parent_id = select_parent(population, tournament_size, first_parent_id)
 
-    return first_parent, second_parent
+    return first_parent_id, second_parent_id
 
-def run_genetic_algorithm(dataset_filename, population_size):
+#crossover
+def crossover(population, first_parent_id, second_parent_id):
+
+    #checking sizes of parents and assigning rule sets
+    #first parent = more rules, second parents = less rules
+    #if equal - assign first to first, second to second
+    if len(population[first_parent_id].rule_set) < len(population[second_parent_id].rule_set):
+        first_parent_rule_set = population[second_parent_id].rule_set
+        second_parent_rule_set = population[first_parent_id].rule_set
+    else:
+        first_parent_rule_set = population[first_parent_id].rule_set
+        second_parent_rule_set = population[second_parent_id].rule_set
+
+    #creating empty offspring
+    first_child = Classifier([], {}, 0.0)
+    second_child = Classifier([], {}, 0.0)
+
+    #if the first parent consists of more rules
+    if len(first_parent_rule_set) > len(second_parent_rule_set):
+        difference = len(first_parent_rule_set) - len(second_parent_rule_set) #difference between sizes of parents
+        #crossover index specifies the position of the second parent in relation to the first one
+        crossover_index_second_parent = random.randrange(0, difference+1)
+
+        for i in range(0, len(first_parent_rule_set)): #iterating through the first parent
+            swap_mask = random.randrange(0, 2) #randomly choosing the mask
+            if swap_mask == 1: #if mask=1 swap elements
+
+                #check the position of the second classifier
+                #if the parents are not aligned in i move element i from the first parent to the second child
+                if i < crossover_index_second_parent or i >= crossover_index_second_parent + len(second_parent_rule_set):
+                    second_child.rule_set.append(first_parent_rule_set[i]) #move element i to the second child
+                else: #else, swap elements
+                    second_child.rule_set.append(first_parent_rule_set[i])
+                    first_child.rule_set.append(second_parent_rule_set[i-crossover_index_second_parent])
+            else: #if mask=0 do not swap elements and copy elements from parents to offspring if possible
+                if i < crossover_index_second_parent or i >= crossover_index_second_parent + len(second_parent_rule_set):
+                    first_child.rule_set.append(first_parent_rule_set[i])
+                else:
+                    second_child.rule_set.append(second_parent_rule_set[i-crossover_index_second_parent])
+                    first_child.rule_set.append(first_parent_rule_set[i])
+
+    else: #if parents have the same length
+        for i in range(0, len(first_parent_rule_set)): #iterate over first parent
+            swap_mask = random.randrange(0, 2)
+            if swap_mask == 1: #swap
+                second_child.rule_set.append(first_parent_rule_set[i])
+                first_child.rule_set.append(second_parent_rule_set[i])
+            else: #do not swap, just copy
+                second_child.rule_set.append(second_parent_rule_set[i])
+                first_child.rule_set.append(first_parent_rule_set[i])
+
+    #replacing parents with new offspring in the population
+    population[first_parent_id] = first_child
+    population[second_parent_id] = second_child
+
+    return population
+
+def run_genetic_algorithm(dataset_filename, iterations, population_size, classifier_size, crossover_probability, tournament_size):
 
     #starting log message
     log_message = "A genetic algorithm (GA) optimizing a set of miRNA-based cell classifiers for in situ cancer " \
@@ -302,11 +366,22 @@ def run_genetic_algorithm(dataset_filename, population_size):
     #remove irrelevant miRNAs
     datasetR, mirnas, log_message = remove_irrelevant_mirna(data, log_message)
     #population initialization
-    population, log_message = initialize_population(population_size, mirnas, log_message)
+    population, log_message = initialize_population(population_size, mirnas, classifier_size, log_message)
     #evaluation of individuals
-    evaluate_individuals(population, datasetR, negatives, positives)
-    #selection of parents for crossover
-    first_parent, second_parent = selection(population, tournament_size=5)
+    best_bacc = evaluate_individuals(population, datasetR, negatives, positives, 0.0)
+    log_message = write_generation_to_log(population, log_message)
+
+    for iter in range(0, iterations):
+        for i in range(0, int(population_size/2)):
+            rand = random.randrange(1, 101)
+            if rand <= crossover_probability*100:
+                #selection of parents for crossover
+                first_parent_id, second_parent_id = selection(population, tournament_size)
+                population = crossover(population, first_parent_id, second_parent_id)
+                best_bacc = evaluate_individuals(population, datasetR, negatives, positives, best_bacc)
+        log_message = write_generation_to_log(population, log_message)
+    print(best_bacc)
+
     #writing the log message to file
     log_message = write_generation_to_log(population, log_message)
     log_file_name = "log_" + str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + ".txt"
@@ -317,4 +392,4 @@ def run_genetic_algorithm(dataset_filename, population_size):
 if __name__ == "__main__":
 
     dataset_filename = sys.argv[1]
-    run_genetic_algorithm(dataset_filename, 100)
+    run_genetic_algorithm(dataset_filename, 20, 20, 5, 0.8, 10)
