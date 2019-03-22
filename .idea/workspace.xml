@@ -2,8 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3a0f6eed-07c0-4b01-9f5e-fffeb774f39a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/crossover.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/eval.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/log.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mutation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/popinit.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/preproc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/run_GA.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/selection.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run-GA.py" beforeDir="false" afterPath="$PROJECT_DIR$/run-GA.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run-GA.py" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,23 +34,25 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="15" />
+          <entry key="py" value="26" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="15" />
+          <entry key="Python" value="26" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="Python Console" value="14" />
-          <entry key="py" value="19627" />
+          <entry key="dummy" value="88" />
+          <entry key="py" value="24969" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="19641" />
+          <entry key="PLAIN_TEXT" value="88" />
+          <entry key="Python" value="24983" />
         </counts>
       </usages-collector>
     </session>
@@ -50,37 +60,89 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/run-GA.py">
+        <entry file="file://$PROJECT_DIR$/run_GA.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="394">
-              <caret line="467" column="56" selection-start-line="467" selection-start-column="56" selection-end-line="467" selection-end-column="56" />
+            <state relative-caret-position="405">
+              <caret line="135" lean-forward="true" selection-start-line="135" selection-end-line="135" />
               <folding>
-                <element signature="e#164#179#0" expanded="true" />
-                <element signature="e#320#531#0" />
-                <element signature="e#582#858#0" />
-                <element signature="e#940#2137#0" />
-                <element signature="e#2266#3461#0" />
-                <element signature="e#3616#4131#0" />
-                <element signature="e#4447#4861#0" />
-                <element signature="e#5047#5313#0" />
-                <element signature="e#5234#5466#0" />
-                <element signature="e#10388#13609#0" />
-                <element signature="e#13582#16896#0" />
-                <marker date="1553102199693" expanded="true" signature="3370:4250" ph="..." />
-                <marker date="1553102199693" expanded="false" signature="3446:3489" ph="..." />
-                <marker date="1553102199693" expanded="false" signature="4197:4250" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="5324:5325" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="5324:6889" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="5618:6889" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="9417:10084" ph="..." />
-                <marker date="1553102199693" expanded="false" signature="13542:17695" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="17751:18061" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="18060:18061" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="18239:18240" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="18239:18245" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="18239:18468" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="18239:18599" ph="..." />
-                <marker date="1553102199693" expanded="true" signature="22282:22283" ph="..." />
+                <element signature="e#163#178#0" expanded="true" />
+                <marker date="1553285680081" expanded="true" signature="324:325" ph="..." />
+                <marker date="1553285680081" expanded="true" signature="325:327" ph="..." />
+                <marker date="1553285680081" expanded="true" signature="326:327" ph="..." />
+                <marker date="1553285680081" expanded="true" signature="888:889" ph="..." />
+                <marker date="1553285680081" expanded="true" signature="888:894" ph="..." />
+                <marker date="1553285680081" expanded="true" signature="888:1114" ph="..." />
+                <marker date="1553285680081" expanded="true" signature="888:1401" ph="..." />
+                <marker date="1553285680081" expanded="true" signature="5452:5453" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/log.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="326">
+              <caret line="68" column="49" selection-start-line="68" selection-start-column="49" selection-end-line="68" selection-end-column="49" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/crossover.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="40">
+              <caret line="2" lean-forward="true" selection-start-line="2" selection-end-line="2" />
+              <folding>
+                <element signature="e#0#13#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/mutation.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2740">
+              <caret line="137" column="39" selection-start-line="137" selection-start-column="39" selection-end-line="137" selection-end-column="39" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/selection.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="520">
+              <caret line="26" column="10" selection-start-line="26" selection-start-column="10" selection-end-line="26" selection-end-column="10" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/eval.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1800">
+              <caret line="90" column="40" selection-start-line="90" selection-start-column="40" selection-end-line="90" selection-end-column="40" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/popinit.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="100">
+              <caret line="5" selection-start-line="5" selection-end-line="5" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/preproc.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="300">
+              <caret line="15" column="24" lean-forward="true" selection-start-line="15" selection-start-column="24" selection-end-line="15" selection-end-column="24" />
+              <folding>
+                <element signature="e#0#10#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -104,9 +166,14 @@
       <find>del</find>
       <find>initialize_population</find>
       <find>evaluate_individuals</find>
-      <find>Classifier</find>
       <find>Single</find>
       <find>while</find>
+      <find>(hsa_miR_205) AND (hsa_miR_205)</find>
+      <find>write</find>
+      <find>Class</find>
+      <find>Classifier</find>
+      <find>eval</find>
+      <find>selec</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -116,7 +183,16 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
+        <option value="$PROJECT_DIR$/preprocessing.py" />
+        <option value="$PROJECT_DIR$/population.py" />
         <option value="$PROJECT_DIR$/run-GA.py" />
+        <option value="$PROJECT_DIR$/select.py" />
+        <option value="$PROJECT_DIR$/crossover.py" />
+        <option value="$PROJECT_DIR$/log.py" />
+        <option value="$PROJECT_DIR$/mutation.py" />
+        <option value="$PROJECT_DIR$/eval.py" />
+        <option value="$PROJECT_DIR$/popinit.py" />
+        <option value="$PROJECT_DIR$/run_GA.py" />
       </list>
     </option>
   </component>
@@ -146,6 +222,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="SearchEverywhereHistoryKey" value=":&#9;null&#9;null" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
@@ -174,8 +251,8 @@
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run-GA.py" />
-      <option name="PARAMETERS" value="C:\Projects\RAccoon\C2_bt250.csv" />
+      <option name="SCRIPT_NAME" value="C:\Projects\RAccoon\run_GA.py" />
+      <option name="PARAMETERS" value="C:\Projects\RAccoon\C1_bt250.csv" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -197,29 +274,37 @@
     </task>
     <servers />
   </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="6.7114097E-4" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.36879432" visible="true" weight="0.14362416" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.24832214" visible="true" weight="0.27234042" />
-      <window_info anchor="bottom" auto_hide="true" x="53" y="309" width="1490" height="369" id="Debug" order="3" sideWeight="0.7516779" side_tool="true" weight="0.32624114" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" weight="0.4539007" />
-      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Python Console" order="10" weight="0.32907802" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.14899328" visible="true" weight="0.14326242" />
+      <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="4" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="5" weight="0.32907802" />
+      <window_info anchor="bottom" id="Version Control" order="6" weight="0.32907802" />
+      <window_info anchor="bottom" id="Terminal" order="7" weight="0.4539007" />
+      <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
+      <window_info anchor="bottom" id="Python Console" order="9" weight="0.32907802" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="R Graphics" order="3" />
       <window_info anchor="right" id="R Packages" order="4" />
+      <window_info anchor="right" auto_hide="true" x="53" y="309" width="1490" height="369" id="Debug" order="5" sideWeight="0.8510067" weight="0.5100671" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
@@ -258,37 +343,82 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/run-GA.py">
+    <entry file="file://C:/Anaconda3/Lib/codecs.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="394">
-          <caret line="467" column="56" selection-start-line="467" selection-start-column="56" selection-end-line="467" selection-end-column="56" />
+        <state relative-caret-position="297">
+          <caret line="310" selection-start-line="310" selection-end-line="310" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/log.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="326">
+          <caret line="68" column="49" selection-start-line="68" selection-start-column="49" selection-end-line="68" selection-end-column="49" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mutation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2740">
+          <caret line="137" column="39" selection-start-line="137" selection-start-column="39" selection-end-line="137" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/crossover.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="40">
+          <caret line="2" lean-forward="true" selection-start-line="2" selection-end-line="2" />
           <folding>
-            <element signature="e#164#179#0" expanded="true" />
-            <element signature="e#320#531#0" />
-            <element signature="e#582#858#0" />
-            <element signature="e#940#2137#0" />
-            <element signature="e#2266#3461#0" />
-            <element signature="e#3616#4131#0" />
-            <element signature="e#4447#4861#0" />
-            <element signature="e#5047#5313#0" />
-            <element signature="e#5234#5466#0" />
-            <element signature="e#10388#13609#0" />
-            <element signature="e#13582#16896#0" />
-            <marker date="1553102199693" expanded="true" signature="3370:4250" ph="..." />
-            <marker date="1553102199693" expanded="false" signature="3446:3489" ph="..." />
-            <marker date="1553102199693" expanded="false" signature="4197:4250" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="5324:5325" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="5324:6889" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="5618:6889" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="9417:10084" ph="..." />
-            <marker date="1553102199693" expanded="false" signature="13542:17695" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="17751:18061" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="18060:18061" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="18239:18240" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="18239:18245" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="18239:18468" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="18239:18599" ph="..." />
-            <marker date="1553102199693" expanded="true" signature="22282:22283" ph="..." />
+            <element signature="e#0#13#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="520">
+          <caret line="26" column="10" selection-start-line="26" selection-start-column="10" selection-end-line="26" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/eval.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1800">
+          <caret line="90" column="40" selection-start-line="90" selection-start-column="40" selection-end-line="90" selection-end-column="40" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/popinit.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="100">
+          <caret line="5" selection-start-line="5" selection-end-line="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/preproc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="15" column="24" lean-forward="true" selection-start-line="15" selection-start-column="24" selection-end-line="15" selection-end-column="24" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/run_GA.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="405">
+          <caret line="135" lean-forward="true" selection-start-line="135" selection-end-line="135" />
+          <folding>
+            <element signature="e#163#178#0" expanded="true" />
+            <marker date="1553285680081" expanded="true" signature="324:325" ph="..." />
+            <marker date="1553285680081" expanded="true" signature="325:327" ph="..." />
+            <marker date="1553285680081" expanded="true" signature="326:327" ph="..." />
+            <marker date="1553285680081" expanded="true" signature="888:889" ph="..." />
+            <marker date="1553285680081" expanded="true" signature="888:894" ph="..." />
+            <marker date="1553285680081" expanded="true" signature="888:1114" ph="..." />
+            <marker date="1553285680081" expanded="true" signature="888:1401" ph="..." />
+            <marker date="1553285680081" expanded="true" signature="5452:5453" ph="..." />
           </folding>
         </state>
       </provider>
