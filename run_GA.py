@@ -13,123 +13,176 @@ import selection
 import crossover
 import mutation
 import log
+import time
+import argparse
 
-random.seed(669)
+
+random.seed(0)
+
+# algorithm parameters read from the command line
+def check_params(args):
+
+    # parameter parser
+    parser = argparse.ArgumentParser(description='A genetic algorithm (GA) optimizing a set of miRNA-based cell '
+                                                 'classifiers for in situ cancer classification. Written by Melania '
+                                                 'Nowicka, FU Berlin, 2019.\n\n')
+
+    # adding arguments
+    parser.add_argument('-df', '--dataset_filename', type=argparse.FileType('r'), help='data set file name')
+    parser.add_argument('-f', '--filter_data', type=bool, default=False, help='filter data of not')
+    parser.add_argument('-iter', '--iterations', type=int, default=100, help='number of iterations')
+    parser.add_argument('-pop', '--population_size', type=int, default=50, help='population size')
+    parser.add_argument('-size', '--classifier_size', type=int, default=5, help='classifier size')
+    parser.add_argument('-thres', '--evaluation_threshold', default=0.5, type=float, help='evaluation threshold')
+    parser.add_argument('-cp', '--crossover_probability', default=0.75, type=float, help='probability of crossover')
+    parser.add_argument('-mp', '--mutation_probability', default=0.05, type=float, help='probability of mutation')
+    parser.add_argument('-ts', '--tournament_size', default=0.1, type=float, help='tournament size')
+
+    # parse arguments
+    params = parser.parse_args(args)
+
+    return params.dataset_filename, params.filter_data, params.iterations, params.population_size, \
+           params.classifier_size, params.evaluation_threshold, params.crossover_probability, \
+           params.mutation_probability, params.tournament_size
 
 
+# run genetic algorithm
 def run_genetic_algorithm(dataset_filename,  # name of the dataset file
+                          filter_data,  # a flag whether data should be filtered or not
                           iterations,  # number of iterations
                           population_size,  # size of a population
                           classifier_size,  # max size of a classifier
-                          evaluation_function,  # evaluation function
+                          evaluation_threshold,  # evaluation function
                           crossover_probability,  # probability of crossover
                           mutation_probability,  # probability of mutation
                           tournament_size):  # size of a tournament
 
-    # start log message
+    # start log message for GA run
     log_message = "A genetic algorithm (GA) optimizing a set of miRNA-based cell classifiers for in situ cancer " \
                   "classification. Written by Melania Nowicka, FU Berlin, 2019.\n\n"
     log_file_name = "log_" + str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + ".txt"  # log name
 
     # initialize of best classifier
-    best_bacc = 0.0
-    avg_bacc = 0.0
-    best_classifier = popinit.Classifier(rule_set=[], error_rates={}, bacc=0.0)
+    best_bacc = 0.0  # best classifier BACC
+    avg_bacc = 0.0  # average BACC in the population
+    best_classifier = popinit.Classifier(rule_set=[], error_rates={}, bacc=0.0)  # first best classifier
+    best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
     # read data
-    data, negatives, positives, log_message = preproc.read_data(dataset_filename, log_message)
+    dataset, negatives, positives, mirnas, log_message = preproc.read_data(dataset_filename, log_message)
 
     # remove irrelevant miRNAs
-    datasetR, mirnas, log_message = preproc.remove_irrelevant_mirna(data, log_message)
+    if filter_data == True:
+        dataset, mirnas, log_message = preproc.remove_irrelevant_mirna(dataset, log_message)
 
     # population initialization
     population, log_message = popinit.initialize_population(population_size, mirnas, classifier_size, log_message)
 
-    # first evaluation of individuals
-    best_bacc, avg_bacc, best_classifier = eval.evaluate_individuals(population, ('majority', 0.5), datasetR, negatives,
-                                                                positives, best_bacc, best_classifier)
+    # remove rule duplicates
+    for classifier in population:
+        classifier.remove_duplicates()
 
+    # first evaluation of individuals
+    best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population, evaluation_threshold, dataset,
+                                                                     negatives, positives, best_bacc, best_classifiers)
     # write first population to log
     log_message = log_message + "***FIRST POPULATION***"
-    log_message = log.write_generation_to_log(population, 0, log_message)
+    log_message = log.write_generation_to_log(population, 0, best_classifiers, log_message)
     log_message = log_message + "\n***FIRST POPULATION***"
-    # write log to a file
-    with open(log_file_name, "a+") as log_file:
+    with open(log_file_name, "a+") as log_file: # write log to a file
         log_file.write(log_message)
 
-    # create a new empty population
-    new_population = []
+    # create a new empty population for selection
+    selected_parents = []
 
     # iterate over generations
     for iteration in range(0, iterations):
         # show progress, the current best score and average score
         print(int(iteration/iterations*100), "% | BACC: ", best_bacc, "|  AVG BACC: ", avg_bacc)
-        new_population.clear()  # empty new population
 
-        # create a list of available for selection individuals
-        available_for_selection = list(range(0, len(population)))
+        selected_parents.clear()  # empty new population for selection
+
+        # selection of individuals for crossover
         for i in range(0, int(population_size/2)):  # iterate through population
+            first_parent_id, second_parent_id = selection.select(population,
+                                                                 tournament_size)
+            # add new parents to the selected parents
+            selected_parents.append(population[first_parent_id].__copy__())
+            selected_parents.append(population[second_parent_id].__copy__())
 
-            crossover_rand = random.random()  # randomly choose a number for crossover
+        population.clear()  # empty population
+
+        # crossover of selected individuals
+        for i in range(0, int(population_size/2)):  # iterate through parents
+
+            crossover_rand = random.random()  # randomly choose probability for crossover
+
+            first_parent_id = random.randrange(0, len(selected_parents))  # randomly choose first parent id
+            first_parent = selected_parents[first_parent_id].__copy__()  # copy first parent
+
+            del selected_parents[first_parent_id]  # remove parent from available parents
+
+            second_parent_id = random.randrange(0, len(selected_parents))  # randomly choose second parent id
+            second_parent = selected_parents[second_parent_id].__copy__()  # copy first parent
+
+            del selected_parents[second_parent_id]  # remove parent from available parents
+
             # if the crossover_rand is lower than probability - apply crossover
             if crossover_rand <= crossover_probability:
 
-                # selection of parents for crossover
-                first_parent_id, second_parent_id = selection.select(population,
-                                                                     available_for_selection,
-                                                                     tournament_size)
-
-                # selected parents are removed from a list of available parents
-                available_for_selection.remove(first_parent_id)
-                available_for_selection.remove(second_parent_id)
-
                 # crossover
-                first_child, second_child = crossover.crossover(population, first_parent_id, second_parent_id)
+                first_child, second_child = crossover.crossover(selected_parents, first_parent, second_parent)
 
-                # add offspring to the new population
-                new_population.append(first_child)
-                new_population.append(second_child)
-
-        # add parents that were not used for crossover to the new population
-        for j in range(0, population_size):
-            if j in available_for_selection:
-                new_population.append(population[j])
-
-        # assign a new population to the current generation
-        population = new_population.copy()
+                population.append(first_child)  # add children to the new population
+                population.append(second_child)
+            else:
+                population.append(first_parent.__copy__())  # if crossover not allowed - copy parents
+                population.append(second_parent.__copy__())
 
         # mutation
         population = mutation.mutate(population, mirnas, mutation_probability)
 
+        # remove rule duplicates
+        for classifier in population:
+            classifier.remove_duplicates()
+
         # evaluation of population
-        best_bacc, avg_bacc, best_classifier = eval.evaluate_individuals(population,
-                                                                         evaluation_function,
-                                                                         data,
+        best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population,
+                                                                         evaluation_threshold,
+                                                                         dataset,
                                                                          negatives,
                                                                          positives,
                                                                          best_bacc,
-                                                                         best_classifier)
+                                                                         best_classifiers)
 
         # writing log message to a file
         log_message = ""
-        log_message = log.write_generation_to_log(population, iteration, log_message)
+        log_message = log.write_generation_to_log(population, iteration, best_classifiers, log_message)
         with open(log_file_name, "a+") as log_file:
             log_file.write(log_message)
 
     # show best scores
-    log_message = log.write_final_scores(best_bacc, best_classifier)
+    log_message = log.write_final_scores(best_bacc, best_classifiers)
     with open(log_file_name, "a+") as log_file:
         log_file.write(log_message)
 
 
 if __name__ == "__main__":
 
-    dataset_filename = sys.argv[1]
-    run_genetic_algorithm(dataset_filename=dataset_filename,
-                          iterations=50,
-                          population_size=25,
-                          classifier_size=5,
-                          evaluation_function=('threshold', 0.75),
-                          crossover_probability=0.3,
-                          mutation_probability=0.5,
-                          tournament_size=20)
+    start = time.time()
+
+    dataset_filename, filter_data, iterations, population_size, classifier_size, evaluation_threshold, \
+    crossover_probability, mutation_probability, tournament_size = check_params(sys.argv[1:])
+
+    run_genetic_algorithm(dataset_filename,
+                          filter_data,
+                          iterations,
+                          population_size,
+                          classifier_size,
+                          evaluation_threshold,
+                          crossover_probability,
+                          mutation_probability,
+                          tournament_size)
+
+    end = time.time()
+    print(end - start)

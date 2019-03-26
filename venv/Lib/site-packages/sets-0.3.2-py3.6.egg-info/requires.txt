@@ -1,0 +1,5 @@
+numpy
+requests
+nltk
+lxml
+definitions

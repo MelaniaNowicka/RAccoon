@@ -1,4 +1,4 @@
-def write_generation_to_log(population, iteration, log_message):
+def write_generation_to_log(population, iteration, best_classifiers, log_message):
 
     id = 1
     log_message = log_message + "\n\n ITERATION " + str(iteration) + "\n"
@@ -33,39 +33,45 @@ def write_generation_to_log(population, iteration, log_message):
         log_message = log_message + classifier_message + "\n"
         log_message = log_message + "BACC: " + str(classifier.bacc) + "; TP: " + str(classifier.error_rates["tp"]) \
                       + "; TN: " + str(classifier.error_rates["tn"]) + "\n"
-
     return log_message
 
 
-def write_final_scores(best_bacc, best_classifier):
+def write_final_scores(best_bacc, best_classifiers):
 
     # final score
     print("BEST BACC:", best_bacc)
 
+    best_classifiers_messages = []
+
     # final result
-    classifier_message = ""
+    for classifier in best_classifiers:
+        classifier_message = ""
+        for rule in classifier.rule_set:
+            rule_message = ""
 
-    for rule in best_classifier.rule_set:
-        rule_message = ""
+            if len(rule.neg_inputs) == 0 and len(rule.pos_inputs) == 1:
+                rule_message = "(" + str(rule.pos_inputs[0]) + ")"
+            elif len(rule.pos_inputs) == 0 and len(rule.neg_inputs) == 1:
+                rule_message = "(NOT " + str(rule.neg_inputs[0]) + ")"
+            else:
+                for input in rule.pos_inputs:
+                    rule_message = rule_message + "(" + input + ")"
+                for input in rule.neg_inputs:
+                    rule_message = rule_message + "(NOT " + input + ")"
 
-        if len(rule.neg_inputs) == 0 and len(rule.pos_inputs) == 1:
-            rule_message = "(" + str(rule.pos_inputs[0]) + ")"
-        elif len(rule.pos_inputs) == 0 and len(rule.neg_inputs) == 1:
-            rule_message = "(NOT " + str(rule.neg_inputs[0]) + ")"
-        else:
-            for input in rule.pos_inputs:
-                rule_message = rule_message + "(" + input + ")"
-            for input in rule.neg_inputs:
-                rule_message = rule_message + "(NOT " + input + ")"
+            rule_message = " [" + rule_message + "] "
 
-        rule_message = " [" + rule_message + "] "
+            rule_message = rule_message.replace(")(", ") AND (")
 
-        rule_message = rule_message.replace(")(", ") AND (")
+            classifier_message = classifier_message + rule_message
 
-        classifier_message = classifier_message + rule_message
+        best_classifiers_messages.append(classifier_message)
 
-    print("BEST CLASSIFIER: ", classifier_message)
+    # removing duplicates
+    best_classifiers_messages = set(best_classifiers_messages)
 
-    log_message = "BEST SCORE: " + str(best_bacc) + "\n" + classifier_message
+    for classifier in best_classifiers_messages:
+        print("BEST CLASSIFIER: ", classifier)
+        log_message = "\nBEST SCORE: " + str(best_bacc) + "| BEST CLASSIFIER: " + str(classifier)
 
     return log_message

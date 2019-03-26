@@ -1,5 +1,6 @@
 import sys
 
+
 # balanced accuracy score
 def calculate_balanced_accuracy(tp, tn, p, n):
 
@@ -13,11 +14,12 @@ def calculate_balanced_accuracy(tp, tn, p, n):
 
 # evaluation of the population
 def evaluate_individuals(population,
-                         evaluation_function,
-                         dataset, negatives,
+                         evaluation_threshold,
+                         dataset,
+                         negatives,
                          positives,
                          best_bacc,
-                         best_classifier):
+                         best_classifiers):
 
     # sum of bacc for the population
     sum_bacc = 0.0
@@ -33,13 +35,14 @@ def evaluate_individuals(population,
         false_positives = 0
         false_negatives = 0
 
-        for sample_id in range(0, len(dataset.index)):  # iterate through dataset skipping the header
+        for sample_id in range(0, len(dataset.index)):  # iterate through dataset
             sample_output = 0  # single sample output
             rule_outputs.clear()  # clearing the rule outputs for a single sample
 
             for rule in classifier.rule_set:  # evaluating every rule in the classifier
 
                 rule_output = 1
+
                 for input in rule.pos_inputs:  # positive inputs
                     rule_output = rule_output and dataset.iloc[sample_id][input]
                 for input in rule.neg_inputs:  # negative inputs
@@ -47,25 +50,17 @@ def evaluate_individuals(population,
 
                 rule_outputs.append(rule_output)  # adding a single rule output to a list of rule outputs
 
-            # sum of outputs represented as OR of rule outputs
-            if evaluation_function[0] == 'sum':
-                for result in rule_outputs:  # evaluating the final classifier output for a given sample
-                    sample_output = sample_output or result
+            rule_positive_outputs = 0
+            # count positive(1) outputs
+            for result in rule_outputs:
+                if result == 1:
+                    rule_positive_outputs = rule_positive_outputs + 1
 
-            if evaluation_function[0] == 'threshold':
-                threshold = evaluation_function[1]
-                rule_positive_outputs = 0
-                rule_negative_outputs = 0
-                for result in rule_outputs:
-                    if result == 0:
-                        rule_negative_outputs = rule_negative_outputs + 1
-                    if result == 1:
-                        rule_negative_outputs = rule_positive_outputs + 1
-
-                if rule_negative_outputs >= threshold * len(rule_outputs):
-                    sample_output = 0
-                else:
-                    sample_output = 1
+            # calculate the sample decision
+            if rule_positive_outputs >= round(evaluation_threshold * len(rule_outputs)):
+                sample_output = 1
+            else:
+                sample_output = 0
 
             # counting tps, tns, fps and fns
             if dataset.iloc[sample_id]['Annots'] == 1 and sample_output == 1:
@@ -86,10 +81,16 @@ def evaluate_individuals(population,
 
         sum_bacc = sum_bacc + classifier.bacc
 
-        if best_bacc < classifier.bacc:
-            best_bacc = classifier.bacc
-            best_classifier = classifier
+        # comparing new score to the best score
+        if best_bacc < classifier.bacc:  # if new score is better
+            best_bacc = classifier.bacc  # assign new best score
+            best_classifiers.clear()  # clear the list of best classifiers
+            best_classifiers.append(classifier.__copy__())  # add new classifier
 
+        if best_bacc == classifier.bacc:  # if new score == the best
+            best_classifiers.append(classifier.__copy__())  # add new classifier to best classifiers
+
+    # calculate average BACC
     avg_bacc = sum_bacc / len(population)
 
-    return best_bacc, avg_bacc, best_classifier
+    return best_bacc, avg_bacc, best_classifiers

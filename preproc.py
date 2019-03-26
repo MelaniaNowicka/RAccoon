@@ -22,9 +22,11 @@ def read_data(dataset_filename, log_message):
               "- the annotation of samples.")
         sys.exit(0)
 
+    # extract miRNA's names
+    mirnas = header[2:]
     # counting negative and positive samples
     samples = len(dataset.index)
-    negatives = dataset[dataset["Annots"]==0].count()["Annots"]
+    negatives = dataset[dataset["Annots"] == 0].count()["Annots"]
     positives = samples - negatives
 
     log_message = log_message + "Number of samples: " + str(samples) + "\n"
@@ -35,7 +37,7 @@ def read_data(dataset_filename, log_message):
         print("Error: no negative or positive samples in the dataset!")
         sys.exit(0)
 
-    return dataset, negatives, positives, log_message
+    return dataset, negatives, positives, mirnas, log_message
 
 
 # removal of irrelevant (non-regulated) miRNAs (filled with only 0/1).
@@ -60,9 +62,9 @@ def remove_irrelevant_mirna(dataset, log_message):
     dataset = dataset.drop(irrelevant_mirna, axis=1)
 
     # creating log message
-    log_message = log_message + "Number of relevant miRNAs according to a given threshold:" + str(len(relevant_mirna)) \
+    log_message = log_message + "Number of relevant miRNAs according to a given threshold: " + str(len(relevant_mirna)) \
                   + "\n"
-    log_message = log_message + "Number of irrelevant miRNAs according to a given threshold:" \
+    log_message = log_message + "Number of irrelevant miRNAs according to a given threshold: " \
                   + str(len(irrelevant_mirna)) + "\n\n"
 
     log_message = log_message + "Relevant miRNAs: "
