@@ -28,16 +28,16 @@ def check_params(args):
                                                  'Nowicka, FU Berlin, 2019.\n\n')
 
     # adding arguments
-    parser.add_argument('-train', '--dataset_filename_train', help='data set file name')
-    parser.add_argument('-test', '--dataset_filename_test', help='data set file name')
-    parser.add_argument('-f', '--filter_data', type=bool, default=True, help='filter data of not')
-    parser.add_argument('-iter', '--iterations', type=int, default=100, help='number of iterations')
-    parser.add_argument('-pop', '--population_size', type=int, default=300, help='population size')
-    parser.add_argument('-size', '--classifier_size', type=int, default=5, help='classifier size')
-    parser.add_argument('-thres', '--evaluation_threshold', default=0.75, type=float, help='evaluation threshold')
-    parser.add_argument('-cp', '--crossover_probability', default=0.9, type=float, help='probability of crossover')
-    parser.add_argument('-mp', '--mutation_probability', default=0.1, type=float, help='probability of mutation')
-    parser.add_argument('-ts', '--tournament_size', default=0.2, type=float, help='tournament size')
+    parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train", help='data set file name')
+    parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", help='data set file name')
+    parser.add_argument('-f', '--filter-data', dest="filter_data", type=bool, default=True, help='filter data of not')
+    parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=100, help='number of iterations')
+    parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300, help='population size')
+    parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5, help='classifier size')
+    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=0.75, type=float, help='evaluation threshold alpha')
+    parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.9, type=float, help='probability of crossover')
+    parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float, help='probability of mutation')
+    parser.add_argument('-t', '--tournament-size', dest="tournament_size", default=0.2, type=float, help='tournament size')
 
     # parse arguments
     params = parser.parse_args(args)
