@@ -2,7 +2,9 @@ def write_generation_to_log(population, iteration, best_classifiers, log_message
 
     id = 1
     log_message = log_message + "\n\n ITERATION " + str(iteration) + "\n"
+    sum_len = 0
     for classifier in population:
+        sum_len = sum_len + len(classifier.rule_set)
 
         log_message = log_message + "C" + str(id) + ": "
         id = id + 1
@@ -33,6 +35,10 @@ def write_generation_to_log(population, iteration, best_classifiers, log_message
         log_message = log_message + classifier_message + "\n"
         log_message = log_message + "BACC: " + str(classifier.bacc) + "; TP: " + str(classifier.error_rates["tp"]) \
                       + "; TN: " + str(classifier.error_rates["tn"]) + "\n"
+
+    log_message = log_message + "AVERAGE CLASSIFIER LENGTH: " + str(sum_len/len(population)) + "\n"
+    print(log_message)
+
     return log_message
 
 

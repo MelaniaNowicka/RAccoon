@@ -8,7 +8,7 @@ def read_data(dataset_filename, log_message):
     # reading the data
     # throws an exception when datafile not found
     try:
-        dataset = pd.read_csv(dataset_filename, sep='\t', header=0)
+        dataset = pd.read_csv(dataset_filename, sep=';', header=0)
     except IOError:
         print("Error: No such file or directory.")
         sys.exit(0)
@@ -32,6 +32,10 @@ def read_data(dataset_filename, log_message):
     log_message = log_message + "Number of samples: " + str(samples) + "\n"
     log_message = log_message + "Number of negative samples: " + str(negatives) + "\n"
     log_message = log_message + "Number of positive samples: " + str(positives) + "\n\n"
+
+    print("Number of samples: " + str(samples))
+    print("Number of negative samples: " + str(negatives))
+    print("Number of positive samples: " + str(positives))
 
     if negatives == 0 or positives == 0:
         print("Error: no negative or positive samples in the dataset!")

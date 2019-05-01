@@ -15,7 +15,7 @@ import mutation
 import log
 import time
 import argparse
-
+import toolbox
 
 random.seed(0)
 
@@ -28,26 +28,27 @@ def check_params(args):
                                                  'Nowicka, FU Berlin, 2019.\n\n')
 
     # adding arguments
-    parser.add_argument('-df', '--dataset_filename', type=argparse.FileType('r'), help='data set file name')
-    parser.add_argument('-f', '--filter_data', type=bool, default=False, help='filter data of not')
+    parser.add_argument('-train', '--dataset_filename_train', help='data set file name')
+    parser.add_argument('-test', '--dataset_filename_test', help='data set file name')
+    parser.add_argument('-f', '--filter_data', type=bool, default=True, help='filter data of not')
     parser.add_argument('-iter', '--iterations', type=int, default=100, help='number of iterations')
-    parser.add_argument('-pop', '--population_size', type=int, default=50, help='population size')
+    parser.add_argument('-pop', '--population_size', type=int, default=300, help='population size')
     parser.add_argument('-size', '--classifier_size', type=int, default=5, help='classifier size')
-    parser.add_argument('-thres', '--evaluation_threshold', default=0.5, type=float, help='evaluation threshold')
-    parser.add_argument('-cp', '--crossover_probability', default=0.75, type=float, help='probability of crossover')
-    parser.add_argument('-mp', '--mutation_probability', default=0.05, type=float, help='probability of mutation')
-    parser.add_argument('-ts', '--tournament_size', default=0.1, type=float, help='tournament size')
+    parser.add_argument('-thres', '--evaluation_threshold', default=0.75, type=float, help='evaluation threshold')
+    parser.add_argument('-cp', '--crossover_probability', default=0.9, type=float, help='probability of crossover')
+    parser.add_argument('-mp', '--mutation_probability', default=0.1, type=float, help='probability of mutation')
+    parser.add_argument('-ts', '--tournament_size', default=0.2, type=float, help='tournament size')
 
     # parse arguments
     params = parser.parse_args(args)
 
-    return params.dataset_filename, params.filter_data, params.iterations, params.population_size, \
-           params.classifier_size, params.evaluation_threshold, params.crossover_probability, \
+    return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, params.iterations, \
+           params.population_size, params.classifier_size, params.evaluation_threshold, params.crossover_probability, \
            params.mutation_probability, params.tournament_size
 
 
 # run genetic algorithm
-def run_genetic_algorithm(dataset_filename,  # name of the dataset file
+def run_genetic_algorithm(train_data,  # name of train datafile
                           filter_data,  # a flag whether data should be filtered or not
                           iterations,  # number of iterations
                           population_size,  # size of a population
@@ -69,7 +70,7 @@ def run_genetic_algorithm(dataset_filename,  # name of the dataset file
     best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
     # read data
-    dataset, negatives, positives, mirnas, log_message = preproc.read_data(dataset_filename, log_message)
+    dataset, negatives, positives, mirnas, log_message = preproc.read_data(train_data, log_message)
 
     # remove irrelevant miRNAs
     if filter_data == True:
@@ -86,11 +87,11 @@ def run_genetic_algorithm(dataset_filename,  # name of the dataset file
     best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population, evaluation_threshold, dataset,
                                                                      negatives, positives, best_bacc, best_classifiers)
     # write first population to log
-    log_message = log_message + "***FIRST POPULATION***"
-    log_message = log.write_generation_to_log(population, 0, best_classifiers, log_message)
-    log_message = log_message + "\n***FIRST POPULATION***"
-    with open(log_file_name, "a+") as log_file: # write log to a file
-        log_file.write(log_message)
+    #log_message = log_message + "***FIRST POPULATION***"
+    #log_message = log.write_generation_to_log(population, 0, best_classifiers, log_message)
+    #log_message = log_message + "\n***FIRST POPULATION***"
+    #with open(log_file_name, "a+") as log_file: # write log to a file
+        #log_file.write(log_message)
 
     # create a new empty population for selection
     selected_parents = []
@@ -156,33 +157,69 @@ def run_genetic_algorithm(dataset_filename,  # name of the dataset file
                                                                          best_classifiers)
 
         # writing log message to a file
-        log_message = ""
-        log_message = log.write_generation_to_log(population, iteration, best_classifiers, log_message)
-        with open(log_file_name, "a+") as log_file:
-            log_file.write(log_message)
-
+        #log_message = ""
+        #log_message = log.write_generation_to_log(population, iteration, best_classifiers, log_message)
+        #with open(log_file_name, "a+") as log_file:
+            #log_file.write(log_message)
+    #log_message = "***LAST POPULATION***"
+    #log_message = log.write_generation_to_log(population, iteration, best_classifiers, log_message)
+    #log_message = "***LAST POPULATION***"
     # show best scores
-    log_message = log.write_final_scores(best_bacc, best_classifiers)
-    with open(log_file_name, "a+") as log_file:
-        log_file.write(log_message)
+    #log_message = log.write_final_scores(best_bacc, best_classifiers)
+    #with open(log_file_name, "a+") as log_file:
+        #log_file.write(log_message)
 
+    #print("BEST CLASSIFIERS: ")
+    # show best scores
+    #log_message = log.write_final_scores(best_bacc, best_classifiers)
+
+    classifier_sizes = []
+    for classifier in best_classifiers:
+        inputs = 0
+        for rule in classifier.rule_set:
+            for input in rule.pos_inputs:
+                inputs = inputs + 1
+            for input in rule.neg_inputs:
+                inputs = inputs + 1
+        classifier_sizes.append(inputs)
+
+    shortest_classifier = classifier_sizes.index(min(classifier_sizes))
+    print("SHORTEST CLASSIFIER: ")
+    # show best scores
+    log_message = log.write_final_scores(best_bacc, [best_classifiers[shortest_classifier]])
+    #with open(log_file_name, "a+") as log_file:
+        #log_file.write(log_message)
+
+    return best_classifiers[shortest_classifier], best_classifiers
 
 if __name__ == "__main__":
 
     start = time.time()
 
-    dataset_filename, filter_data, iterations, population_size, classifier_size, evaluation_threshold, \
+    train_datafile, test_datafile, filter_data, iterations, population_size, classifier_size, evaluation_threshold, \
     crossover_probability, mutation_probability, tournament_size = check_params(sys.argv[1:])
 
-    run_genetic_algorithm(dataset_filename,
-                          filter_data,
-                          iterations,
-                          population_size,
-                          classifier_size,
-                          evaluation_threshold,
-                          crossover_probability,
-                          mutation_probability,
-                          tournament_size)
+    classifier_performances = []
+
+    for i in range(0, 1):
+        print("TEST ", i+1)
+        print("TRAINING DATA")
+        classifier, best_classifiers = run_genetic_algorithm(train_datafile,
+                                           filter_data,
+                                           iterations,
+                                           population_size,
+                                           classifier_size,
+                                           evaluation_threshold,
+                                           crossover_probability,
+                                           mutation_probability,
+                                           tournament_size)
+        print("TEST DATA")
+        test_bacc = toolbox.evaluate_classifier(classifier, evaluation_threshold, test_datafile)
+        classifier_performances.append(test_bacc)
+
+    bacc_avg = sum(classifier_performances) / len(classifier_performances)
+
+    print("AVERAGE BACC: ", bacc_avg)
 
     end = time.time()
-    print(end - start)
+    print("TIME: ", end - start)

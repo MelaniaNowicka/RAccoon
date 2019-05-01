@@ -1,3 +1,4 @@
+from decimal import Decimal, ROUND_HALF_UP
 import sys
 
 
@@ -57,7 +58,8 @@ def evaluate_individuals(population,
                     rule_positive_outputs = rule_positive_outputs + 1
 
             # calculate the sample decision
-            if rule_positive_outputs >= round(evaluation_threshold * len(rule_outputs)):
+            dec = Decimal(evaluation_threshold * len(rule_outputs)).to_integral_value(rounding=ROUND_HALF_UP)
+            if rule_positive_outputs >= dec:
                 sample_output = 1
             else:
                 sample_output = 0
@@ -68,9 +70,9 @@ def evaluate_individuals(population,
             if dataset.iloc[sample_id]['Annots'] == 0 and sample_output == 0:
                 true_negatives = true_negatives + 1
             if dataset.iloc[sample_id]['Annots'] == 1 and sample_output == 0:
-                false_positives = false_positives + 1
-            if dataset.iloc[sample_id]['Annots'] == 0 and sample_output == 1:
                 false_negatives = false_negatives + 1
+            if dataset.iloc[sample_id]['Annots'] == 0 and sample_output == 1:
+                false_positives = false_positives + 1
 
         # assigning classifier scores
         classifier.error_rates["tp"] = true_positives
