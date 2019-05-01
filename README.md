@@ -26,7 +26,7 @@ Description of parameters:
 
 ***-a*** - classification threshold
 
-***-c*** - crossover probability
+***-x*** - crossover probability
 
 ***-m*** - mutation probability
 
