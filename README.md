@@ -7,27 +7,27 @@ A genetic algorithm to designing distributed cell classifier circuits.
 Run the algorithm from a command line:
 
 ```
-python run_GA.py -train train_data.csv -test test_data.csv -f True -iter 75 -pop 200 -size 5 -thres 0.5 -cp 1.0 -mp 0.3 -ts 0.1
+python run_GA.py --train train_data.csv --test test_data.csv -f True -i 75 -p 200 -c 5 -a 0.5 -c 1.0 -m 0.3 -t 0.1
 ```
 
 Description of parameters:
 
-***-train*** - training data set in the .csv format
+***--train*** - training data set in the .csv format
 
-***-test*** - testing data set in the .csv format
+***--test*** - testing data set in the .csv format
 
 ***-f*** - filtering the data set (non-relevant columns are removed)
 
-***-iter*** - number of iterations
+***-i*** - number of iterations
 
-***-pop*** - population size
+***-p*** - population size
 
-***-size*** - maximal size of a classifier
+***-c*** - maximal size of a classifier
 
-***-thres*** - classification threshold
+***-a*** - classification threshold
 
-***-cp*** - crossover probability
+***-x*** - crossover probability
 
-***-mp*** - mutation probability
+***-m*** - mutation probability
 
-***-ts*** - tournament size
+***-t*** - tournament size
