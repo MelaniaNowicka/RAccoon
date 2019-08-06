@@ -1,6 +1,6 @@
 from decimal import Decimal, ROUND_HALF_UP
+import multiprocessing as mp
 import sys
-
 
 # balanced accuracy score
 def calculate_balanced_accuracy(tp, tn, p, n):
@@ -25,10 +25,7 @@ def evaluate_individuals(population,
     # sum of bacc for the population
     sum_bacc = 0.0
 
-    # a list of rule results
-    rule_outputs = []
-
-    error_rates = {"tp": 0, "tn": 0, "fp": 0, "fn": 0}
+    annots = dataset["Annots"].tolist()
 
     for classifier in population:  # evaluating every classifier
         true_positives = 0
@@ -36,42 +33,38 @@ def evaluate_individuals(population,
         false_positives = 0
         false_negatives = 0
 
-        for sample_id in range(0, len(dataset.index)):  # iterate through dataset
-            sample_output = 0  # single sample output
-            rule_outputs.clear()  # clearing the rule outputs for a single sample
+        classifier_output = [0] * len(annots)
 
-            for rule in classifier.rule_set:  # evaluating every rule in the classifier
+        for rule in classifier.rule_set:  # evaluating every rule in the classifier
+            columns = []
+            for input in rule.pos_inputs:
+                columns.append(dataset[input].tolist())
+            for input in rule.neg_inputs:
+                columns.append([not x for x in dataset[input].tolist()])
 
-                rule_output = 1
+            rule_output = [1] * len(annots)
 
-                for input in rule.pos_inputs:  # positive inputs
-                    rule_output = rule_output and dataset.iloc[sample_id][input]
-                for input in rule.neg_inputs:  # negative inputs
-                    rule_output = rule_output and not dataset.iloc[sample_id][input]
+            for column in columns:
+                rule_output = [i and j for i, j in zip(rule_output, column)]
 
-                rule_outputs.append(rule_output)  # adding a single rule output to a list of rule outputs
+            classifier_output = [i + j for i, j in zip(classifier_output, rule_output)]
 
-            rule_positive_outputs = 0
-            # count positive(1) outputs
-            for result in rule_outputs:
-                if result == 1:
-                    rule_positive_outputs = rule_positive_outputs + 1
-
-            # calculate the sample decision
-            dec = Decimal(evaluation_threshold * len(rule_outputs)).to_integral_value(rounding=ROUND_HALF_UP)
-            if rule_positive_outputs >= dec:
-                sample_output = 1
+        dec = Decimal(evaluation_threshold * len(classifier.rule_set)).to_integral_value(rounding=ROUND_HALF_UP)
+        outputs = []
+        for i in classifier_output:
+            if i >= dec:
+                outputs.append(1)
             else:
-                sample_output = 0
+                outputs.append(0)
 
-            # counting tps, tns, fps and fns
-            if dataset.iloc[sample_id]['Annots'] == 1 and sample_output == 1:
+        for i in range(0, len(annots)):
+            if annots[i] == 1 and outputs[i] == 1:
                 true_positives = true_positives + 1
-            if dataset.iloc[sample_id]['Annots'] == 0 and sample_output == 0:
+            if annots[i] == 0 and outputs[i] == 0:
                 true_negatives = true_negatives + 1
-            if dataset.iloc[sample_id]['Annots'] == 1 and sample_output == 0:
+            if annots[i] == 1 and outputs[i] == 0:
                 false_negatives = false_negatives + 1
-            if dataset.iloc[sample_id]['Annots'] == 0 and sample_output == 1:
+            if annots[i] == 0 and outputs[i] == 1:
                 false_positives = false_positives + 1
 
         # assigning classifier scores

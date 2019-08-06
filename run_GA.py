@@ -17,7 +17,7 @@ import time
 import argparse
 import toolbox
 
-random.seed(0)
+random.seed(1)
 
 # algorithm parameters read from the command line
 def check_params(args):
@@ -30,7 +30,7 @@ def check_params(args):
     # adding arguments
     parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train", help='data set file name')
     parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", help='data set file name')
-    parser.add_argument('-f', '--filter-data', dest="filter_data", type=bool, default=True, help='filter data of not')
+    parser.add_argument('-f', '--filter-data', dest="filter_data", type=bool, default=False, help='filter data of not')
     parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=100, help='number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300, help='population size')
     parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5, help='classifier size')
