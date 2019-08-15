@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3a0f6eed-07c0-4b01-9f5e-fffeb774f39a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/RAccoon.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/RAccoon.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eval.py" beforeDir="false" afterPath="$PROJECT_DIR$/eval.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/popinit.py" beforeDir="false" afterPath="$PROJECT_DIR$/popinit.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run_GA.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_GA.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/toolbox.py" beforeDir="false" afterPath="$PROJECT_DIR$/toolbox.py" afterDir="false" />
     </list>
@@ -19,15 +17,15 @@
     <session id="-1034430400">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="9" />
+          <entry key="project.closed" value="10" />
           <entry key="project.open.time.0" value="2" />
           <entry key="project.open.time.11" value="1" />
           <entry key="project.open.time.4" value="1" />
           <entry key="project.open.time.5" value="3" />
-          <entry key="project.open.time.6" value="2" />
+          <entry key="project.open.time.6" value="3" />
           <entry key="project.open.time.7" value="2" />
           <entry key="project.open.time.8" value="1" />
-          <entry key="project.opened" value="12" />
+          <entry key="project.opened" value="13" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -42,15 +40,15 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="Python Console" value="1770" />
+          <entry key="Python Console" value="2391" />
           <entry key="dummy" value="88" />
-          <entry key="py" value="43480" />
+          <entry key="py" value="48492" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="88" />
-          <entry key="Python" value="45250" />
+          <entry key="Python" value="50883" />
         </counts>
       </usages-collector>
     </session>
@@ -60,11 +58,11 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/run_GA.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-3640">
-              <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
+            <state relative-caret-position="4100">
+              <caret line="205" column="23" selection-start-line="205" selection-start-column="23" selection-end-line="205" selection-end-column="23" />
               <folding>
                 <element signature="e#163#178#0" expanded="true" />
-                <marker date="1564667065149" expanded="true" signature="365:366" ph="..." />
+                <marker date="1565821095099" expanded="true" signature="378:379" ph="..." />
               </folding>
             </state>
           </provider>
@@ -73,8 +71,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/eval.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="416">
-              <caret line="67" column="53" lean-forward="true" selection-start-line="35" selection-start-column="8" selection-end-line="67" selection-end-column="53" />
+            <state relative-caret-position="356">
+              <caret line="54" column="24" selection-start-line="54" selection-start-column="24" selection-end-line="54" selection-end-column="24" />
               <folding>
                 <element signature="e#0#42#0" expanded="true" />
                 <marker date="1565087414424" expanded="true" signature="83:84" ph="..." />
@@ -87,10 +85,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/toolbox.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="320">
-              <caret line="16" column="19" lean-forward="true" selection-start-line="16" selection-start-column="19" selection-end-line="16" selection-end-column="19" />
+            <state relative-caret-position="506">
+              <caret line="491" column="4" selection-start-line="491" selection-start-column="4" selection-end-line="491" selection-end-column="4" />
               <folding>
                 <element signature="e#0#42#0" expanded="true" />
+                <marker date="1565889938915" expanded="true" signature="16497:16498" ph="..." />
+                <marker date="1565889938915" expanded="true" signature="18275:18457" ph="..." />
               </folding>
             </state>
           </provider>
@@ -111,8 +111,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/popinit.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="220">
-              <caret line="11" column="17" selection-start-line="11" selection-start-column="17" selection-end-line="11" selection-end-column="17" />
+            <state relative-caret-position="1200">
+              <caret line="60" column="59" selection-start-line="60" selection-start-column="59" selection-end-line="60" selection-end-column="59" />
             </state>
           </provider>
         </entry>
@@ -141,7 +141,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mutation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3640">
+            <state relative-caret-position="3620">
               <caret line="182" column="31" selection-start-line="182" selection-start-column="31" selection-end-line="182" selection-end-column="31" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
@@ -153,8 +153,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/log.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1640">
-              <caret line="82" column="22" selection-start-line="82" selection-start-column="22" selection-end-line="82" selection-end-column="22" />
+            <state relative-caret-position="640">
+              <caret line="32" column="66" selection-start-line="11" selection-start-column="8" selection-end-line="32" selection-end-column="66" />
             </state>
           </provider>
         </entry>
@@ -191,6 +191,8 @@
       <find>with</find>
       <find>difference</find>
       <find>print</find>
+      <find>log_messa</find>
+      <find>initialize_</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -207,14 +209,14 @@
         <option value="$PROJECT_DIR$/postproc.py" />
         <option value="$PROJECT_DIR$/tests.py" />
         <option value="$PROJECT_DIR$/selection.py" />
-        <option value="$PROJECT_DIR$/popinit.py" />
         <option value="$PROJECT_DIR$/mutation.py" />
         <option value="$PROJECT_DIR$/preproc.py" />
         <option value="$PROJECT_DIR$/log.py" />
         <option value="$PROJECT_DIR$/crossover.py" />
         <option value="$PROJECT_DIR$/eval_parallel.py" />
-        <option value="$PROJECT_DIR$/run_GA.py" />
         <option value="$PROJECT_DIR$/eval.py" />
+        <option value="$PROJECT_DIR$/popinit.py" />
+        <option value="$PROJECT_DIR$/run_GA.py" />
         <option value="$PROJECT_DIR$/toolbox.py" />
       </list>
     </option>
@@ -230,6 +232,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -245,7 +248,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -314,7 +316,7 @@
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.36879432" visible="true" weight="0.16107382" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.36879432" visible="true" weight="0.16308725" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -323,10 +325,10 @@
       <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="4" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="5" weight="0.32907802" />
-      <window_info anchor="bottom" id="Version Control" order="6" sideWeight="0.49932885" weight="0.32907802" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="7" visible="true" weight="0.37730497" />
+      <window_info anchor="bottom" id="Version Control" order="6" sideWeight="0.49932885" weight="0.21134752" />
+      <window_info anchor="bottom" id="Terminal" order="7" weight="0.22978723" />
       <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.50067115" side_tool="true" weight="0.31205675" />
-      <window_info anchor="bottom" id="Python Console" order="9" sideWeight="0.49932885" weight="0.43829787" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="9" sideWeight="0.49932885" visible="true" weight="0.44113475" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -418,9 +420,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/postproc.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/postproc.py" />
     <entry file="file://C:/Anaconda3/Lib/codecs.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="189">
@@ -436,6 +436,7 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/eval_parallel.py" />
     <entry file="file://$PROJECT_DIR$/preproc.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="720">
@@ -448,8 +449,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/popinit.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="11" column="17" selection-start-line="11" selection-start-column="17" selection-end-line="11" selection-end-column="17" />
+        <state relative-caret-position="1200">
+          <caret line="60" column="59" selection-start-line="60" selection-start-column="59" selection-end-line="60" selection-end-column="59" />
         </state>
       </provider>
     </entry>
@@ -470,16 +471,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/log.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1640">
-          <caret line="82" column="22" selection-start-line="82" selection-start-column="22" selection-end-line="82" selection-end-column="22" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/mutation.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3640">
+        <state relative-caret-position="3620">
           <caret line="182" column="31" selection-start-line="182" selection-start-column="31" selection-end-line="182" selection-end-column="31" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
@@ -487,31 +481,28 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/eval_parallel.py">
+    <entry file="file://$PROJECT_DIR$/log.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="36" column="27" lean-forward="true" selection-start-line="36" selection-start-column="27" selection-end-line="36" selection-end-column="27" />
-          <folding>
-            <element signature="e#0#42#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="640">
+          <caret line="32" column="66" selection-start-line="11" selection-start-column="8" selection-end-line="32" selection-end-column="66" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/run_GA.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3640">
-          <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
+        <state relative-caret-position="4100">
+          <caret line="205" column="23" selection-start-line="205" selection-start-column="23" selection-end-line="205" selection-end-column="23" />
           <folding>
             <element signature="e#163#178#0" expanded="true" />
-            <marker date="1564667065149" expanded="true" signature="365:366" ph="..." />
+            <marker date="1565821095099" expanded="true" signature="378:379" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/eval.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="416">
-          <caret line="67" column="53" lean-forward="true" selection-start-line="35" selection-start-column="8" selection-end-line="67" selection-end-column="53" />
+        <state relative-caret-position="356">
+          <caret line="54" column="24" selection-start-line="54" selection-start-column="24" selection-end-line="54" selection-end-column="24" />
           <folding>
             <element signature="e#0#42#0" expanded="true" />
             <marker date="1565087414424" expanded="true" signature="83:84" ph="..." />
@@ -522,10 +513,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/toolbox.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="320">
-          <caret line="16" column="19" lean-forward="true" selection-start-line="16" selection-start-column="19" selection-end-line="16" selection-end-column="19" />
+        <state relative-caret-position="506">
+          <caret line="491" column="4" selection-start-line="491" selection-start-column="4" selection-end-line="491" selection-end-column="4" />
           <folding>
             <element signature="e#0#42#0" expanded="true" />
+            <marker date="1565889938915" expanded="true" signature="16497:16498" ph="..." />
+            <marker date="1565889938915" expanded="true" signature="18275:18457" ph="..." />
           </folding>
         </state>
       </provider>

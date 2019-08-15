@@ -6,6 +6,7 @@ Written by Melania Nowicka, FU Berlin, 2019.
 import datetime
 import sys
 import random
+import numpy
 import preproc
 import popinit
 import eval
@@ -77,7 +78,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         dataset, mirnas, log_message = preproc.remove_irrelevant_mirna(dataset, log_message)
 
     # population initialization
-    population, log_message = popinit.initialize_population(population_size, mirnas, classifier_size, log_message)
+    population = popinit.initialize_population(population_size, mirnas, classifier_size)
 
     # remove rule duplicates
     for classifier in population:
@@ -199,7 +200,8 @@ if __name__ == "__main__":
     train_datafile, test_datafile, filter_data, iterations, population_size, classifier_size, evaluation_threshold, \
     crossover_probability, mutation_probability, tournament_size = check_params(sys.argv[1:])
 
-    classifier_performances = []
+    train_results = []
+    test_results = []
 
     for i in range(0, 1):
         print("TEST ", i+1)
@@ -213,13 +215,19 @@ if __name__ == "__main__":
                                            crossover_probability,
                                            mutation_probability,
                                            tournament_size)
+
+        print("TRAIN DATA")
+        train_bacc = toolbox.evaluate_classifier(classifier, evaluation_threshold, train_datafile)
+        train_results.append(train_bacc)
         print("TEST DATA")
         test_bacc = toolbox.evaluate_classifier(classifier, evaluation_threshold, test_datafile)
-        classifier_performances.append(test_bacc)
+        test_results.append(test_bacc)
 
-    bacc_avg = sum(classifier_performances) / len(classifier_performances)
+    print("TRAIN AVG BACC: ", numpy.average(train_results))
+    print("TRAIN AVG STDEV: ", numpy.std(train_results))
 
-    print("AVERAGE BACC: ", bacc_avg)
+    print("TEST AVG BACC: ", numpy.average(test_results))
+    print("TEST AVG STDEV: ", numpy.std(test_results))
 
     end = time.time()
     print("TIME: ", end - start)

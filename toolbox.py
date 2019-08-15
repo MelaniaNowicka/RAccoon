@@ -2,6 +2,8 @@ from decimal import Decimal, ROUND_HALF_UP
 import sys
 import pandas as pd
 import random
+import popinit
+import math
 
 random.seed(0)
 
@@ -74,7 +76,7 @@ def remove_irrelevant_mirna(dataset_filename):
     for mirna in relevant_mirna:
         print(str(mirna), " ")
 
-    dataset.to_csv(dataset_out_filename, sep="\t", index=False)
+    dataset.to_csv(dataset_out_filename, sep=";", index=False)
 
 
 def crossvalidation(dataset_filename, kfolds):
@@ -329,3 +331,165 @@ def generate_bash_scripts():
         script_file = open("bash_scripts/script_" + log_name + ".sh", 'w')
         script_file.write(script)
         script_file.close()
+
+def print_classifier(classifier):
+
+    classifier_message = ""
+
+    for rule in classifier.rule_set:
+        rule_message = ""
+
+        if len(rule.neg_inputs) == 0 and len(rule.pos_inputs) == 1:
+            rule_message = "(" + str(rule.pos_inputs[0]) + ")"
+            # print(rule_message)
+        elif len(rule.pos_inputs) == 0 and len(rule.neg_inputs) == 1:
+            rule_message = "(NOT " + str(rule.neg_inputs[0]) + ")"
+            # print(rule_message)
+        else:
+            for input in rule.pos_inputs:
+                rule_message = rule_message + "(" + input + ")"
+                # print(rule_message)
+            for input in rule.neg_inputs:
+                rule_message = rule_message + "(NOT " + input + ")"
+                # print(rule_message)
+
+        rule_message = " [" + rule_message + "] "
+
+        rule_message = rule_message.replace(")(", ") AND (")
+
+        classifier_message = classifier_message + rule_message
+
+    return classifier_message
+
+
+def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_param, lambda_param):
+
+    miR_expr_sorted, annots_sorted = zip(*sorted(zip(miR_expr, annots)))
+
+    segment_step = (max(miR_expr) - min(miR_expr))/m_segments
+
+    segment_threshold = min(miR_expr) + segment_step
+
+    segments = []
+
+    cdds = []
+
+    for m in range(0, m_segments):
+
+        segment = [i for i in miR_expr_sorted if i <= segment_threshold]
+
+        segment_threshold += segment_step
+
+        segments.append(segment)
+
+
+    for segment in segments:
+
+        neg_class = annots_sorted[0:len(segment)].count(0)
+        pos_class = annots_sorted[0:len(segment)].count(1)
+
+        cdd = neg_class/negatives - pos_class/positives
+
+        cdds.append(cdd)
+
+    cdd_max = max(cdds)
+    cdd_min = min(cdds)
+
+    cdd_max_abs = math.fabs(max(cdds))
+    cdd_min_abs = math.fabs(min(cdds))
+
+    difference = math.fabs(cdd_max-cdd_min)
+
+    cutpoint = 0
+
+    if difference < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:
+        print("ONE STATE")
+
+    if difference >= alpha_param:
+        if max(cdd_max_abs, cdd_min_abs) >= lambda_param:
+            if min(cdd_max_abs, cdd_min_abs) < lambda_param:
+                print("TWO STATES")
+
+                if cdd_max_abs > cdd_min_abs:
+                    index = cdds.index(cdd_max) + 1
+                    cutpoint = min(miR_expr) + segment_step * index
+
+                if cdd_max_abs <= cdd_min_abs:
+                    index = cdds.index(cdd_min) + 1
+                    cutpoint = min(miR_expr) + segment_step * index
+
+        print("CUTPOINT: ", cutpoint)
+
+    if difference >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:
+        print("THREE STATES")
+
+    return cutpoint
+
+
+def discretize_data(con_data_fname_train, m_segments, alpha_param, lambda_param):
+
+    dataset, negatives, positives = read_data(con_data_fname_train)
+
+    new_file = str(con_data_fname_train.replace(".csv", "")) + "_discretized_" + str(m_segments) \
+               + "_" + str(alpha_param) + "_" + str(lambda_param)
+
+    annots = dataset["Annots"].tolist()
+
+    miRNAs = dataset.columns.values.tolist()[2:]
+
+    thresholds = []
+
+    data_discretized = dataset.drop(miRNAs, axis=1)
+
+    for miRNA in miRNAs:
+
+        threshold = 0
+
+        print("miRNA ", miRNA)
+
+        miR_expr = dataset[miRNA].tolist()
+
+        threshold = discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_param, lambda_param)
+
+        thresholds.append(threshold)
+
+        miR_discretized = [0 if i <= threshold else 1 for i in miR_expr]
+
+        data_discretized[miRNA] = miR_discretized
+
+    data_discretized.to_csv(new_file+".csv", index=False, sep=";")
+
+    return miRNAs, thresholds
+
+
+def discretize_with_thresholds(con_data_fname_test, miRNAs, thresholds):
+
+    dataset, negatives, positives = read_data(con_data_fname_test)
+
+    new_file = str(con_data_fname_test.replace(".csv", "")) + "_discretized"
+
+    annots = dataset["Annots"].tolist()
+
+    miRNAs = dataset.columns.values.tolist()[2:]
+
+    data_discretized = dataset.drop(miRNAs, axis=1)
+
+    miR_dict = dict(zip(miRNAs, thresholds))
+
+    for miRNA in miRNAs:
+
+        miR_expr = dataset[miRNA].tolist()
+
+        miR_discretized = [0 if i <= miR_dict[miRNA] else 1 for i in miR_expr]
+
+        data_discretized[miRNA] = miR_discretized
+
+    data_discretized.to_csv(new_file+".csv", index=False, sep=";")
+
+
+def discretize_data_for_tests(con_data_fname_train, con_data_fname_test, m_segments, alpha_param, lambda_param):
+
+    miRNAs, thresholds = discretize_data(con_data_fname_train, m_segments, alpha_param, lambda_param)
+
+    discretize_with_thresholds(con_data_fname_test, miRNAs, thresholds)
+

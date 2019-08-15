@@ -132,7 +132,8 @@ def initialize_single_rule(temp_mirnas):
 
 
 # initialization of a new classifier
-def initialize_classifier(classifier_size, mirnas, log_message):
+def initialize_classifier(classifier_size, mirnas
+                          ):
 
     # size of a classifier
     size = random.randrange(1, classifier_size+1)
@@ -151,20 +152,19 @@ def initialize_classifier(classifier_size, mirnas, log_message):
     # initialization of a new classifier
     classifier = Classifier(rule_set, error_rates={}, bacc={})
 
-    return classifier, log_message
+    return classifier
 
 
 # population initialization
 def initialize_population(population_size,
                           mirnas,
-                          classifier_size,
-                          log_message):
+                          classifier_size):
 
     population = []  # empty population
 
     # initialization of n=population_size classifiers
     for i in range(0, population_size):
-        classifier, log_message = initialize_classifier(classifier_size, mirnas, log_message)
+        classifier = initialize_classifier(classifier_size, mirnas)
         population.append(classifier)
 
-    return population, log_message
+    return population
