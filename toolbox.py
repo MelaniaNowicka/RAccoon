@@ -1,11 +1,11 @@
 from decimal import Decimal, ROUND_HALF_UP
 import sys
-import pandas as pd
+import pandas
 import random
-import popinit
 import math
 
-random.seed(0)
+random.seed(1)
+
 
 # reading binarized data set.
 def read_data(dataset_filename):
@@ -13,7 +13,7 @@ def read_data(dataset_filename):
     # reading the data
     # throws an exception when datafile not found
     try:
-        dataset = pd.read_csv(dataset_filename, sep=';', header=0)
+        dataset = pandas.read_csv(dataset_filename, sep=';', header=0)
     except IOError:
         print("Error: No such file or directory.")
         sys.exit(0)
@@ -42,6 +42,7 @@ def read_data(dataset_filename):
 
     return dataset, negatives, positives
 
+
 # removal of irrelevant (non-regulated) miRNAs (filled with only 0/1).
 def remove_irrelevant_mirna(dataset_filename):
 
@@ -59,7 +60,10 @@ def remove_irrelevant_mirna(dataset_filename):
     # (in other words: the whole column is filled in with 0s or 1s)
     for id, sum in column_sum.items():
         if id not in ["ID", "Annots"]:
+            print("S", sum)
+            print(len(dataset.index))
             if sum == 0 or sum == len(dataset.index):
+
                 irrelevant_mirna.append(id)
             else:
                 relevant_mirna.append(id)
@@ -71,12 +75,52 @@ def remove_irrelevant_mirna(dataset_filename):
     print("Number of relevant miRNAs according to a given threshold: " + str(len(relevant_mirna)))
     print("Number of irrelevant miRNAs according to a given threshold: " + str(len(irrelevant_mirna)))
 
-    print("Relevant miRNAs: ")
+    #print("Relevant miRNAs: ")
 
-    for mirna in relevant_mirna:
-        print(str(mirna), " ")
+    #for mirna in relevant_mirna:
+     #   print(str(mirna), " ")
 
     dataset.to_csv(dataset_out_filename, sep=";", index=False)
+
+
+def divide_into_train_test(dataset_filename, train_frac):
+
+    dataset, negatives, positives = read_data(dataset_filename)
+    header = dataset.columns.values.tolist()
+
+    data_size = len(dataset.index)
+
+    negative_samples = dataset.iloc[:negatives].copy()
+    positive_samples = dataset.iloc[negatives:data_size].copy()
+
+    # create training set
+    negative_samples_to_draw = int(round(negatives*train_frac/100))
+    positive_samples_to_draw = int(round(positives*train_frac/100))
+
+    # draw positive training samples
+    training_positives = positive_samples.sample(n=positive_samples_to_draw)  # draw n samples
+    training_positives.sort_index()  # sort samples
+    ids_to_drop = training_positives.index.values  # get the ids of positive training samples
+    testing_positives = positive_samples.drop(ids_to_drop)
+
+    # draw negative training samples
+    training_negatives = negative_samples.sample(n=negative_samples_to_draw)  # draw n samples
+    training_negatives.sort_index()  # sort samples
+    ids_to_drop = training_negatives.index.values  # get the ids of negative training samples
+    testing_negatives = negative_samples.drop(ids_to_drop)
+
+    training_data = training_negatives.append(training_positives)
+    testing_data = testing_negatives.append(testing_positives)
+
+    new_name = "_train_" + str(train_frac) + ".csv"
+    filename = dataset_filename.replace(".csv", new_name)
+    training_data.to_csv(filename, sep=";", index=False)
+
+    new_name = "_test_" + str(100-train_frac) + ".csv"
+    filename = dataset_filename.replace(".csv", new_name)
+    testing_data.to_csv(filename, sep=";", index=False)
+
+    return training_data, testing_data
 
 
 def crossvalidation(dataset_filename, kfolds):
@@ -92,9 +136,11 @@ def crossvalidation(dataset_filename, kfolds):
 
     positive_samples_to_draw = int(round(positives/kfolds))
 
-
     negative_folds = []
     positive_folds = []
+
+    train_datasets = []
+    test_datasets = []
 
     for fold in range(1, kfolds):
 
@@ -128,7 +174,6 @@ def crossvalidation(dataset_filename, kfolds):
         filename = dataset_filename.replace(".csv", new_name)
         test_folds[fold].to_csv(filename, sep=";", index=False)
 
-
         train_folds_to_merge = []
         for i in range(0, kfolds):
             if i != fold:
@@ -150,6 +195,11 @@ def crossvalidation(dataset_filename, kfolds):
         filename = dataset_filename.replace(".csv", new_name)
         train_fold.to_csv(filename, sep=";", index=False)
 
+        train_datasets.append(train_fold)
+        test_datasets.append(test_folds)
+
+    return train_datasets, test_datasets
+
 
 # balanced accuracy score
 def calculate_balanced_accuracy(tp, tn, p, n):
@@ -162,13 +212,22 @@ def calculate_balanced_accuracy(tp, tn, p, n):
 
     return balanced_accuracy
 
+
 # evaluation of the population
 def evaluate_classifier(classifier,
                         evaluation_threshold,
                         dataset_filename):
 
-    # read data
-    dataset, negatives, positives = read_data(dataset_filename)
+
+    if isinstance(dataset_filename, pandas.DataFrame):
+        dataset = dataset_filename.__copy__()
+        samples = len(dataset_filename.index)
+        negatives = dataset_filename[dataset_filename["Annots"] == 0].count()["Annots"]
+        positives = samples - negatives
+    else:
+        # read data
+        dataset, negatives, positives = read_data(dataset_filename)
+
 
     annots = dataset["Annots"].tolist()
 
@@ -221,6 +280,7 @@ def evaluate_classifier(classifier,
 
     return bacc
 
+
 def generate_parameters(iter_lower, iter_upper, iter_step,
                         pop_lower, pop_upper, pop_step,
                         cp_lower, cp_upper, cp_step,
@@ -251,86 +311,41 @@ def generate_parameters(iter_lower, iter_upper, iter_step,
 
     return parameter_sets
 
-def generate_bash_scripts():
+
+def generate_bash_scripts(train_list, test_list):
 
     parameter_sets = generate_parameters(25, 100, 25,
                                          50, 300, 50,
                                          10, 100, 10,
                                          10, 100, 10,
                                          10, 50, 10,
-                                         300)
-
-    train_data_1 = "C1_bt250_filtered_train_1.csv"
-    train_data_2 = "C1_bt250_filtered_train_2.csv"
-    train_data_3 = "C1_bt250_filtered_train_3.csv"
-
-    test_data_1 = "C1_bt250_filtered_test_1.csv"
-    test_data_2 = "C1_bt250_filtered_test_2.csv"
-    test_data_3 = "C1_bt250_filtered_test_3.csv"
-
+                                         100)
     run_commands = []
 
-    for i in range(0, len(parameter_sets)):
+    for train, test in zip(train_list, test_list):
+        for i in range(0, len(parameter_sets)):
 
-        log_name = "log_" + train_data_1.replace(".csv", "") + "_" + str(parameter_sets[i][0]) + "_" \
-                   + str(parameter_sets[i][1]) + "_" + str(parameter_sets[i][2]) + "_" \
-                   + str(parameter_sets[i][3]) + "_" + str(parameter_sets[i][4])
+            log_name = "log_" + train.replace(".csv", "") + "_" + str(parameter_sets[i][0]) + "_" \
+                       + str(parameter_sets[i][1]) + "_" + str(parameter_sets[i][2]) + "_" \
+                       + str(parameter_sets[i][3]) + "_" + str(parameter_sets[i][4])
 
-        run_command = "python3 /home/mnowicka/run_GA.py" + \
-                      " -train ./data/" + train_data_1 + " -test ./data/" + test_data_1 + \
-                      " -iter " + str(parameter_sets[i][0]) + " -pop " + str(parameter_sets[i][1]) + \
-                      " -size " + str(5) + " -thres " + str(0.5) + " -cp " + str(parameter_sets[i][2]) + \
-                      " -mp " + str(parameter_sets[i][3]) + " -ts " + str(parameter_sets[i][4]) + \
-                      " > " + log_name
+            run_command = "python3 /home/mnowicka/run_GA.py" + \
+                          " --train ./data/" + train + " --test ./data/" + test + \
+                          " -i " + str(parameter_sets[i][0]) + " -p " + str(parameter_sets[i][1]) + \
+                          " -c " + str(5) + " -a " + str(0.5) + " -x " + str(parameter_sets[i][2]) + \
+                          " -m " + str(parameter_sets[i][3]) + " -t " + str(parameter_sets[i][4]) + \
+                          " > " + log_name
 
-        script = "#!/bin/bash\n#SBATCH -J " + log_name + "\n#SBATCH -D /data/scratch/mnowicka\n#SBATCH -o " \
-                 + log_name + ".%j.out\n#SBATCH -n 1\n#SBATCH --time=5-00:00:00\n" \
-                              "#SBATCH --partition=big\n#SBATCH --mem=500M\n#SBATCH --cpus-per-task=1\n\n" \
-                              "source /home/mnowicka/venv/bin/activate\n" + run_command
+            script = "#!/bin/bash\n#SBATCH -J " + log_name + "\n#SBATCH -D /data/scratch/mnowicka\n#SBATCH -o " \
+                     + log_name + ".%j.out\n#SBATCH -n 1\n#SBATCH --time=5-00:00:00\n" \
+                                  "#SBATCH --partition=big\n#SBATCH --mem=2000M\n#SBATCH --cpus-per-task=1\n\n" \
+                                  "source /home/mnowicka/venv/bin/activate\n" + run_command
 
-        script_file = open("bash_scripts/script_" + log_name + ".sh", 'w')
-        script_file.write(script)
-        script_file.close()
+            script_name = "C:/Projects/DISCRETIZATION/SIMDATA/D2/bash_scripts/script_" + log_name + ".sh"
+            script_file = open(script_name, 'w')
+            script_file.write(script)
+            script_file.close()
 
-        log_name = "log_" + train_data_2.replace(".csv", "") + "_" + str(parameter_sets[i][0]) + \
-                   "_" + str(parameter_sets[i][1]) + "_" + str(parameter_sets[i][2]) + "_" \
-                   + str(parameter_sets[i][3]) + "_" + str(parameter_sets[i][4])
-
-        run_command = "python3 /home/mnowicka/run_GA.py" +\
-                      " -train ./data/" + train_data_2 + " -test ./data/" + test_data_2 + \
-                      " -iter " + str(parameter_sets[i][0]) + " -pop " + str(parameter_sets[i][1]) + \
-                      " -size " + str(5) + " -thres " + str(0.5) + " -cp " + str(parameter_sets[i][2]) + \
-                      " -mp " + str(parameter_sets[i][3]) + " -ts " + str(parameter_sets[i][4]) + \
-                      " > " + log_name
-
-        script = "#!/bin/bash\n#SBATCH -J " + log_name + "\n#SBATCH -D /data/scratch/mnowicka\n#SBATCH -o " \
-                 + log_name + ".%j.out\n#SBATCH -n 1\n#SBATCH --time=5-00:00:00\n" \
-                              "#SBATCH --partition=big\n#SBATCH --mem=500M\n#SBATCH --cpus-per-task=1\n\n" \
-                              "source /home/mnowicka/venv/bin/activate\n" + run_command
-
-        script_file = open("bash_scripts/script_" + log_name + ".sh", 'w')
-        script_file.write(script)
-        script_file.close()
-
-        log_name = "log_" + train_data_3.replace(".csv", "") + "_" + str(parameter_sets[i][0]) + "_" \
-                   + str(parameter_sets[i][1]) + "_" + str(parameter_sets[i][2]) + "_" \
-                   + str(parameter_sets[i][3]) + "_" + str(parameter_sets[i][4])
-
-        run_command = "python3 /home/mnowicka/run_GA.py" +\
-                      " -train ./data/" + train_data_3 + " -test ./data/" + test_data_3 + \
-                      " -iter " + str(parameter_sets[i][0]) + " -pop " + str(parameter_sets[i][1]) + \
-                      " -size " + str(5) + " -thres " + str(0.5) + " -cp " + str(parameter_sets[i][2]) + \
-                      " -mp " + str(parameter_sets[i][3]) + " -ts " + str(parameter_sets[i][4]) + \
-                      " > " + log_name
-
-        script = "#!/bin/bash\n#SBATCH -J " + log_name + "\n#SBATCH -D /data/scratch/mnowicka\n#SBATCH -o " \
-                 + log_name + ".%j.out\n#SBATCH -n 1\n#SBATCH --time=5-00:00:00\n" \
-                              "#SBATCH --partition=big\n#SBATCH --mem=500M\n#SBATCH --cpus-per-task=1\n\n" \
-                              "source /home/mnowicka/venv/bin/activate\n" + run_command
-
-        script_file = open("bash_scripts/script_" + log_name + ".sh", 'w')
-        script_file.write(script)
-        script_file.close()
 
 def print_classifier(classifier):
 
@@ -402,13 +417,13 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
 
     cutpoint = 0
 
-    if difference < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:
-        print("ONE STATE")
+    #if difference < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:
+        #print("ONE STATE")
 
     if difference >= alpha_param:
         if max(cdd_max_abs, cdd_min_abs) >= lambda_param:
             if min(cdd_max_abs, cdd_min_abs) < lambda_param:
-                print("TWO STATES")
+               #print("TWO STATES")
 
                 if cdd_max_abs > cdd_min_abs:
                     index = cdds.index(cdd_max) + 1
@@ -418,10 +433,10 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
                     index = cdds.index(cdd_min) + 1
                     cutpoint = min(miR_expr) + segment_step * index
 
-        print("CUTPOINT: ", cutpoint)
+        #print("CUTPOINT: ", cutpoint)
 
-    if difference >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:
-        print("THREE STATES")
+    #if difference >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:
+        #print("THREE STATES")
 
     return cutpoint
 
@@ -441,21 +456,31 @@ def discretize_data(con_data_fname_train, m_segments, alpha_param, lambda_param)
 
     data_discretized = dataset.drop(miRNAs, axis=1)
 
+    onestate = 0
+    twostates = 0
+
     for miRNA in miRNAs:
 
         threshold = 0
 
-        print("miRNA ", miRNA)
+        #print("miRNA ", miRNA)
 
         miR_expr = dataset[miRNA].tolist()
 
         threshold = discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_param, lambda_param)
+
+        if threshold != 0:
+            twostates += 1
+        else:
+            onestate += 1
 
         thresholds.append(threshold)
 
         miR_discretized = [0 if i <= threshold else 1 for i in miR_expr]
 
         data_discretized[miRNA] = miR_discretized
+
+    print("ONE STATE miRNAs: ", onestate, " TWO STATE miRNAs: ", twostates)
 
     data_discretized.to_csv(new_file+".csv", index=False, sep=";")
 
@@ -487,9 +512,19 @@ def discretize_with_thresholds(con_data_fname_test, miRNAs, thresholds):
     data_discretized.to_csv(new_file+".csv", index=False, sep=";")
 
 
-def discretize_data_for_tests(con_data_fname_train, con_data_fname_test, m_segments, alpha_param, lambda_param):
+def discretize_data_for_tests(train_list, test_list, m_segments, alpha_param, lambda_param):
 
-    miRNAs, thresholds = discretize_data(con_data_fname_train, m_segments, alpha_param, lambda_param)
+    for train, test in zip(train_list, test_list):
 
-    discretize_with_thresholds(con_data_fname_test, miRNAs, thresholds)
+        miRNAs, thresholds = discretize_data(train, m_segments, alpha_param, lambda_param)
+
+        print("miRNAs")
+        print(miRNAs)
+
+        print("Thresholds")
+        print(thresholds)
+
+        discretize_with_thresholds(test, miRNAs, thresholds)
+
+
 

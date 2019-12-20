@@ -7,6 +7,7 @@ import datetime
 import sys
 import random
 import numpy
+import pandas
 import preproc
 import popinit
 import eval
@@ -64,14 +65,24 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                   "classification. Written by Melania Nowicka, FU Berlin, 2019.\n\n"
     log_file_name = "log_" + str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + ".txt"  # log name
 
+    run_algorithm = True
+
     # initialize of best classifier
     best_bacc = 0.0  # best classifier BACC
     avg_bacc = 0.0  # average BACC in the population
-    best_classifier = popinit.Classifier(rule_set=[], error_rates={}, bacc=0.0)  # first best classifier
+
+    # first best classifier
+    best_classifier = popinit.Classifier(rule_set=[], errors = {}, error_rates={}, bacc=0.0, additional_scores={})
     best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
-    # read data
-    dataset, negatives, positives, mirnas, log_message = preproc.read_data(train_data, log_message)
+    if isinstance(train_data, pandas.DataFrame):
+        dataset = train_data.__copy__()
+        samples = len(train_data.index)
+        negatives = train_data[train_data["Annots"] == 0].count()["Annots"]
+        positives = samples - negatives
+    else:
+        # read data
+        dataset, negatives, positives, mirnas, log_message = preproc.read_data(train_data, log_message)
 
     # remove irrelevant miRNAs
     if filter_data == True:
@@ -97,10 +108,15 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     # create a new empty population for selection
     selected_parents = []
 
+    # count iterations without a change of scores
+    iteration_counter = 0
+
     # iterate over generations
-    for iteration in range(0, iterations):
+    #for iteration in range(0, iterations):
+    while run_algorithm == True:
+
         # show progress, the current best score and average score
-        print(int(iteration/iterations*100), "% | BACC: ", best_bacc, "|  AVG BACC: ", avg_bacc)
+        #print(int(iteration/iterations*100), "% | BACC: ", best_bacc, "|  AVG BACC: ", avg_bacc)
 
         selected_parents.clear()  # empty new population for selection
 
@@ -148,6 +164,8 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         for classifier in population:
             classifier.remove_duplicates()
 
+        old_bacc = best_bacc
+
         # evaluation of population
         best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population,
                                                                          evaluation_threshold,
@@ -156,6 +174,15 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                                                                          positives,
                                                                          best_bacc,
                                                                          best_classifiers)
+
+
+        if best_bacc == old_bacc:
+            iteration_counter = iteration_counter + 1
+        else:
+            iteration_counter = 0
+
+        if iteration_counter == iterations:
+            run_algorithm = False
 
         # writing log message to a file
         #log_message = ""
@@ -193,6 +220,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     return best_classifiers[shortest_classifier], best_classifiers
 
+
 if __name__ == "__main__":
 
     start = time.time()
@@ -200,10 +228,26 @@ if __name__ == "__main__":
     train_datafile, test_datafile, filter_data, iterations, population_size, classifier_size, evaluation_threshold, \
     crossover_probability, mutation_probability, tournament_size = check_params(sys.argv[1:])
 
-    train_results = []
-    test_results = []
+    train_bacc_avg = []
+    train_tpr_avg = []
+    train_tnr_avg = []
+    train_fpr_avg = []
+    train_fnr_avg = []
+    train_f1_avg = []
+    train_mcc_avg = []
+    train_ppv_avg = []
+    train_fdr_avg = []
+    test_bacc_avg = []
+    test_tpr_avg = []
+    test_tnr_avg = []
+    test_fpr_avg = []
+    test_fnr_avg = []
+    test_f1_avg = []
+    test_mcc_avg = []
+    test_ppv_avg = []
+    test_fdr_avg = []
 
-    for i in range(0, 1):
+    for i in range(0, 50):
         print("TEST ", i+1)
         print("TRAINING DATA")
         classifier, best_classifiers = run_genetic_algorithm(train_datafile,
@@ -217,17 +261,44 @@ if __name__ == "__main__":
                                            tournament_size)
 
         print("TRAIN DATA")
-        train_bacc = toolbox.evaluate_classifier(classifier, evaluation_threshold, train_datafile)
-        train_results.append(train_bacc)
+        train_bacc, train_error_rates, train_additional_scores = \
+            toolbox.evaluate_classifier(classifier, evaluation_threshold, train_datafile)
+        train_bacc_avg.append(train_bacc)
+        train_tpr_avg.append(train_error_rates["tpr"])
+        train_tnr_avg.append(train_error_rates["tnr"])
+        train_fpr_avg.append(train_error_rates["fpr"])
+        train_fnr_avg.append(train_error_rates["fnr"])
+        train_f1_avg.append(train_additional_scores["f1"])
+        train_mcc_avg.append(train_additional_scores["mcc"])
+        train_ppv_avg.append(train_additional_scores["ppv"])
+        train_fdr_avg.append(train_additional_scores["fdr"])
+
         print("TEST DATA")
-        test_bacc = toolbox.evaluate_classifier(classifier, evaluation_threshold, test_datafile)
-        test_results.append(test_bacc)
+        test_bacc, test_error_rates, test_additional_scores = \
+            toolbox.evaluate_classifier(classifier, evaluation_threshold, test_datafile)
+        test_bacc_avg.append(test_bacc)
 
-    print("TRAIN AVG BACC: ", numpy.average(train_results))
-    print("TRAIN AVG STDEV: ", numpy.std(train_results))
+    print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
+    print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg))
+    print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
+    print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
+    print("TRAIN AVG FPR: ", numpy.average(train_fpr_avg))
+    print("TRAIN AVG FNR: ", numpy.average(train_fnr_avg))
+    print("TRAIN AVG TPR: ", numpy.average(train_f1_avg))
+    print("TRAIN AVG TNR: ", numpy.average(train_mcc_avg))
+    print("TRAIN AVG FPR: ", numpy.average(train_ppv_avg))
+    print("TRAIN AVG FNR: ", numpy.average(train_fdr_avg))
 
-    print("TEST AVG BACC: ", numpy.average(test_results))
-    print("TEST AVG STDEV: ", numpy.std(test_results))
+    print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
+    print("TEST AVG STDEV: ", numpy.std(test_bacc_avg))
+    print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
+    print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
+    print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
+    print("TEST AVG FNR: ", numpy.average(test_fnr_avg))
+    print("TEST AVG TPR: ", numpy.average(test_f1_avg))
+    print("TEST AVG TNR: ", numpy.average(test_mcc_avg))
+    print("TEST AVG FPR: ", numpy.average(test_ppv_avg))
+    print("TEST AVG FNR: ", numpy.average(test_fdr_avg))
 
     end = time.time()
     print("TIME: ", end - start)

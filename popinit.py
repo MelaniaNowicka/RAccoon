@@ -14,9 +14,11 @@ class SingleRule:
         new_pos_inputs = []
         new_neg_inputs = []
 
+        # copy positive inputs
         for input in self.pos_inputs:
             new_pos_inputs.append(input)
 
+        # copy negative inputs
         for input in self.neg_inputs:
             new_neg_inputs.append(input)
 
@@ -26,19 +28,22 @@ class SingleRule:
 # classifier (individual)
 class Classifier:
 
-    def __init__(self, rule_set, error_rates, bacc):
+    def __init__(self, rule_set, errors, error_rates, bacc, additional_scores):
         self.rule_set = rule_set  # list of rules
-        self.error_rates = error_rates  # dictionary of error rates (tp, tn, fp, fn)
+        self.errors = errors  # dictionary of error (tp, tn, fp, fn)
+        self.error_rates = error_rates # dictionary of error rates (tpr, tnr, fpr, fnr)
         self.bacc = bacc  # balanced accuracy
+        self.additional_scores = additional_scores # dictionary of other scores (f1, mcc, precision, fdr)
 
     # copy object
     def __copy__(self):
         new_rule_set = []
 
+        # copy rules
         for rule in self.rule_set:
             new_rule_set.append(rule.__copy__())
 
-        return Classifier(new_rule_set, self.error_rates, self.bacc)
+        return Classifier(new_rule_set, self.errors, self.error_rates, self.bacc, self.additional_scores)
 
     # remove repeating rules in classifiers
     def remove_duplicates(self):
@@ -132,8 +137,7 @@ def initialize_single_rule(temp_mirnas):
 
 
 # initialization of a new classifier
-def initialize_classifier(classifier_size, mirnas
-                          ):
+def initialize_classifier(classifier_size, mirnas):
 
     # size of a classifier
     size = random.randrange(1, classifier_size+1)
@@ -150,7 +154,7 @@ def initialize_classifier(classifier_size, mirnas
         rule_set.append(rule)
 
     # initialization of a new classifier
-    classifier = Classifier(rule_set, error_rates={}, bacc={})
+    classifier = Classifier(rule_set, errors={}, error_rates={}, bacc={}, additional_scores={})
 
     return classifier
 
