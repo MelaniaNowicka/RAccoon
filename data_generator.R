@@ -1,3 +1,29 @@
+# Data generation, split intro train/test data sets and normalization 
+# script written by M. Nowicka, Free University Berlin, Berlin (2019).
+# The script allows to generate a gene expression data set containing
+# raw RNA-seq counts using compcodeR package by Soneson C (2014) with
+# different parameter sets, split the data set into train/test fractions
+# and normalize the data sets with TMM normalization (edgeR package). 
+# The test data set is normalized using a reference sample found for 
+# the train data set to prevent information leakage.
+
+# Libraries necessary ti run the script: compcodeR, edgeR, matrixStats
+
+#package check
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+if (!require("compcodeR")) {
+  BiocManager::install("compcodeR")
+}
+if (!require("edgeR")) {
+  BiocManager::install("edgeR")
+}
+if (!require("matrixStats")) {
+  BiocManager::install("matrixStats")
+}
+
+#load packages
 library("compcodeR")
 library("edgeR")
 library("matrixStats")
@@ -119,58 +145,79 @@ normalizeTMM <- function(data.set, annots, refSample) {
   return(normalized.counts)
 }
 
+#####TRANSFORM DATA#####
+#transform data set in a following format:
+# ID | Annots | gene1 | ...
+#  1 |      0 |   100 | ...
+#  2 |      0 |   200 | ...
+transformData <- function(ID, data.set.annotation, data.set.counts) {
+  
+  transformed.dataset <- t(data.set.counts) #transform the count matrix
+  Annots <- data.set.annotation #add annotation of samples
+  transformed.data.set <- cbind(Annots, transformed.dataset) #bind data with annotation
+  transformed.data.set <- cbind(ID, transformed.data.set) #bind data with IDs
+  
+  return(transformed.data.set)
+}
 
 #####DATA PREPARATION#####
 #generate and prepare the data
-#n.vars - number of genes
+#n.genes - number of genes
 #samples.per.cond - number of samples in each class
 #n.diffexp - number of differentially expressed genes
 #fraction.upregulated - fraction of upregulated samples
-#fraction of samples in the training data
+#train.fraction - fraction of samples in the training data
 #random.outlier.high.prob - probability of random outliers (high)
 #random.outlier.low.prob - probability of random outliers (low)
-prepareData <- function(n.vars, samples.per.cond, n.diffexp, fraction.upregulated, 
-                        train.fraction, random.outlier.high.prob, random.outlier.low.prob) {
+#is.seed - set seed to TRUE for reproducibility 
+prepareData <- function(n.genes, samples.per.cond, n.diffexp, fraction.upregulated, 
+                        train.fraction, random.outlier.high.prob, random.outlier.low.prob, is.seed) {
 
-
-  set.seed(1)
-  start_time <- Sys.time()
   
-  dataset.file.name = paste("dataset", n.vars, samples.per.cond, n.diffexp, 
-                            fraction.upregulated, train.fraction, random.outlier.high.prob, 
-                            paste(random.outlier.low.prob, ".rds", sep = "", collapse = NULL),
-                            sep = "_", collapse = NULL)
+  # set seed for reproducibility
+  if (is.seed == TRUE) {
+    set.seed(1)
+    start_time <- Sys.time()
+  }
   
   
   #############DATA SET GENERATION#############
+  #write to file
+  data.set.file.name = paste("data", n.genes, samples.per.cond, n.diffexp, 
+                        fraction.upregulated, train.fraction, random.outlier.high.prob,
+                        paste(random.outlier.low.prob, ".rds", sep="", collapse = NULL), 
+                        sep = "_", collapse = NULL)
   
   #generate synthetic data with compcodeR
   data.set <- generateSyntheticData(dataset = "mydat", 
-                                    n.vars = n.vars, 
+                                    n.vars = n.genes, 
                                     samples.per.cond = samples.per.cond, 
                                     n.diffexp = n.diffexp, 
                                     fraction.upregulated = fraction.upregulated, 
                                     random.outlier.high.prob = random.outlier.high.prob, 
                                     random.outlier.low.prob = random.outlier.low.prob, 
                                     repl.id = 1, 
-                                    output.file = dataset.file.name)
+                                    output.file = data.set.file.name)
   
   
-  ID <- seq(1, ncol(data.set@count.matrix), by=1)
-  transformed.dataset <- t(data.set@count.matrix)
-  Annots <- data.set@sample.annotations$condition
-  data.set.to.write <- cbind(Annots, transformed.dataset)
-  data.set.to.write <- cbind(ID, data.set.to.write)
+  ID <- seq(1, ncol(data.set@count.matrix), by=1) #generate IDs for samples
+  data.set.to.write <- transformData(ID, data.set.annotation = data.set@sample.annotations$condition, 
+                                     data.set.counts =  data.set@count.matrix)
   
-  data.set.name = paste("data", n.vars, samples.per.cond, n.diffexp, 
-                              fraction.upregulated, train.fraction, random.outlier.high.prob,
-                              paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
-                              sep = "_", collapse = NULL)
+  #write to file
+  data.set.name = paste("data", n.genes, samples.per.cond, n.diffexp, 
+                        fraction.upregulated, train.fraction, random.outlier.high.prob,
+                        paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
+                        sep = "_", collapse = NULL)
   
   write.table(data.set.to.write, data.set.name, sep=";", row.names = FALSE)
+  
+  #generate data set summary
+  summarizeSyntheticDataSet(data.set = data.set, output.filename = paste(data.set.name,".html"))
 
   #############DATA SET SPLIT  #############
   
+  # split the data set into train/test according to train.fraction
   data.set.split <- trainTestSplit(data.set, samples.per.cond, train.fraction)
   train.data.set <- data.set.split$train.data.set 
   train.annots <- data.set.split$train.annots
@@ -184,54 +231,52 @@ prepareData <- function(n.vars, samples.per.cond, n.diffexp, fraction.upregulate
 
   #############WRITE DATA TO FILES#############
   
-  #ID <- seq(1, ncol(train.data.set), by=1)
-  ID <- colnames(train.data.set)
-  transformed.train.dataset <- t(train.data.set)
-  Annots <- train.annots
-  train.data.set.to.write <- cbind(Annots, transformed.train.dataset)
-  train.data.set.to.write <- cbind(ID, train.data.set.to.write)
+  #write train data set to file
+  ID <- colnames(train.data.set) #get IDs for samples
+  train.data.set.to.write <- transformData(ID, train.annots, train.data.set)
   
-  train.data.set.name = paste("train", n.vars, samples.per.cond, n.diffexp, 
+  train.data.set.name = paste("train", n.genes, samples.per.cond, n.diffexp, 
                               fraction.upregulated, train.fraction, random.outlier.high.prob,
                               paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
                               sep = "_", collapse = NULL)
   
   write.table(train.data.set.to.write, train.data.set.name, sep=";", row.names = FALSE)
   
-  #write test data set to file
-  #ID <- seq(1, ncol(test.data.set), by=1)
-  ID <- colnames(test.data.set)
-  transformed.test.dataset <- t(test.data.set)
-  Annots <- test.annots
-  test.data.set.to.write <- cbind(Annots, transformed.test.dataset)
-  test.data.set.to.write <- cbind(ID, test.data.set.to.write)
+  #generate data set summary
+  summarizeSyntheticDataSet(data.set = train.data.set, output.filename = paste(train.data.set.to.write,".html"))
   
-  test.data.set.name = paste("test", n.vars, samples.per.cond, n.diffexp, 
+  #write test data set to file
+  ID <- colnames(test.data.set)
+  test.data.set.to.write <- transformData(ID, test.annots, test.data.set)
+  
+  test.data.set.name = paste("test", n.genes, samples.per.cond, n.diffexp, 
                              fraction.upregulated, train.fraction, random.outlier.high.prob,
                              paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
                              sep = "_", collapse = NULL)
   
   write.table(test.data.set.to.write, test.data.set.name, sep=";", row.names = FALSE)
   
+  #generate data set summary
+  summarizeSyntheticDataSet(data.set = test.data.set, output.filename = paste(test.data.set.to.write,".html"))
+  
   #############TRAIN DATA NORMALIZATION#############
   print("TRAIN DATA")
   train.normalized.counts <- normalizeTMM(train.data.set, train.annots, refSample = -1)
   
   #write normalized train data to file
-  #ID <- seq(1, ncol(train.normalized.counts), by=1)
   ID <- colnames(train.normalized.counts)
-  transformed.train.dataset <- t(train.normalized.counts)
-  Annots <- train.annots
-  train.data.set <- cbind(Annots, transformed.train.dataset)
-  train.data.set <- cbind(ID, train.data.set)
+  train.data.set <- transformData(ID, train.annots, train.normalized.counts)
   
-  train.data.set.name = paste("train", n.vars, samples.per.cond, n.diffexp, 
+  train.data.set.name = paste("train", n.genes, samples.per.cond, n.diffexp, 
                               fraction.upregulated, train.fraction, 
                               random.outlier.high.prob, random.outlier.low.prob,
                               paste("TMMnorm", ".csv", sep="", collapse = NULL), 
                               sep = "_", collapse = NULL)
   
   write.table(train.data.set, train.data.set.name, sep=";", row.names = FALSE)
+  
+  #generate data set summary
+  summarizeSyntheticDataSet(data.set = train.normalized.counts, output.filename = paste(train.data.set.name,".html"))
   
   #############TEST DATA NORMALIZATION#############
   print("TEST DATA")
@@ -240,18 +285,18 @@ prepareData <- function(n.vars, samples.per.cond, n.diffexp, fraction.upregulate
   #write test data set to file
   #ID <- seq(1, ncol(test.normalized.counts), by=1)
   ID <- colnames(test.normalized.counts)
-  transformed.test.dataset <- t(test.normalized.counts)
-  Annots <- test.annots
-  test.data.set <- cbind(Annots, transformed.test.dataset)
-  test.data.set <- cbind(ID, test.data.set)
+  test.data.set <- transformData(ID, test.annots, test.normalized.counts)
   
-  test.data.set.name = paste("test", n.vars, samples.per.cond, n.diffexp, 
+  test.data.set.name = paste("test", n.genes, samples.per.cond, n.diffexp, 
                              fraction.upregulated, train.fraction, 
                              random.outlier.high.prob, random.outlier.low.prob,
                              paste("TMMnorm", ".csv", sep="", collapse = NULL), 
                              sep = "_", collapse = NULL)
   
   write.table(test.data.set, test.data.set.name, sep=";", row.names = FALSE)
+  
+  #generate data set summary
+  summarizeSyntheticDataSet(data.set = test.normalized.counts, output.filename = paste(test.data.set.name,".html"))
   
   end_time <- Sys.time()
   
