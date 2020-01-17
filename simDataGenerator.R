@@ -14,6 +14,46 @@ library("compcodeR")
 library("edgeR")
 library("matrixStats")
 
+
+#############DATA SET GENERATION#############
+generateSimData <- function(n.genes, samples.per.cond, n.diffexp, fraction.upregulated, random.outlier.high.prob, random.outlier.low.prob, generateSummary) {
+  
+  #generate file name
+  data.set.file.name = paste("sim_data", n.genes, samples.per.cond, n.diffexp, 
+                             fraction.upregulated, random.outlier.high.prob,
+                             random.outlier.low.prob, sep = "_", collapse = NULL)
+  
+  #generate synthetic data with compcodeR
+  data.set <- generateSyntheticData(dataset = "mydat", 
+                                    n.vars = n.genes, 
+                                    samples.per.cond = samples.per.cond, 
+                                    n.diffexp = n.diffexp, 
+                                    fraction.upregulated = fraction.upregulated, 
+                                    random.outlier.high.prob = random.outlier.high.prob, 
+                                    random.outlier.low.prob = random.outlier.low.prob, 
+                                    repl.id = 1, 
+                                    output.file = paste(data.set.file.name, ".rds", sep=""))
+  
+  #transform data
+  annotation <- transformAnnotation(data.set@sample.annotations$condition)
+  data.set.to.write <- transformData(data.set.annotation = annotation, 
+                                     data.set.counts =  data.set@count.matrix)
+  
+  #write to file
+  data.set.name = paste("data", n.genes, samples.per.cond, n.diffexp, 
+                        fraction.upregulated, random.outlier.high.prob,
+                        random.outlier.low.prob, sep = "_", collapse = NULL)
+  
+  write.table(data.set.to.write, paste(data.set.name, ".csv", sep=""), sep=";", row.names = FALSE)
+  
+  #generate data set summary
+  if(generateSummary == TRUE){
+    summarizeSyntheticDataSet(data.set = data.set, output.filename = paste(data.set.name,".html"))
+  }
+  
+  return(data.set)
+}
+
 #####DATA SPLIT#####
 #split the data intro train&test data sets
 trainTestSplit <- function(count.matrix, annotation, negative.samples, positive.samples, train.fraction) {
@@ -153,6 +193,7 @@ transformAnnotation <- function(annotation){
   return(annotation)
 }
 
+
 #####DATA PREPARATION#####
 #generate and prepare the data
 #n.genes - number of genes
@@ -183,41 +224,15 @@ prepareSimulatedDataset <- function(n.genes,
     set.seed(1)
   }
   
-  
   #############DATA SET GENERATION#############
   
-  #generate file name
-  data.set.file.name = paste("sim_data", n.genes, samples.per.cond, n.diffexp, 
-                        fraction.upregulated, random.outlier.high.prob,
-                        random.outlier.low.prob, train.fraction, sep = "_", collapse = NULL)
-  
-  #generate synthetic data with compcodeR
-  data.set <- generateSyntheticData(dataset = "mydat", 
-                                    n.vars = n.genes, 
-                                    samples.per.cond = samples.per.cond, 
-                                    n.diffexp = n.diffexp, 
-                                    fraction.upregulated = fraction.upregulated, 
-                                    random.outlier.high.prob = random.outlier.high.prob, 
-                                    random.outlier.low.prob = random.outlier.low.prob, 
-                                    repl.id = 1, 
-                                    output.file = paste(data.set.file.name, ".rds", sep=""))
-  
-  #transform data
-  annotation <- transformAnnotation(data.set@sample.annotations$condition)
-  data.set.to.write <- transformData(data.set.annotation = annotation, 
-                                     data.set.counts =  data.set@count.matrix)
-  
-  #write to file
-  data.set.name = paste("data", n.genes, samples.per.cond, n.diffexp, 
-                        fraction.upregulated, train.fraction, random.outlier.high.prob,
-                        random.outlier.low.prob, sep = "_", collapse = NULL)
-  
-  write.table(data.set.to.write, paste(data.set.name, ".csv", sep=""), sep=";", row.names = FALSE)
-  
-  #generate data set summary
-  if(generateSummary == TRUE){
-    summarizeSyntheticDataSet(data.set = data.set, output.filename = paste(data.set.name,".html"))
-  }
+  data.set <- generateSimData(n.genes, 
+                  samples.per.cond, 
+                  n.diffexp, 
+                  fraction.upregulated, 
+                  random.outlier.high.prob, 
+                  random.outlier.low.prob,
+                  generateSummary)
   
   #############IMBALANCE DATA PROCESSING#############
   
