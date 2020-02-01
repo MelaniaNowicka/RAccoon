@@ -19,8 +19,6 @@ import time
 import argparse
 import toolbox
 
-random.seed(1)
-
 # algorithm parameters read from the command line
 def check_params(args):
 
@@ -56,9 +54,11 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           population_size,  # size of a population
                           classifier_size,  # max size of a classifier
                           evaluation_threshold,  # evaluation function
+                          miRNA_cdds,  # miRNA cdds
                           crossover_probability,  # probability of crossover
                           mutation_probability,  # probability of mutation
-                          tournament_size):  # size of a tournament
+                          tournament_size,
+                          objective):  # size of a tournament
 
     # start log message for GA run
     log_message = "A genetic algorithm (GA) optimizing a set of miRNA-based cell classifiers for in situ cancer " \
@@ -72,55 +72,49 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     avg_bacc = 0.0  # average BACC in the population
 
     # first best classifier
-    best_classifier = popinit.Classifier(rule_set=[], errors = {}, error_rates={}, bacc=0.0, additional_scores={})
+    best_classifier = popinit.Classifier(rule_set=[], errors={}, error_rates={}, bacc=0.0, additional_scores={}, cdd_score=0.0)
     best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
+    # check if the data comes from file or data frame
     if isinstance(train_data, pandas.DataFrame):
         dataset = train_data.__copy__()
         samples = len(train_data.index)
         negatives = train_data[train_data["Annots"] == 0].count()["Annots"]
         positives = samples - negatives
+        header = dataset.columns.values.tolist()
+        mirnas = header[2:]
     else:
         # read data
         dataset, negatives, positives, mirnas, log_message = preproc.read_data(train_data, log_message)
 
-    # remove irrelevant miRNAs
+    # REMOVE IRRELEVANT miRNAs
     if filter_data == True:
         dataset, mirnas, log_message = preproc.remove_irrelevant_mirna(dataset, log_message)
 
-    # population initialization
+    # INITIALIZE POPULATION
     population = popinit.initialize_population(population_size, mirnas, classifier_size)
 
-    # remove rule duplicates
+    # REMOVE RULE DUPLICATES
     for classifier in population:
         classifier.remove_duplicates()
 
-    # first evaluation of individuals
-    best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population, evaluation_threshold, dataset,
+    # EVALUATE INDIVIDUALS
+    best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population, evaluation_threshold, miRNA_cdds, dataset,
                                                                      negatives, positives, best_bacc, best_classifiers)
-    # write first population to log
-    #log_message = log_message + "***FIRST POPULATION***"
-    #log_message = log.write_generation_to_log(population, 0, best_classifiers, log_message)
-    #log_message = log_message + "\n***FIRST POPULATION***"
-    #with open(log_file_name, "a+") as log_file: # write log to a file
-        #log_file.write(log_message)
-
-    # create a new empty population for selection
-    selected_parents = []
 
     # count iterations without a change of scores
     iteration_counter = 0
 
-    # iterate over generations
-    #for iteration in range(0, iterations):
+    # ITERATE OVER GENERATIONS
+    # run as long as there is score change
     while run_algorithm == True:
 
         # show progress, the current best score and average score
         #print(int(iteration/iterations*100), "% | BACC: ", best_bacc, "|  AVG BACC: ", avg_bacc)
 
-        selected_parents.clear()  # empty new population for selection
+        # SELECTION
+        selected_parents = []
 
-        # selection of individuals for crossover
         for i in range(0, int(population_size/2)):  # iterate through population
             first_parent_id, second_parent_id = selection.select(population,
                                                                  tournament_size)
@@ -130,7 +124,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
         population.clear()  # empty population
 
-        # crossover of selected individuals
+        # CROSSOVER
         for i in range(0, int(population_size/2)):  # iterate through parents
 
             crossover_rand = random.random()  # randomly choose probability for crossover
@@ -157,18 +151,19 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                 population.append(first_parent.__copy__())  # if crossover not allowed - copy parents
                 population.append(second_parent.__copy__())
 
-        # mutation
+        # MUTATION
         population = mutation.mutate(population, mirnas, mutation_probability)
 
-        # remove rule duplicates
+        # REMOVE RULE DUPLICATES
         for classifier in population:
             classifier.remove_duplicates()
 
-        old_bacc = best_bacc
+        global_best_bacc = best_bacc
 
         # evaluation of population
-        best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population,
+        best_bacc, avg_bacc, best_classifiers, = eval.evaluate_individuals(population,
                                                                          evaluation_threshold,
+                                                                         miRNA_cdds,
                                                                          dataset,
                                                                          negatives,
                                                                          positives,
@@ -176,7 +171,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                                                                          best_classifiers)
 
 
-        if best_bacc == old_bacc:
+        if best_bacc == global_best_bacc:
             iteration_counter = iteration_counter + 1
         else:
             iteration_counter = 0
@@ -184,41 +179,34 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         if iteration_counter == iterations:
             run_algorithm = False
 
-        # writing log message to a file
-        #log_message = ""
-        #log_message = log.write_generation_to_log(population, iteration, best_classifiers, log_message)
-        #with open(log_file_name, "a+") as log_file:
-            #log_file.write(log_message)
-    #log_message = "***LAST POPULATION***"
-    #log_message = log.write_generation_to_log(population, iteration, best_classifiers, log_message)
-    #log_message = "***LAST POPULATION***"
-    # show best scores
-    #log_message = log.write_final_scores(best_bacc, best_classifiers)
-    #with open(log_file_name, "a+") as log_file:
-        #log_file.write(log_message)
 
-    #print("BEST CLASSIFIERS: ")
-    # show best scores
-    #log_message = log.write_final_scores(best_bacc, best_classifiers)
+    if (objective == "cdd"):
+        cdds = []
+        for classifier in best_classifiers:
+            cdds.append(classifier.cdd_score)
 
-    classifier_sizes = []
-    for classifier in best_classifiers:
-        inputs = 0
-        for rule in classifier.rule_set:
-            for input in rule.pos_inputs:
-                inputs = inputs + 1
-            for input in rule.neg_inputs:
-                inputs = inputs + 1
-        classifier_sizes.append(inputs)
+        max_cdd = cdds.index(max(cdds))
+        print("BEST CDD: ")
+        log.write_final_scores(best_bacc, [best_classifiers[max_cdd]])
+        return best_classifiers[max_cdd], best_classifiers
 
-    shortest_classifier = classifier_sizes.index(min(classifier_sizes))
-    print("SHORTEST CLASSIFIER: ")
-    # show best scores
-    log_message = log.write_final_scores(best_bacc, [best_classifiers[shortest_classifier]])
-    #with open(log_file_name, "a+") as log_file:
-        #log_file.write(log_message)
 
-    return best_classifiers[shortest_classifier], best_classifiers
+    if (objective == "size"):
+        classifier_sizes = []
+        for classifier in best_classifiers:
+            inputs = 0
+            for rule in classifier.rule_set:
+                for input in rule.pos_inputs:
+                    inputs = inputs + 1
+                for input in rule.neg_inputs:
+                    inputs = inputs + 1
+            classifier_sizes.append(inputs)
+
+        shortest_classifier = classifier_sizes.index(min(classifier_sizes))
+        print("SHORTEST CLASSIFIER: ")
+        # show best scores
+        log.write_final_scores(best_bacc, [best_classifiers[shortest_classifier]])
+        return best_classifiers[shortest_classifier], best_classifiers
 
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 import random
 
-
 # single boolean function class
 # inputs are connected with and AND
 class SingleRule:
@@ -28,12 +27,13 @@ class SingleRule:
 # classifier (individual)
 class Classifier:
 
-    def __init__(self, rule_set, errors, error_rates, bacc, additional_scores):
+    def __init__(self, rule_set, errors, error_rates, bacc, additional_scores, cdd_score):
         self.rule_set = rule_set  # list of rules
         self.errors = errors  # dictionary of error (tp, tn, fp, fn)
         self.error_rates = error_rates # dictionary of error rates (tpr, tnr, fpr, fnr)
         self.bacc = bacc  # balanced accuracy
         self.additional_scores = additional_scores # dictionary of other scores (f1, mcc, precision, fdr)
+        self.cdd_score = cdd_score # class distribution diversity score
 
     # copy object
     def __copy__(self):
@@ -43,7 +43,20 @@ class Classifier:
         for rule in self.rule_set:
             new_rule_set.append(rule.__copy__())
 
-        return Classifier(new_rule_set, self.errors, self.error_rates, self.bacc, self.additional_scores)
+        return Classifier(new_rule_set, self.errors, self.error_rates, self.bacc, self.additional_scores, self.cdd_score)
+
+    # get a list of inputs
+    def get_input_list(self):
+
+        inputs = []
+        for rule in self.rule_set:
+            for input in rule.pos_inputs:  # add positive inputs
+                inputs.append(input)
+
+            for input in rule.neg_inputs:  # add negative inputs
+                inputs.append(input)
+
+        return inputs
 
     # remove repeating rules in classifiers
     def remove_duplicates(self):
@@ -154,7 +167,7 @@ def initialize_classifier(classifier_size, mirnas):
         rule_set.append(rule)
 
     # initialization of a new classifier
-    classifier = Classifier(rule_set, errors={}, error_rates={}, bacc={}, additional_scores={})
+    classifier = Classifier(rule_set, errors={}, error_rates={}, bacc={}, additional_scores={}, cdd_score={})
 
     return classifier
 

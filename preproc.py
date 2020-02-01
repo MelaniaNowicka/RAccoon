@@ -1,6 +1,8 @@
 import sys
 import pandas
 import math
+import toolbox
+from decimal import Decimal, ROUND_HALF_UP
 
 
 # reading binarized data set.
@@ -93,32 +95,25 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
     # calculate segment step
     segment_step = (max(miR_expr) - min(miR_expr))/m_segments
 
-    # calculate segnment threshold
-    segment_threshold = min(miR_expr) + segment_step
-
     # segments
     segments = []
 
     # class diversity distribution
     cdds = []
 
+
     # calculate segment thresholds
-    for m in range(0, m_segments):
+    for m in range(1, m_segments+1):
 
-        segment = [i for i in miR_expr_sorted if i <= segment_threshold]
-
-        segment_threshold += segment_step
-
+        if(m==m_segments): segment_threshold = Decimal(max(miR_expr))
+        else: segment_threshold = Decimal(min(miR_expr)) + Decimal(segment_step)*m
+        segment = [i for i in miR_expr_sorted if Decimal(i) <= Decimal(segment_threshold)]
         segments.append(segment)
-
-    # calculate cdds for each segment
-    for segment in segments:
 
         neg_class = annots_sorted[0:len(segment)].count(0)
         pos_class = annots_sorted[0:len(segment)].count(1)
 
-        cdd = neg_class/negatives - pos_class/positives
-
+        cdd = neg_class / negatives - pos_class / positives
         cdds.append(cdd)
 
     # max and min cdd
@@ -129,18 +124,18 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
     cdd_max_abs = math.fabs(max(cdds))
     cdd_min_abs = math.fabs(min(cdds))
 
-    # difference between absulute values of max and min cdda
-    difference = math.fabs(cdd_max-cdd_min)
+    # difference between absolute values of max and min cdda
+    global_cdd = math.fabs(cdd_max-cdd_min)
 
     # assign threshold = 0
     threshold = 0
 
     # one state miRNAs
-    if difference < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:
+    if global_cdd < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:
         threshold = 0
 
     # two states miRNAs
-    if difference >= alpha_param:
+    if global_cdd >= alpha_param:
         if max(cdd_max_abs, cdd_min_abs) >= lambda_param:
             if min(cdd_max_abs, cdd_min_abs) < lambda_param:
 
@@ -153,10 +148,10 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
                     threshold = min(miR_expr) + segment_step * index
 
     # complicated patterns
-    if difference >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:
+    if global_cdd >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:
         threshold = -1
 
-    return threshold
+    return threshold, global_cdd
 
 
 # discretize train data set
@@ -169,23 +164,26 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
         positives = samples - negatives
     else:
         # read data
-        dataset, negatives, positives = read_data(train_dataset)
+        dataset, negatives, positives = toolbox.read_data(train_dataset)
 
     # create a new name for a discretized data set
     new_file = str(train_dataset.replace(".csv", "")) + "_discretized_" + str(m_segments) \
                + "_" + str(alpha_param) + "_" + str(lambda_param)
 
     # list of sample annotation
-    annots = train_dataset["Annots"].tolist()
+    annots = dataset["Annots"].tolist()
 
     # get miRNA IDs
-    miRNAs = train_dataset.columns.values.tolist()[2:]
+    miRNAs = dataset.columns.values.tolist()[2:]
 
     # list of discretization thresholds
     thresholds = []
 
-    # drop all the miRNAs from the train data set
-    data_discretized = train_dataset.drop(miRNAs, axis=1)
+    # global miRNA cdds
+    global_cdds = []
+
+    # drop all the miRNAs from the train data set, keep the sample IDs and annotation
+    data_discretized = dataset.drop(miRNAs, axis=1)
 
     # count miRNAs with one/two states or another complicated pattern
     one_state_miRNAs = 0
@@ -199,27 +197,32 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
         threshold = 0
 
         # get single miRNA gene expression levels
-        miR_expr = train_dataset[miRNA].tolist()
+        miR_expr = dataset[miRNA].tolist()
 
         # discretize miRNA
-        threshold = discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_param, lambda_param)
+        threshold, global_cdd = discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_param, lambda_param)
 
         # count miRNA expression patterns
-        if threshold == 0:
-            one_state_miRNAs += 1
-        if threshold > 0:
-            two_states_miRNAs += 1
         if threshold == -1:
             complicated_pattern_miRNAs += 1
+        if threshold == 0:
+            one_state_miRNAs += 1
+            threshold = -1
+        if threshold > 0:
+            two_states_miRNAs += 1
 
         # add threshold to a list of thresholds
         thresholds.append(threshold)
+        global_cdds.append(global_cdd)
 
         # discretize miRNAs according to thresholds
         miR_discretized = [0 if i <= threshold else 1 for i in miR_expr]
 
         # add discretized miRNAs to the data
         data_discretized[miRNA] = miR_discretized
+
+    # create a dictrionary of miRNAs and its cdds
+    miRNA_cdds = dict(zip(miRNAs, global_cdds))
 
     print("ONE STATE miRNAs: ", one_state_miRNAs)
     print("TWO STATE miRNAs: ", two_states_miRNAs)
@@ -229,7 +232,7 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
         # write data to a file
         data_discretized.to_csv(new_file+".csv", index=False, sep=";")
 
-    return data_discretized, miRNAs, thresholds
+    return data_discretized, miRNAs, thresholds, miRNA_cdds
 
 
 # discretize test data
@@ -294,7 +297,7 @@ def discretize_data_for_tests(train_list, test_list, m_segments, alpha_param, la
 
         print("THRESHOLD INFORMATION")
         # discretize train data and return thresholds
-        data_discretized, miRNAs, thresholds = discretize_train_data(train, m_segments, alpha_param, lambda_param)
+        data_discretized, miRNAs, thresholds, miRNA_cdds = discretize_train_data(train, m_segments, alpha_param, lambda_param)
 
         discretized_train_data.append(data_discretized)
 
@@ -309,5 +312,5 @@ def discretize_data_for_tests(train_list, test_list, m_segments, alpha_param, la
 
         discretized_test_data.append(data_discretized)
 
-    return discretized_train_data, discretized_test_data
+    return discretized_train_data, discretized_test_data, miRNA_cdds
 

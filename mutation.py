@@ -1,5 +1,5 @@
-import random
 import popinit
+import random
 
 # mutate single rule
 def mutate_rule(rule, mirnas):

@@ -1,15 +1,16 @@
 import random
+random.seed(1)
+
+
 import configparser
 import numpy
 import time
 import argparse
 import preproc
 import sys
-
 import toolbox
 import run_GA
 import eval
-
 
 # divide data into train and test
 def divide_into_train_test(dataset_filename, train_frac):
@@ -124,7 +125,7 @@ def crossvalidation(dataset, dataset_filename, kfolds):
 
 
 # train and test classifiers
-def train_and_test(training_fold, testing_fold, parameter_set, evaluation_threshold, repeats):
+def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, evaluation_threshold, miRNA_cdds, repeats, objective):
 
     # parameter set
     iter, pop, cp, mp, ts = parameter_set
@@ -138,6 +139,8 @@ def train_and_test(training_fold, testing_fold, parameter_set, evaluation_thresh
     train_mcc_avg = []
     train_ppv_avg = []
     train_fdr_avg = []
+    train_cdd_avg = []
+
     test_bacc_avg = []
     test_tpr_avg = []
     test_tnr_avg = []
@@ -158,11 +161,15 @@ def train_and_test(training_fold, testing_fold, parameter_set, evaluation_thresh
         start = time.time() # measure time
 
         # run the algorithm
-        classifier, best_classifiers = run_GA.run_genetic_algorithm(training_fold, True, iter, pop, 5, 0.5, cp, mp, ts)
+        classifier, best_classifiers = run_GA.run_genetic_algorithm(training_fold, True, iter, pop, classifier_size,
+                                                                    evaluation_threshold, miRNA_cdds, cp, mp, ts, objective)
+
+        # get annotation
+        annotation = training_fold["Annots"].tolist()
 
         # calculate best train BACC
-        train_bacc, train_error_rates, train_additional_scores = \
-            eval.evaluate_classifier(classifier, evaluation_threshold, training_fold)
+        train_bacc, train_errors, train_error_rates, train_additional_scores, train_cdd = \
+            eval.evaluate_classifier(classifier, annotation, testing_fold, evaluation_threshold, miRNA_cdds)
         train_bacc_avg.append(train_bacc)
         train_tpr_avg.append(train_error_rates["tpr"])
         train_tnr_avg.append(train_error_rates["tnr"])
@@ -172,10 +179,14 @@ def train_and_test(training_fold, testing_fold, parameter_set, evaluation_thresh
         train_mcc_avg.append(train_additional_scores["mcc"])
         train_ppv_avg.append(train_additional_scores["ppv"])
         train_fdr_avg.append(train_additional_scores["fdr"])
+        train_cdd_avg.append(train_cdd)
+
+        # get annotation
+        annotation = testing_fold["Annots"].tolist()
 
         # calculate best test BACC
-        test_bacc, test_error_rates, test_additional_scores = \
-            eval.evaluate_classifier(classifier, evaluation_threshold, testing_fold)
+        test_bacc, test_errors, test_error_rates, test_additional_scores, train_cdd = \
+        eval.evaluate_classifier(classifier, annotation, testing_fold, evaluation_threshold, miRNA_cdds)
 
         test_bacc_avg.append(test_bacc)
         test_tpr_avg.append(test_error_rates["tpr"])
@@ -216,6 +227,7 @@ def train_and_test(training_fold, testing_fold, parameter_set, evaluation_thresh
     print("TRAIN AVG MCC: ", numpy.average(train_mcc_avg))
     print("TRAIN AVG PPV: ", numpy.average(train_ppv_avg))
     print("TRAIN AVG FDR: ", numpy.average(train_fdr_avg))
+    print("TRAIN AVG CDD: ", numpy.average(train_cdd_avg))
 
     # calculate test average scores
     print("\nTEST AVERAGE RESULTS")
@@ -244,7 +256,8 @@ def train_and_test(training_fold, testing_fold, parameter_set, evaluation_thresh
 
 
 # parameter tuning
-def tune_parameters(training_cv_datasets, testing_cv_datasets, config, evaluation_threshold, test_repeats):
+def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifier_size, evaluation_threshold,
+                    miRNA_cdds, test_repeats, objective):
 
     # get the parameters from configuration file
     iteration_lower_bound = int(config['PARAMETER TUNING']['IterationLowerBound'])
@@ -305,8 +318,8 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, evaluatio
             fold = fold + 1
 
             # train and test classifiers
-            test_bacc, test_std = train_and_test(training_fold, testing_fold, parameter_set,
-                                             evaluation_threshold, test_repeats)
+            test_bacc, test_std = train_and_test(training_fold, testing_fold, parameter_set, classifier_size,
+                                             evaluation_threshold, miRNA_cdds, test_repeats, objective)
 
             test_bacc_cv.append(test_bacc)
             test_std_cv.append(test_std)
@@ -384,7 +397,7 @@ def run_test(train_dataset_filename, test_dataset_filename):
     lambda_bin = float(config["BINARIZATION PARAMETERS"]["LambdaBin"])
 
     # binarize cv data sets
-    training_cv_datasets_bin, testing_cv_datasets_bin = preproc.discretize_data_for_tests(training_cv_datasets,
+    training_cv_datasets_bin, testing_cv_datasets_bin, miRNA_cdds = preproc.discretize_data_for_tests(training_cv_datasets,
                                                                                   testing_cv_datasets,
                                                                                   m_segments,
                                                                                   alpha_bin,
@@ -404,16 +417,21 @@ def run_test(train_dataset_filename, test_dataset_filename):
 
         fold = fold + 1
 
+    classifier_size = float(config["CLASSIFIER PARAMETERS"]["ClassifierSize"])
     evaluation_threshold = float(config["THRESHOLD"]["Alpha"])
     test_repeats = int(config["GENERAL"]["SingleTestRepeats"])
+    objective = str(config["OBJECTIVE FUNCTION"]["Objective"])
 
     # parameter tuning
     print("\n***PARAMETER TUNING***")
     best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin,
                                                            testing_cv_datasets_bin,
                                                            config,
+                                                           classifier_size,
                                                            evaluation_threshold,
-                                                           test_repeats)
+                                                           miRNA_cdds,
+                                                           test_repeats,
+                                                           objective)
 
     print("BEST PARAMETERS: ", best_parameters)
     print("BEST SCORE: ", best_bacc, " STD: ", best_std)
@@ -421,7 +439,7 @@ def run_test(train_dataset_filename, test_dataset_filename):
     print("\n###########FINAL TEST###########")
     print("\n***DATA DISCRETIZATION***")
     # binarize training and testing data sets
-    discretized_train_data, discretized_test_data = preproc.discretize_data_for_tests([training_data],
+    discretized_train_data, discretized_test_data, miRNA_cdds = preproc.discretize_data_for_tests([training_data],
                                                                               [testing_data],
                                                                               m_segments,
                                                                               alpha_bin,
@@ -443,8 +461,8 @@ def run_test(train_dataset_filename, test_dataset_filename):
     # measure time
     start_test = time.time()
     #run test
-    train_and_test(discretized_train_data[0], discretized_test_data[0], best_parameters, evaluation_threshold,
-                   test_repeats)
+    train_and_test(discretized_train_data[0], discretized_test_data[0], best_parameters, classifier_size,
+                   evaluation_threshold, miRNA_cdds, test_repeats, objective)
     # measure time
     end_test = time.time()
     print("\nRUNTIME")

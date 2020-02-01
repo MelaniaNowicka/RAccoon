@@ -1,11 +1,8 @@
 from decimal import Decimal, ROUND_HALF_UP
 import sys
 import pandas
-import random
 import math
-
-random.seed(1)
-
+import random
 
 # reading binarized data set.
 def read_data(dataset_filename):

@@ -273,7 +273,7 @@ prepareSimulatedDataset <- function(n.genes,
                               paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
                               sep = "_", collapse = NULL)
   
-  write.table(train.data.set.to.write, train.data.set.name, sep=";", row.names = FALSE)
+  write.table(train.data.set.to.write, train.data.set.name,  sep = ";", row.names = FALSE, quote=FALSE)
   
   #write test data set to file
   test.data.set.to.write <- transformData(test.annots, test.data.set)
@@ -283,7 +283,7 @@ prepareSimulatedDataset <- function(n.genes,
                              paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
                              sep = "_", collapse = NULL)
   
-  write.table(test.data.set.to.write, test.data.set.name, sep=";", row.names = FALSE)
+  write.table(test.data.set.to.write, test.data.set.name,  sep = ";", row.names = FALSE, quote=FALSE)
   
   #############TRAIN DATA NORMALIZATION#############
   print("TRAIN DATA")
@@ -298,7 +298,7 @@ prepareSimulatedDataset <- function(n.genes,
                               paste("TMMnorm", ".csv", sep="", collapse = NULL), 
                               sep = "_", collapse = NULL)
   
-  write.table(train.data.set, train.data.set.name, sep=";", row.names = FALSE)
+  write.table(train.data.set, train.data.set.name,  sep = ";", row.names = FALSE, quote=FALSE)
   
   #############TEST DATA NORMALIZATION#############
   print("TEST DATA")
@@ -314,14 +314,11 @@ prepareSimulatedDataset <- function(n.genes,
                              paste("TMMnorm", ".csv", sep="", collapse = NULL), 
                              sep = "_", collapse = NULL)
   
-  write.table(test.data.set, test.data.set.name, sep=";", row.names = FALSE)
+  write.table(test.data.set, test.data.set.name, sep = ";", row.names = FALSE, quote=FALSE)
   
   end_time <- Sys.time()
   
   print(paste("RUN TIME: ", end_time - start_time))
   
-  dataTMM <- list(train.normalized.counts, test.normalized.counts)
-  names(dataTMM) <- c("train.data.set", "test.data.set")
-  
-  return(dataTMM)
+  return(data.set)
 }
