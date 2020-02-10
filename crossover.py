@@ -1,8 +1,9 @@
 import popinit
 import random
 
+
 # crossover
-def crossover(population, first_parent, second_parent):
+def crossover(first_parent, second_parent):
 
     # checking sizes of parents and assigning rule sets
     # first parent - consists of more rules, second parents - less
@@ -15,8 +16,8 @@ def crossover(population, first_parent, second_parent):
         second_parent_rule_set = second_parent.rule_set
 
     # creating empty offspring
-    first_child = popinit.Classifier([], {}, {}, 0.0, {}, 0.0)
-    second_child = popinit.Classifier([], {}, {}, 0.0, {}, 0.0)
+    first_child = popinit.Classifier([], {}, {}, 0.0, 0.0, 0.0, {})
+    second_child = popinit.Classifier([], {}, {}, 0.0, 0.0, 0.0, {})
 
     # if the first parent consists of more rules
     if len(first_parent_rule_set) > len(second_parent_rule_set):

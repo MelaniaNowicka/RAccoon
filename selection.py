@@ -1,5 +1,6 @@
 import random
 
+
 # one parent selection function
 def select_parent(population, tournament_size, first_parent_id):
 
@@ -17,7 +18,7 @@ def select_parent(population, tournament_size, first_parent_id):
     # choosing the best parent for crossover
     best_candidate = tournament[0]  # assign first in tournament as the best candidate
     for candidate in tournament:  # compare the best candidate to others
-        if population[candidate].bacc > population[best_candidate].bacc:  # if new candidate is better
+        if population[candidate].score > population[best_candidate].score:  # if new candidate is better
             best_candidate = candidate  # assign to the best candidate
 
     return best_candidate

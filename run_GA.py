@@ -19,6 +19,7 @@ import time
 import argparse
 import toolbox
 
+
 # algorithm parameters read from the command line
 def check_params(args):
 
@@ -57,39 +58,28 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           miRNA_cdds,  # miRNA cdds
                           crossover_probability,  # probability of crossover
                           mutation_probability,  # probability of mutation
-                          tournament_size,
-                          objective):  # size of a tournament
-
-    # start log message for GA run
-    log_message = "A genetic algorithm (GA) optimizing a set of miRNA-based cell classifiers for in situ cancer " \
-                  "classification. Written by Melania Nowicka, FU Berlin, 2019.\n\n"
-    log_file_name = "log_" + str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + ".txt"  # log name
-
-    run_algorithm = True
+                          tournament_size,  # size of a tournament
+                          bacc_weight):  # bacc weight
 
     # initialize of best classifier
-    best_bacc = 0.0  # best classifier BACC
-    avg_bacc = 0.0  # average BACC in the population
+    best_score = 0.0  # best classifier BACC
 
     # first best classifier
-    best_classifier = popinit.Classifier(rule_set=[], errors={}, error_rates={}, bacc=0.0, additional_scores={}, cdd_score=0.0)
+    best_classifier = popinit.Classifier(rule_set=[], errors={}, error_rates={}, score=0.0, bacc=0.0, cdd_score=0.0, additional_scores={})
     best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
     # check if the data comes from file or data frame
     if isinstance(train_data, pandas.DataFrame):
         dataset = train_data.__copy__()
-        samples = len(train_data.index)
-        negatives = train_data[train_data["Annots"] == 0].count()["Annots"]
-        positives = samples - negatives
         header = dataset.columns.values.tolist()
         mirnas = header[2:]
     else:
         # read data
-        dataset, negatives, positives, mirnas, log_message = preproc.read_data(train_data, log_message)
+        dataset, negatives, positives, mirnas = preproc.read_data(train_data)
 
     # REMOVE IRRELEVANT miRNAs
     if filter_data == True:
-        dataset, mirnas, log_message = preproc.remove_irrelevant_mirna(dataset, log_message)
+        dataset, mirnas = preproc.remove_irrelevant_mirna(dataset)
 
     # INITIALIZE POPULATION
     population = popinit.initialize_population(population_size, mirnas, classifier_size)
@@ -99,23 +89,25 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         classifier.remove_duplicates()
 
     # EVALUATE INDIVIDUALS
-    best_bacc, avg_bacc, best_classifiers = eval.evaluate_individuals(population, evaluation_threshold, miRNA_cdds, dataset,
-                                                                     negatives, positives, best_bacc, best_classifiers)
-
+    best_score, avg_bacc, best_classifiers = eval.evaluate_individuals(population, dataset,
+                                                                       evaluation_threshold, bacc_weight, miRNA_cdds,
+                                                                       best_score, best_classifiers)
     # count iterations without a change of scores
     iteration_counter = 0
 
     # ITERATE OVER GENERATIONS
     # run as long as there is score change
+    run_algorithm = True
     while run_algorithm == True:
 
         # show progress, the current best score and average score
-        #print(int(iteration/iterations*100), "% | BACC: ", best_bacc, "|  AVG BACC: ", avg_bacc)
+        #print(int(iteration/iterations*100), "% | BACC: ", best_score, "|  AVG BACC: ", avg_bacc)
 
         # SELECTION
         selected_parents = []
 
         for i in range(0, int(population_size/2)):  # iterate through population
+
             first_parent_id, second_parent_id = selection.select(population,
                                                                  tournament_size)
             # add new parents to the selected parents
@@ -143,7 +135,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
             if crossover_rand <= crossover_probability:
 
                 # crossover
-                first_child, second_child = crossover.crossover(selected_parents, first_parent, second_parent)
+                first_child, second_child = crossover.crossover(first_parent, second_parent)
 
                 population.append(first_child)  # add children to the new population
                 population.append(second_child)
@@ -158,20 +150,14 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         for classifier in population:
             classifier.remove_duplicates()
 
-        global_best_bacc = best_bacc
+        global_best_score = best_score
 
         # evaluation of population
-        best_bacc, avg_bacc, best_classifiers, = eval.evaluate_individuals(population,
-                                                                         evaluation_threshold,
-                                                                         miRNA_cdds,
-                                                                         dataset,
-                                                                         negatives,
-                                                                         positives,
-                                                                         best_bacc,
-                                                                         best_classifiers)
+        best_score, avg_bacc, best_classifiers = \
+            eval.evaluate_individuals(population, dataset, evaluation_threshold, bacc_weight, miRNA_cdds, best_score,
+                                      best_classifiers)
 
-
-        if best_bacc == global_best_bacc:
+        if best_score == global_best_score:
             iteration_counter = iteration_counter + 1
         else:
             iteration_counter = 0
@@ -179,34 +165,21 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         if iteration_counter == iterations:
             run_algorithm = False
 
+    classifier_sizes = []
+    for classifier in best_classifiers:
+        inputs = 0
+        for rule in classifier.rule_set:
+            for input in rule.pos_inputs:
+                inputs = inputs + 1
+            for input in rule.neg_inputs:
+                inputs = inputs + 1
+        classifier_sizes.append(inputs)
 
-    if (objective == "cdd"):
-        cdds = []
-        for classifier in best_classifiers:
-            cdds.append(classifier.cdd_score)
-
-        max_cdd = cdds.index(max(cdds))
-        print("BEST CDD: ")
-        log.write_final_scores(best_bacc, [best_classifiers[max_cdd]])
-        return best_classifiers[max_cdd], best_classifiers
-
-
-    if (objective == "size"):
-        classifier_sizes = []
-        for classifier in best_classifiers:
-            inputs = 0
-            for rule in classifier.rule_set:
-                for input in rule.pos_inputs:
-                    inputs = inputs + 1
-                for input in rule.neg_inputs:
-                    inputs = inputs + 1
-            classifier_sizes.append(inputs)
-
-        shortest_classifier = classifier_sizes.index(min(classifier_sizes))
-        print("SHORTEST CLASSIFIER: ")
-        # show best scores
-        log.write_final_scores(best_bacc, [best_classifiers[shortest_classifier]])
-        return best_classifiers[shortest_classifier], best_classifiers
+    # show best scores
+    shortest_classifier = classifier_sizes.index(min(classifier_sizes))
+    print("SHORTEST CLASSIFIER: ")
+    log.write_final_scores(best_score, [best_classifiers[shortest_classifier]])
+    return best_classifiers[shortest_classifier], best_classifiers
 
 
 if __name__ == "__main__":

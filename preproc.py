@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 
 # reading binarized data set.
-def read_data(dataset_filename, log_message):
+def read_data(dataset_filename):
 
     # reading the data
     # throws an exception when datafile not found
@@ -32,10 +32,6 @@ def read_data(dataset_filename, log_message):
     negatives = dataset[dataset["Annots"] == 0].count()["Annots"]
     positives = samples - negatives
 
-    log_message = log_message + "Number of samples: " + str(samples) + "\n"
-    log_message = log_message + "Number of negative samples: " + str(negatives) + "\n"
-    log_message = log_message + "Number of positive samples: " + str(positives) + "\n\n"
-
     print("Number of samples: " + str(samples))
     print("Number of negative samples: " + str(negatives))
     print("Number of positive samples: " + str(positives))
@@ -44,11 +40,11 @@ def read_data(dataset_filename, log_message):
         print("Error: no negative or positive samples in the dataset!")
         sys.exit(0)
 
-    return dataset, negatives, positives, mirnas, log_message
+    return dataset, negatives, positives, mirnas
 
 
 # removal of irrelevant (non-regulated) miRNAs (filled with only 0/1).
-def remove_irrelevant_mirna(dataset, log_message):
+def remove_irrelevant_mirna(dataset):
 
     relevant_mirna = []
     irrelevant_mirna = []
@@ -69,19 +65,10 @@ def remove_irrelevant_mirna(dataset, log_message):
     dataset = dataset.drop(irrelevant_mirna, axis=1)
 
     # creating log message
-    log_message = log_message + "Number of relevant miRNAs according to a given threshold: " + str(len(relevant_mirna)) \
-                  + "\n"
-    log_message = log_message + "Number of irrelevant miRNAs according to a given threshold: " \
-                  + str(len(irrelevant_mirna)) + "\n\n"
+    print("Number of relevant miRNAs according to a given threshold: " + str(len(relevant_mirna)))
+    print("Number of irrelevant miRNAs according to a given threshold: ", str(len(irrelevant_mirna)))
 
-    log_message = log_message + "Relevant miRNAs: "
-
-    for i in relevant_mirna:
-        log_message = log_message + str(i) + "; "
-
-    log_message = log_message + "\n\n"
-
-    return dataset, relevant_mirna, log_message
+    return dataset, relevant_mirna
 
 
 # discretize miRNA expression levels
@@ -100,7 +87,6 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
 
     # class diversity distribution
     cdds = []
-
 
     # calculate segment thresholds
     for m in range(1, m_segments+1):

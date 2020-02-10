@@ -1,5 +1,6 @@
 import random
 
+
 # single boolean function class
 # inputs are connected with and AND
 class SingleRule:
@@ -27,13 +28,14 @@ class SingleRule:
 # classifier (individual)
 class Classifier:
 
-    def __init__(self, rule_set, errors, error_rates, bacc, additional_scores, cdd_score):
+    def __init__(self, rule_set, errors, error_rates, score, bacc, cdd_score, additional_scores):
         self.rule_set = rule_set  # list of rules
         self.errors = errors  # dictionary of error (tp, tn, fp, fn)
         self.error_rates = error_rates # dictionary of error rates (tpr, tnr, fpr, fnr)
+        self.score = score  # classifier score (may be bacc, may be other)
         self.bacc = bacc  # balanced accuracy
-        self.additional_scores = additional_scores # dictionary of other scores (f1, mcc, precision, fdr)
-        self.cdd_score = cdd_score # class distribution diversity score
+        self.cdd_score = cdd_score  # classifier class distribution diversity score
+        self.additional_scores = additional_scores  # dictionary of other scores (f1, mcc, precision, fdr)
 
     # copy object
     def __copy__(self):
@@ -43,7 +45,7 @@ class Classifier:
         for rule in self.rule_set:
             new_rule_set.append(rule.__copy__())
 
-        return Classifier(new_rule_set, self.errors, self.error_rates, self.bacc, self.additional_scores, self.cdd_score)
+        return Classifier(new_rule_set, self.errors, self.error_rates, self.score, self.bacc, self.cdd_score, self.additional_scores)
 
     # get a list of inputs
     def get_input_list(self):
@@ -167,7 +169,7 @@ def initialize_classifier(classifier_size, mirnas):
         rule_set.append(rule)
 
     # initialization of a new classifier
-    classifier = Classifier(rule_set, errors={}, error_rates={}, bacc={}, additional_scores={}, cdd_score={})
+    classifier = Classifier(rule_set, errors={}, error_rates={}, score={}, bacc={}, additional_scores={}, cdd_score={})
 
     return classifier
 
