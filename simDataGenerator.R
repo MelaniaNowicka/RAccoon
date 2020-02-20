@@ -16,12 +16,17 @@ library("matrixStats")
 
 
 #############DATA SET GENERATION#############
-generateSimData <- function(n.genes, samples.per.cond, n.diffexp, fraction.upregulated, random.outlier.high.prob, random.outlier.low.prob, generateSummary) {
+generateSimData <- function(n.genes, samples.per.cond, n.diffexp, 
+                            fraction.upregulated, random.outlier.high.prob, 
+                            random.outlier.low.prob, single.outlier.high.prob,
+                            single.outlier.low.prob, fraction.non.overdispersed,
+                            generateSummary) {
   
   #generate file name
   data.set.file.name = paste("sim_data", n.genes, samples.per.cond, n.diffexp, 
-                             fraction.upregulated, random.outlier.high.prob,
-                             random.outlier.low.prob, sep = "_", collapse = NULL)
+                             fraction.upregulated, random.outlier.high.prob, 
+                             single.outlier.high.prob, single.outlier.low.prob, 
+                             fraction.non.overdispersed, random.outlier.low.prob, sep = "_", collapse = NULL)
   
   #generate synthetic data with compcodeR
   data.set <- generateSyntheticData(dataset = "mydat", 
@@ -29,8 +34,11 @@ generateSimData <- function(n.genes, samples.per.cond, n.diffexp, fraction.upreg
                                     samples.per.cond = samples.per.cond, 
                                     n.diffexp = n.diffexp, 
                                     fraction.upregulated = fraction.upregulated, 
+                                    fraction.non.overdispersed = fraction.non.overdispersed,
                                     random.outlier.high.prob = random.outlier.high.prob, 
-                                    random.outlier.low.prob = random.outlier.low.prob, 
+                                    random.outlier.low.prob = random.outlier.low.prob,
+                                    single.outlier.high.prob = single.outlier.high.prob,
+                                    single.outlier.low.prob = single.outlier.low.prob,
                                     repl.id = 1, 
                                     output.file = paste(data.set.file.name, ".rds", sep=""))
   
@@ -106,6 +114,7 @@ trainTestSplit <- function(count.matrix, annotation, negative.samples, positive.
   return(data.set.split)
   
 }
+
 
 
 #####REFERENCE SAMPLE#####
@@ -211,7 +220,10 @@ prepareSimulatedDataset <- function(n.genes,
                         n.diffexp, 
                         fraction.upregulated, 
                         random.outlier.high.prob, 
-                        random.outlier.low.prob, 
+                        random.outlier.low.prob,
+                        single.outlier.high.prob,
+                        single.outlier.low.prob,
+                        fraction.non.overdispersed,
                         train.fraction,
                         is.seed, 
                         generateSummary,
@@ -232,6 +244,9 @@ prepareSimulatedDataset <- function(n.genes,
                   fraction.upregulated, 
                   random.outlier.high.prob, 
                   random.outlier.low.prob,
+                  single.outlier.high.prob,
+                  single.outlier.low.prob,
+                  fraction.non.overdispersed,
                   generateSummary)
   
   #############IMBALANCE DATA PROCESSING#############
