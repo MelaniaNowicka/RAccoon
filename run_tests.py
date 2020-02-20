@@ -126,10 +126,10 @@ def divide_into_cv_folds(dataset, kfolds):
 
 # train and test classifiers
 def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, evaluation_threshold, \
-                   miRNA_cdds, bacc_weight, repeats, print_results):
+                   miRNA_cdds, repeats, print_results):
 
     # parameter set
-    iter, pop, cp, mp, ts = parameter_set
+    bacc_weight, iter, pop, cp, mp, ts = parameter_set
 
     # lists of scores
     # train scores
@@ -272,9 +272,19 @@ def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, 
 
 # parameter tuning
 def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifier_size, evaluation_threshold,
-                    miRNA_cdds, test_repeats, bacc_weight):
+                    miRNA_cdds, test_repeats):
 
     # get the parameters from configuration file
+    tune_weights = config.getboolean("PARAMETER TUNING", "TuneWeights")
+
+    if tune_weights:
+        bacc_weight_lower_bound = int(config['PARAMETER TUNING']['BaccWeightLowerBound'])
+        bacc_weight_upper_bound = int(config['PARAMETER TUNING']['BaccWeightUpperBound'])
+        bacc_weight_step = int(config['PARAMETER TUNING']['BaccWeightStep'])
+    else:
+        bacc_weight_lower_bound = int(config['OBJECTIVE FUNCTION']['BaccWeight'])
+        bacc_weight_upper_bound = int(config['OBJECTIVE FUNCTION']['BaccWeight'])
+        bacc_weight_step = int(config['OBJECTIVE FUNCTION']['BaccWeight'])
     iteration_lower_bound = int(config['PARAMETER TUNING']['IterationLowerBound'])
     iteration_upper_bound = int(config['PARAMETER TUNING']['IterationUpperBound'])
     iteration_step = int(config['PARAMETER TUNING']['IterationStep'])
@@ -293,7 +303,11 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     number_of_sets = int(config['PARAMETER TUNING']['NumberOfSets'])
 
     # generate parameter sets
-    parameter_sets = toolbox.generate_parameters(iteration_lower_bound,
+    parameter_sets = toolbox.generate_parameters(tune_weights,
+                                                 bacc_weight_lower_bound,
+                                                 bacc_weight_upper_bound,
+                                                 bacc_weight_step,
+                                                 iteration_lower_bound,
                                                  iteration_upper_bound,
                                                  iteration_step,
                                                  population_lower_bound,
@@ -323,7 +337,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     # iterate over parameter sets
     for parameter_set in parameter_sets:
 
-        print("TESTING PARAMETER SET ", parameter_set_number,": ", parameter_set)
+        print("TESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         parameter_set_number += 1
 
         fold = 1
@@ -335,7 +349,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
 
             # train and test classifiers
             test_bacc, test_std = train_and_test(training_fold, testing_fold, parameter_set, classifier_size,
-                                             evaluation_threshold, miRNA_cdds, bacc_weight, test_repeats, False)
+                                             evaluation_threshold, miRNA_cdds, test_repeats, False)
 
             test_bacc_cv.append(test_bacc)
             test_std_cv.append(test_std)
@@ -348,15 +362,18 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
         print("TEST AVG BACC: ", test_bacc_avg, " , STD: ", test_std_avg)
 
         # improvement check
-        if test_bacc_avg > best_avg_test_bacc:
+        if eval.is_higher(best_avg_test_bacc, test_bacc_avg):
             best_parameter_set = parameter_set
             best_avg_test_bacc = test_bacc_avg
             best_avg_test_std = test_std_avg
 
-            if test_bacc_avg == best_avg_test_bacc and test_std_avg > best_avg_test_std:
+            if eval.is_close(test_bacc_avg, best_avg_test_bacc) and eval.is_higher(best_avg_test_std, test_std_avg):
                 best_parameter_set = parameter_set
                 best_avg_test_bacc = test_bacc_avg
                 best_avg_test_std = test_std_avg
+
+        if eval.is_close(best_avg_test_bacc, 1.0) and eval.is_close(best_avg_test_std, 0.0):
+            return best_parameter_set, best_avg_test_bacc, best_avg_test_std
 
     return best_parameter_set, best_avg_test_bacc, best_avg_test_std
 
@@ -438,7 +455,6 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
     test_repeats = int(config["RUN PARAMETERS"]["SingleTestRepeats"])
     bacc_weight = float(config["OBJECTIVE FUNCTION"]["BaccWeight"])
 
-
     # remove irrelevant miRNAs
     training_cv_datasets_bin_filtered = []
     for train_set in training_cv_datasets_bin:
@@ -454,8 +470,7 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
                                                            classifier_size,
                                                            evaluation_threshold,
                                                            miRNA_cdds,
-                                                           test_repeats,
-                                                           bacc_weight)
+                                                           test_repeats)
 
     print("BEST PARAMETERS: ", best_parameters)
     print("BEST SCORE: ", best_bacc, " STD: ", best_std)
@@ -490,7 +505,7 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
 
     #run test
     train_and_test(discretized_train_data[0], discretized_test_data[0], best_parameters, classifier_size,
-                   evaluation_threshold, miRNA_cdds, bacc_weight, test_repeats, True)
+                   evaluation_threshold, miRNA_cdds, test_repeats, True)
     # measure time
     end_test = time.time()
     print("\nRUNTIME")

@@ -279,13 +279,16 @@ def evaluate_classifier(classifier,
     return bacc
 
 
-def generate_parameters(iter_lower, iter_upper, iter_step,
+def generate_parameters(tune_weights, bacc_lower, bacc_upper, bacc_step,
+                        iter_lower, iter_upper, iter_step,
                         pop_lower, pop_upper, pop_step,
                         cp_lower, cp_upper, cp_step,
                         mp_lower, mp_upper, mp_step,
                         ts_lower, ts_upper, ts_step,
                         param_sets_numb):
 
+    if tune_weights:
+        bacc_weights = [i for i in range(bacc_lower, bacc_upper+1, bacc_step)]
     iterations = [i for i in range(iter_lower, iter_upper+1, iter_step)]
     population_size = [i for i in range(pop_lower, pop_upper+1, pop_step)]
     crossover_probability = [i/100 for i in range(cp_lower, cp_upper+1, cp_step)]
@@ -294,18 +297,24 @@ def generate_parameters(iter_lower, iter_upper, iter_step,
 
     parameter_sets = []
     for i in range(0, param_sets_numb):
+        if tune_weights:
+            weight = bacc_weights[random.randrange(0, len(bacc_weights))]/100
+        else:
+            weight = bacc_lower/100
         iter = iterations[random.randrange(0, len(iterations))]
         pop = population_size[random.randrange(0, len(population_size))]
         cp = crossover_probability[random.randrange(0, len(crossover_probability))]
         mp = mutation_probability[random.randrange(0, len(mutation_probability))]
         ts = tournament_size[random.randrange(0, len(tournament_size))]
         while [iter, pop, cp, mp, ts] in parameter_sets:
+            if tune_weights == True:
+                weight = bacc_weights[random.randrange(0, len(bacc_weights))]
             iter = iterations[random.randrange(0, len(iterations))]
             pop = population_size[random.randrange(0, len(population_size))]
             cp = crossover_probability[random.randrange(0, len(crossover_probability))]
             mp = mutation_probability[random.randrange(0, len(mutation_probability))]
             ts = tournament_size[random.randrange(0, len(tournament_size))]
-        parameter_sets.append([iter, pop, cp, mp, ts])
+        parameter_sets.append([weight, iter, pop, cp, mp, ts])
 
     return parameter_sets
 

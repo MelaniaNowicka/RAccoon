@@ -1,9 +1,21 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import *
 import toolbox
 import pandas
 import math
 import sys
 
+# compare floats
+def is_close(x, y, tol=1e-5):
+    if abs(x - y) <= tol:
+        return True
+    else:
+        return False
+
+def is_higher(x, y, tol=1e-5):
+    if y - x >= tol:
+        return True
+    else:
+        return False
 
 # calculate balanced accuracy score
 def calculate_balanced_accuracy(tp, tn, p, n):
@@ -185,15 +197,16 @@ def evaluate_classifier(classifier,
 # comparing new score to the best score
 def update_best_classifier(new_classifier, best_score, best_classifiers):
 
-    if best_score < new_classifier.score:  # if new score is better
+    if is_higher(best_score, new_classifier.score):  # if new score is better
         best_score = new_classifier.score  # assign new best score
         best_classifiers.clear()  # clear the list of best classifiers
         best_classifiers.append(new_classifier.__copy__())  # add new classifier
 
-    if best_score == new_classifier.score:  # if new score == the best
+    if is_close(best_score, new_classifier.score):  # if new score == the best
         best_classifiers.append(new_classifier.__copy__())  # add new classifier to best classifiers
 
     return best_score, best_classifiers
+
 
 # evaluation of the population
 def evaluate_individuals(population,
