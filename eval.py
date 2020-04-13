@@ -17,6 +17,7 @@ def is_higher(x, y, tol=1e-5):
     else:
         return False
 
+
 # calculate balanced accuracy score
 def calculate_balanced_accuracy(tp, tn, p, n):
 

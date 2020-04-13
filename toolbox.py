@@ -300,7 +300,7 @@ def generate_parameters(tune_weights, bacc_lower, bacc_upper, bacc_step,
         if tune_weights:
             weight = bacc_weights[random.randrange(0, len(bacc_weights))]/100
         else:
-            weight = bacc_lower/100
+            weight = bacc_lower
         iter = iterations[random.randrange(0, len(iterations))]
         pop = population_size[random.randrange(0, len(population_size))]
         cp = crossover_probability[random.randrange(0, len(crossover_probability))]

@@ -125,7 +125,7 @@ def divide_into_cv_folds(dataset, kfolds):
 
 
 # train and test classifiers
-def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, evaluation_threshold, \
+def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, evaluation_threshold,
                    miRNA_cdds, repeats, print_results):
 
     # parameter set
@@ -282,9 +282,9 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
         bacc_weight_upper_bound = int(config['PARAMETER TUNING']['BaccWeightUpperBound'])
         bacc_weight_step = int(config['PARAMETER TUNING']['BaccWeightStep'])
     else:
-        bacc_weight_lower_bound = int(config['OBJECTIVE FUNCTION']['BaccWeight'])
-        bacc_weight_upper_bound = int(config['OBJECTIVE FUNCTION']['BaccWeight'])
-        bacc_weight_step = int(config['OBJECTIVE FUNCTION']['BaccWeight'])
+        bacc_weight_lower_bound = float(config['OBJECTIVE FUNCTION']['BaccWeight'])
+        bacc_weight_upper_bound = float(config['OBJECTIVE FUNCTION']['BaccWeight'])
+        bacc_weight_step = float(config['OBJECTIVE FUNCTION']['BaccWeight'])
     iteration_lower_bound = int(config['PARAMETER TUNING']['IterationLowerBound'])
     iteration_upper_bound = int(config['PARAMETER TUNING']['IterationUpperBound'])
     iteration_step = int(config['PARAMETER TUNING']['IterationStep'])
@@ -337,7 +337,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     # iterate over parameter sets
     for parameter_set in parameter_sets:
 
-        print("TESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
+        print("\nTESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         parameter_set_number += 1
 
         fold = 1

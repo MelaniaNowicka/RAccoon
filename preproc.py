@@ -1,5 +1,6 @@
 import sys
 import pandas
+import numpy
 import math
 import toolbox
 from decimal import Decimal, ROUND_HALF_UP
@@ -176,6 +177,7 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
     two_states_miRNAs = 0
     complicated_pattern_miRNAs = 0
 
+    relevant = []
     # iterate over miRNAs
     for miRNA in miRNAs:
 
@@ -196,6 +198,7 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
             threshold = -1
         if threshold > 0:
             two_states_miRNAs += 1
+            relevant.append(miRNA)
 
         # add threshold to a list of thresholds
         thresholds.append(threshold)
@@ -218,6 +221,9 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
         # write data to a file
         data_discretized.to_csv(new_file+".csv", index=False, sep=";")
 
+    print([miRNA_cdds[x] for x in relevant])
+    print(numpy.average([miRNA_cdds[x] for x in relevant]))
+    print(numpy.std([miRNA_cdds[x] for x in relevant]))
     return data_discretized, miRNAs, thresholds, miRNA_cdds
 
 
