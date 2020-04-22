@@ -31,21 +31,54 @@ def check_params(args):
     # adding arguments
     parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train", help='data set file name')
     parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", help='data set file name')
-    parser.add_argument('-f', '--filter-data', dest="filter_data", type=bool, default=False, help='filter data of not')
-    parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=100, help='number of iterations')
+    parser.add_argument('-f', '--filter-data', dest="filter_data", type=bool, default=True, help='filter data of not')
+    parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30, help='number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300, help='population size')
     parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5, help='classifier size')
-    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=0.75, type=float, help='evaluation threshold alpha')
+    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=0.5, type=float, help='evaluation threshold alpha')
+    parser.add_argument('--cdds', '--miRNA-cdds', dest="miRNA_cdds", default={}, type=dict, help='miRNA cdds list')
     parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.9, type=float, help='probability of crossover')
     parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float, help='probability of mutation')
     parser.add_argument('-t', '--tournament-size', dest="tournament_size", default=0.2, type=float, help='tournament size')
+    parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float, help='bacc_weight')
 
     # parse arguments
     params = parser.parse_args(args)
 
     return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, params.iterations, \
-           params.population_size, params.classifier_size, params.evaluation_threshold, params.crossover_probability, \
-           params.mutation_probability, params.tournament_size
+           params.population_size, params.classifier_size, params.evaluation_threshold, params.miRNA_cdds, params.crossover_probability, \
+           params.mutation_probability, params.tournament_size, params.bacc_weight
+
+
+def measure_runtimes(train_data,  # name of train datafile
+                    filter_data,  # a flag whether data should be filtered or not
+                    iterations,  # number of iterations
+                    population_size,  # size of a population
+                    classifier_size,  # max size of a classifier
+                    evaluation_threshold,  # evaluation function
+                    miRNA_cdds,  # miRNA cdds
+                    crossover_probability,  # probability of crossover
+                    mutation_probability,  # probability of mutation
+                    tournament_size,  # size of a tournament
+                    bacc_weight):  # bacc weight
+
+    start = time.time()
+
+    for i in range(0, 10):
+        run_genetic_algorithm(train_data,
+                              filter_data,
+                              iterations,
+                              population_size,
+                              classifier_size,
+                              evaluation_threshold,
+                              miRNA_cdds,
+                              crossover_probability,
+                              mutation_probability,
+                              tournament_size,
+                              bacc_weight)
+
+    end = time.time()
+    print((end-start)/10)
 
 
 # run genetic algorithm
@@ -187,7 +220,7 @@ if __name__ == "__main__":
     start = time.time()
 
     train_datafile, test_datafile, filter_data, iterations, population_size, classifier_size, evaluation_threshold, \
-    crossover_probability, mutation_probability, tournament_size = check_params(sys.argv[1:])
+    cdds, crossover_probability, mutation_probability, tournament_size, bacc_weight = check_params(sys.argv[1:])
 
     train_bacc_avg = []
     train_tpr_avg = []
@@ -208,22 +241,28 @@ if __name__ == "__main__":
     test_ppv_avg = []
     test_fdr_avg = []
 
-    for i in range(0, 50):
-        print("TEST ", i+1)
+    train_dataset, negatives, positives, mirnas = preproc.read_data(train_datafile)
+    annotation = train_dataset["Annots"]
+
+    for i in range(0, 1):
+        #print("TEST ", i+1)
         print("TRAINING DATA")
-        classifier, best_classifiers = run_genetic_algorithm(train_datafile,
+        classifier, best_classifiers = run_genetic_algorithm(train_dataset,
                                            filter_data,
                                            iterations,
                                            population_size,
                                            classifier_size,
                                            evaluation_threshold,
+                                           cdds,
                                            crossover_probability,
                                            mutation_probability,
-                                           tournament_size)
+                                           tournament_size,
+                                           bacc_weight)
 
         print("TRAIN DATA")
-        train_bacc, train_error_rates, train_additional_scores = \
-            toolbox.evaluate_classifier(classifier, evaluation_threshold, train_datafile)
+        classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
+            eval.evaluate_classifier(classifier, annotation, train_dataset, evaluation_threshold, cdds, bacc_weight)
+
         train_bacc_avg.append(train_bacc)
         train_tpr_avg.append(train_error_rates["tpr"])
         train_tnr_avg.append(train_error_rates["tnr"])
@@ -235,31 +274,33 @@ if __name__ == "__main__":
         train_fdr_avg.append(train_additional_scores["fdr"])
 
         print("TEST DATA")
-        test_bacc, test_error_rates, test_additional_scores = \
-            toolbox.evaluate_classifier(classifier, evaluation_threshold, test_datafile)
+        test_dataset, negatives, positives, mirnas = preproc.read_data(test_datafile)
+        annotation = test_dataset["Annots"]
+        classifier_score, test_bacc, errors, test_error_rates, test_additional_scores, cdd_score = \
+            eval.evaluate_classifier(classifier, annotation, test_dataset, evaluation_threshold, cdds, bacc_weight)
         test_bacc_avg.append(test_bacc)
 
-    print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
-    print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg))
-    print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
-    print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
-    print("TRAIN AVG FPR: ", numpy.average(train_fpr_avg))
-    print("TRAIN AVG FNR: ", numpy.average(train_fnr_avg))
-    print("TRAIN AVG TPR: ", numpy.average(train_f1_avg))
-    print("TRAIN AVG TNR: ", numpy.average(train_mcc_avg))
-    print("TRAIN AVG FPR: ", numpy.average(train_ppv_avg))
-    print("TRAIN AVG FNR: ", numpy.average(train_fdr_avg))
+    #print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
+    #print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg))
+    #print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
+    #print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
+    #print("TRAIN AVG FPR: ", numpy.average(train_fpr_avg))
+    #print("TRAIN AVG FNR: ", numpy.average(train_fnr_avg))
+    #print("TRAIN AVG TPR: ", numpy.average(train_f1_avg))
+    #print("TRAIN AVG TNR: ", numpy.average(train_mcc_avg))
+    #print("TRAIN AVG FPR: ", numpy.average(train_ppv_avg))
+    #print("TRAIN AVG FNR: ", numpy.average(train_fdr_avg))
 
-    print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
-    print("TEST AVG STDEV: ", numpy.std(test_bacc_avg))
-    print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
-    print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
-    print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
-    print("TEST AVG FNR: ", numpy.average(test_fnr_avg))
-    print("TEST AVG TPR: ", numpy.average(test_f1_avg))
-    print("TEST AVG TNR: ", numpy.average(test_mcc_avg))
-    print("TEST AVG FPR: ", numpy.average(test_ppv_avg))
-    print("TEST AVG FNR: ", numpy.average(test_fdr_avg))
+    #print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
+    #print("TEST AVG STDEV: ", numpy.std(test_bacc_avg))
+    #print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
+    #print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
+    #print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
+    #print("TEST AVG FNR: ", numpy.average(test_fnr_avg))
+    #print("TEST AVG TPR: ", numpy.average(test_f1_avg))
+    #print("TEST AVG TNR: ", numpy.average(test_mcc_avg))
+    #print("TEST AVG FPR: ", numpy.average(test_ppv_avg))
+    #print("TEST AVG FNR: ", numpy.average(test_fdr_avg))
 
     end = time.time()
     print("TIME: ", end - start)

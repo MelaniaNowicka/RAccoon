@@ -1,7 +1,7 @@
 import random
 import numpy
-import pathlib
-import os
+from multiprocessing import Pool
+from functools import partial
 import configparser
 import time
 import argparse
@@ -125,11 +125,14 @@ def divide_into_cv_folds(dataset, kfolds):
 
 
 # train and test classifiers
-def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, evaluation_threshold,
+def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_threshold,
                    miRNA_cdds, repeats, print_results):
 
     # parameter set
     bacc_weight, iter, pop, cp, mp, ts = parameter_set
+
+    # cv data
+    training_fold, testing_fold = cv_datasets
 
     # lists of scores
     # train scores
@@ -157,7 +160,7 @@ def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, 
     # numbers of inputs and rules
     inputs_avg = []
     rules_avg = []
-
+    time = []
     # repeat tests
     for i in range(0, repeats):
 
@@ -177,6 +180,7 @@ def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, 
                                                                     tournament_size=ts,
                                                                     bacc_weight=bacc_weight)
 
+        time.append(time.time()-start)
         # get annotation
         annotation = training_fold["Annots"].tolist()
 
@@ -223,6 +227,8 @@ def train_and_test(training_fold, testing_fold, parameter_set, classifier_size, 
 
         inputs_avg.append(number_of_inputs)
         rules_avg.append(number_of_rules)
+
+    print("Avg time: ", numpy.average(time))
 
     if print_results==True:
         # average scores
@@ -302,6 +308,8 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     tournament_step = int(config['PARAMETER TUNING']['TournamentStep'])
     number_of_sets = int(config['PARAMETER TUNING']['NumberOfSets'])
 
+    processes = int(config['PARALELIZATION']['NumberOfProcc'])
+
     # generate parameter sets
     parameter_sets = toolbox.generate_parameters(tune_weights,
                                                  bacc_weight_lower_bound,
@@ -342,21 +350,35 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
 
         fold = 1
         # iterate over folds
-        for training_fold, testing_fold in zip(training_cv_datasets, testing_cv_datasets):
+        #for training_fold, testing_fold in zip(training_cv_datasets, testing_cv_datasets):
 
-            print("\nTESTING FOLD: ", fold)
-            fold += 1
+        #print("\nTESTING FOLD: ", fold)
+        #fold += 1
 
-            # train and test classifiers
-            test_bacc, test_std = train_and_test(training_fold, testing_fold, parameter_set, classifier_size,
-                                             evaluation_threshold, miRNA_cdds, test_repeats, False)
+        cv_datasets = zip(training_cv_datasets, testing_cv_datasets)
 
-            test_bacc_cv.append(test_bacc)
-            test_std_cv.append(test_std)
+        if(processes>1):
+            with Pool(processes) as p:
+                cv_results = p.map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
+                          evaluation_threshold=evaluation_threshold, miRNA_cdds=miRNA_cdds, repeats=test_repeats,
+                          print_results=False), cv_datasets)
+        else:
+            cv_results = list(map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
+                                           evaluation_threshold=evaluation_threshold, miRNA_cdds=miRNA_cdds,
+                                           repeats=test_repeats,
+                                           print_results=False), cv_datasets))
+
+        test_bacc_cv, test_std_cv = zip(*cv_results)
+        # train and test classifiers
+        #test_bacc, test_std = train_and_test(training_fold, testing_fold, parameter_set, classifier_size,
+        #evaluation_threshold, miRNA_cdds, test_repeats, False)
+
+        #test_bacc_cv.append(test_bacc)
+        #test_std_cv.append(test_std)
 
         # calculate average bacc scores
-        test_bacc_avg = sum(test_bacc_cv)/len(test_bacc_cv)
-        test_std_avg = sum(test_std_cv)/len(test_std_cv)
+        test_bacc_avg = numpy.average(test_bacc_cv)
+        test_std_avg = numpy.std(test_std_cv)
 
         print("RESULTS PARAMETER SET ", parameter_set_number,": ", parameter_set)
         print("TEST AVG BACC: ", test_bacc_avg, " , STD: ", test_std_avg)
@@ -482,7 +504,14 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
         preproc.discretize_data_for_tests([training_data], [testing_data], m_segments, alpha_bin, lambda_bin)
 
     #remove irrelevant miRNAs
-    discretized_train_data[0], mirnas = preproc.remove_irrelevant_mirna(discretized_train_data[0])
+    discretized_train_data[0], relevant_mirnas = preproc.remove_irrelevant_mirna(discretized_train_data[0])
+
+    print("***miRNA CDDs***")
+    for miRNA in relevant_mirnas:
+        print("miRNA ", miRNA, " : ", miRNA_cdds[miRNA])
+    cdd_list = [miRNA_cdds[miRNA] for miRNA in relevant_mirnas]
+    print("AVG CDD: ", numpy.average(cdd_list))
+    print("STD CDD: ", numpy.std(cdd_list))
 
     # save to files
     new_name = "_train_bin.csv"
@@ -504,7 +533,7 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
     start_test = time.time()
 
     #run test
-    train_and_test(discretized_train_data[0], discretized_test_data[0], best_parameters, classifier_size,
+    train_and_test((discretized_train_data[0], discretized_test_data[0]), best_parameters, classifier_size,
                    evaluation_threshold, miRNA_cdds, test_repeats, True)
     # measure time
     end_test = time.time()

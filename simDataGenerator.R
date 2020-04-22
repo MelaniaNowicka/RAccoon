@@ -17,16 +17,16 @@ library("matrixStats")
 
 #############DATA SET GENERATION#############
 generateSimData <- function(n.genes, samples.per.cond, n.diffexp, 
-                            fraction.upregulated, random.outlier.high.prob, 
-                            random.outlier.low.prob, single.outlier.high.prob,
-                            single.outlier.low.prob, fraction.non.overdispersed,
-                            generateSummary) {
+                            fraction.upregulated, between.group.dispersion, 
+                            random.outlier.high.prob, random.outlier.low.prob, 
+                            single.outlier.high.prob, single.outlier.low.prob, 
+                            fraction.non.overdispersed, generateSummary) {
   
   #generate file name
-  data.set.file.name = paste("sim_data", n.genes, samples.per.cond, n.diffexp, 
-                             fraction.upregulated, random.outlier.high.prob, 
+  data.set.file.name = paste("sim_data", n.genes, samples.per.cond, n.diffexp,fraction.upregulated, 
+                             random.outlier.high.prob, random.outlier.low.prob,
                              single.outlier.high.prob, single.outlier.low.prob, 
-                             fraction.non.overdispersed, random.outlier.low.prob, sep = "_", collapse = NULL)
+                             fraction.non.overdispersed, sep = "_", collapse = NULL)
   
   #generate synthetic data with compcodeR
   data.set <- generateSyntheticData(dataset = "mydat", 
@@ -34,6 +34,7 @@ generateSimData <- function(n.genes, samples.per.cond, n.diffexp,
                                     samples.per.cond = samples.per.cond, 
                                     n.diffexp = n.diffexp, 
                                     fraction.upregulated = fraction.upregulated, 
+                                    between.group.diffdisp = between.group.dispersion,
                                     fraction.non.overdispersed = fraction.non.overdispersed,
                                     random.outlier.high.prob = random.outlier.high.prob, 
                                     random.outlier.low.prob = random.outlier.low.prob,
@@ -48,9 +49,11 @@ generateSimData <- function(n.genes, samples.per.cond, n.diffexp,
                                      data.set.counts =  data.set@count.matrix)
   
   #write to file
-  data.set.name = paste("data", n.genes, samples.per.cond, n.diffexp, 
-                        fraction.upregulated, random.outlier.high.prob,
-                        random.outlier.low.prob, sep = "_", collapse = NULL)
+  data.set.name = paste("data", n.genes, samples.per.cond, n.diffexp, fraction.upregulated,
+                        between.group.dispersion,
+                        random.outlier.high.prob, random.outlier.low.prob,
+                        single.outlier.high.prob, single.outlier.low.prob, 
+                        fraction.non.overdispersed, sep = "_", collapse = NULL)
   
   write.table(data.set.to.write, paste(data.set.name, ".csv", sep=""), sep=";", row.names = FALSE)
   
@@ -219,6 +222,7 @@ prepareSimulatedDataset <- function(n.genes,
                         samples.per.cond, 
                         n.diffexp, 
                         fraction.upregulated, 
+                        between.group.dispersion,
                         random.outlier.high.prob, 
                         random.outlier.low.prob,
                         single.outlier.high.prob,
@@ -242,6 +246,7 @@ prepareSimulatedDataset <- function(n.genes,
                   samples.per.cond, 
                   n.diffexp, 
                   fraction.upregulated, 
+                  between.group.dispersion,
                   random.outlier.high.prob, 
                   random.outlier.low.prob,
                   single.outlier.high.prob,
@@ -283,9 +288,10 @@ prepareSimulatedDataset <- function(n.genes,
   #write train data set to file
   train.data.set.to.write <- transformData(train.annots, train.data.set)
   
-  train.data.set.name = paste("train", n.genes, samples.per.cond, n.diffexp, 
-                              fraction.upregulated, train.fraction, random.outlier.high.prob,
-                              paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
+  train.data.set.name = paste("train", n.genes, samples.per.cond, n.diffexp,fraction.upregulated, 
+                              random.outlier.high.prob, random.outlier.low.prob,
+                              single.outlier.high.prob, single.outlier.low.prob, 
+                              paste(fraction.non.overdispersed, ".csv", sep="", collapse = NULL), 
                               sep = "_", collapse = NULL)
   
   write.table(train.data.set.to.write, train.data.set.name,  sep = ";", row.names = FALSE, quote=FALSE)
@@ -293,9 +299,10 @@ prepareSimulatedDataset <- function(n.genes,
   #write test data set to file
   test.data.set.to.write <- transformData(test.annots, test.data.set)
   
-  test.data.set.name = paste("test", n.genes, samples.per.cond, n.diffexp, 
-                             fraction.upregulated, train.fraction, random.outlier.high.prob,
-                             paste(random.outlier.low.prob, ".csv", sep="", collapse = NULL), 
+  test.data.set.name = paste("test",  n.genes, samples.per.cond, n.diffexp,fraction.upregulated, 
+                             random.outlier.high.prob, random.outlier.low.prob,
+                             single.outlier.high.prob, single.outlier.low.prob, 
+                             paste(fraction.non.overdispersed, ".csv", sep="", collapse = NULL), 
                              sep = "_", collapse = NULL)
   
   write.table(test.data.set.to.write, test.data.set.name,  sep = ";", row.names = FALSE, quote=FALSE)
@@ -307,9 +314,10 @@ prepareSimulatedDataset <- function(n.genes,
   #write normalized train data to file
   train.data.set <- transformData(train.annots, train.normalized.counts)
   
-  train.data.set.name = paste("train", n.genes, samples.per.cond, n.diffexp, 
-                              fraction.upregulated, train.fraction, 
+  train.data.set.name = paste("train", n.genes, samples.per.cond, n.diffexp,fraction.upregulated, 
                               random.outlier.high.prob, random.outlier.low.prob,
+                              single.outlier.high.prob, single.outlier.low.prob, 
+                              fraction.non.overdispersed,
                               paste("TMMnorm", ".csv", sep="", collapse = NULL), 
                               sep = "_", collapse = NULL)
   
@@ -323,9 +331,10 @@ prepareSimulatedDataset <- function(n.genes,
   #ID <- seq(1, ncol(test.normalized.counts), by=1)
   test.data.set <- transformData(test.annots, test.normalized.counts)
   
-  test.data.set.name = paste("test", n.genes, samples.per.cond, n.diffexp, 
-                             fraction.upregulated, train.fraction, 
+  test.data.set.name = paste("test", n.genes, samples.per.cond, n.diffexp,fraction.upregulated, 
                              random.outlier.high.prob, random.outlier.low.prob,
+                             single.outlier.high.prob, single.outlier.low.prob, 
+                             fraction.non.overdispersed,
                              paste("TMMnorm", ".csv", sep="", collapse = NULL), 
                              sep = "_", collapse = NULL)
   
