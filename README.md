@@ -2,7 +2,7 @@
 
 A genetic algorithm to designing distributed cell classifier circuits.
 
-## Running complex analysis
+## Running complex testing scheme
 
 Run the analysis from a command line using:
 
