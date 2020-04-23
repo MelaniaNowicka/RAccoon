@@ -160,12 +160,12 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
     # numbers of inputs and rules
     inputs_avg = []
     rules_avg = []
-    time = []
+
+    print("TRAINING ON DATA FOLD...")
     # repeat tests
     for i in range(0, repeats):
 
         print("REPEAT: ", i+1)
-        start = time.time()  # measure time
 
         # run the algorithm
         classifier, best_classifiers = run_GA.run_genetic_algorithm(train_data=training_fold,
@@ -180,7 +180,6 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
                                                                     tournament_size=ts,
                                                                     bacc_weight=bacc_weight)
 
-        time.append(time.time()-start)
         # get annotation
         annotation = training_fold["Annots"].tolist()
 
@@ -228,13 +227,10 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
         inputs_avg.append(number_of_inputs)
         rules_avg.append(number_of_rules)
 
-    print("Avg time: ", numpy.average(time))
 
     if print_results==True:
         # average scores
-        print("###AVERAGE SCORES###")
-        print("PARAMETER SET: ", parameter_set)
-        print("EVALUATION THRESHOLD: ", evaluation_threshold)
+        print("\n###AVERAGE SCORES###")
 
         # calculate train average scores
         print("\nTRAIN AVERAGE RESULTS")
@@ -308,7 +304,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     tournament_step = int(config['PARAMETER TUNING']['TournamentStep'])
     number_of_sets = int(config['PARAMETER TUNING']['NumberOfSets'])
 
-    processes = int(config['PARALELIZATION']['NumberOfProcc'])
+    processes = int(config['PARALELIZATION']['ProccessorNumb'])
 
     # generate parameter sets
     parameter_sets = toolbox.generate_parameters(tune_weights,
@@ -341,12 +337,12 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     test_bacc_cv = []
     test_std_cv = []
 
-    parameter_set_number = 1
+    parameter_set_number = 0
     # iterate over parameter sets
     for parameter_set in parameter_sets:
 
-        print("\nTESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         parameter_set_number += 1
+        print("\nTESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
 
         fold = 1
         # iterate over folds
@@ -381,7 +377,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
         test_std_avg = numpy.std(test_std_cv)
 
         print("RESULTS PARAMETER SET ", parameter_set_number,": ", parameter_set)
-        print("TEST AVG BACC: ", test_bacc_avg, " , STD: ", test_std_avg)
+        print("TEST AVG BACC: ", test_bacc_avg, ", STD: ", test_std_avg)
 
         # improvement check
         if eval.is_higher(best_avg_test_bacc, test_bacc_avg):
@@ -456,7 +452,8 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
 
     # binarize cv data sets
     training_cv_datasets_bin, testing_cv_datasets_bin, miRNA_cdds = \
-        preproc.discretize_data_for_tests(training_cv_datasets, testing_cv_datasets, m_segments, alpha_bin, lambda_bin)
+        preproc.discretize_data_for_tests(training_cv_datasets, testing_cv_datasets, m_segments, alpha_bin, lambda_bin,
+                                          print_results=False)
 
     # save to files
     fold = 1
@@ -494,24 +491,21 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
                                                            miRNA_cdds,
                                                            test_repeats)
 
-    print("BEST PARAMETERS: ", best_parameters)
+    w, tc, ps, cp, mp, ts = best_parameters
+
+    print("\n##BEST PARAMETERS##")
+    print("WEIGHT: ", w, ", TC: ", tc, ", PS: ", ps, ", CP: ", cp, ", MP: ", mp, ", TS: ", ts)
     print("BEST SCORE: ", best_bacc, " STD: ", best_std)
 
     print("\n###########FINAL TEST###########")
     print("\n***DATA DISCRETIZATION***")
     # binarize training and testing data sets
     discretized_train_data, discretized_test_data, miRNA_cdds = \
-        preproc.discretize_data_for_tests([training_data], [testing_data], m_segments, alpha_bin, lambda_bin)
+        preproc.discretize_data_for_tests([training_data], [testing_data], m_segments, alpha_bin, lambda_bin,
+                                          print_results=True)
 
     #remove irrelevant miRNAs
     discretized_train_data[0], relevant_mirnas = preproc.remove_irrelevant_mirna(discretized_train_data[0])
-
-    print("***miRNA CDDs***")
-    for miRNA in relevant_mirnas:
-        print("miRNA ", miRNA, " : ", miRNA_cdds[miRNA])
-    cdd_list = [miRNA_cdds[miRNA] for miRNA in relevant_mirnas]
-    print("AVG CDD: ", numpy.average(cdd_list))
-    print("STD CDD: ", numpy.std(cdd_list))
 
     # save to files
     new_name = "_train_bin.csv"
@@ -524,10 +518,11 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
 
     # train and test
     print("\n***RUN ALGORITHM***")
-    print("PARAMETERS: ", best_parameters)
+    w, tc, ps, cp, mp, ts = best_parameters
+    print("PARAMETERS:")
+    print("WEIGHT: ", w, ", TC: ", tc, ", PS: ", ps, ", CP: ", cp, ", MP: ", mp, ", TS: ", ts)
     print("EVALUATION THRESHOLD: ", evaluation_threshold)
-    print("BACC WEIGHT: ", bacc_weight)
-    print("SINGLE TEST REPEATS: ", test_repeats)
+    print("SINGLE TEST REPEATS: ", test_repeats, "\n")
 
     # measure time
     start_test = time.time()
@@ -543,10 +538,13 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
 
 if __name__ == "__main__":
 
-    numpy.random.seed(1)
-    random.seed(1)
+    #numpy.random.seed(1)
+    #random.seed(1)
 
     start_global = time.time()
+
+    print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
+          'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', '--dataset-filename-train',
