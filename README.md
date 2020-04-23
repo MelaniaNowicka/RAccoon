@@ -1,10 +1,51 @@
 # RAccoon
 
-A genetic algorithm to designing distributed cell classifier circuits.
+A genetic algorithm to designing distributed cell classifier circuits. Writen by Melania Nowicka
+
+## Training and testing classifiers
+
+To train classifier run: 
+
+```
+python run_GA.py --train train_data.csv 
+```
+
+Description of parameters:
+
+***--train*** - training data set in the .csv format
+
+***--test*** - testing data set in the .csv format (default: None)
+
+***--filter*** - filtering non-relevant features (default: True)
+
+***--discretize*** - discretize the data (default: False)
+
+***--mbin*** - discretization parameter: m segments (default: 50)
+
+***--abin*** - discretization parameter: alpha (default: 0.5)
+
+***--lbin*** - discretization parameter: lambda (default: 0.1)
+
+***-c*** - maximal size of a classifier (default: 5)
+
+***-a*** - classification threshold (default: 0.45)
+
+***-w*** - multi-objective function weight (default: 0.5)
+
+***-i*** - number of iterations without improvement after which the algorithm is terminated (default: 30)
+
+***-p*** - population size (default: 300)
+
+***-x*** - crossover probability (default: 0.8)
+
+***-m*** - mutation probability (default: 0.1)
+
+***-t*** - tournament size (default: 0.2)
+
 
 ## Running complex testing scheme
 
-Run the analysis from a command line using:
+Run the analysis using:
 
 ```
 python run_tests.py --train train_data.csv --test test_data.csv --config config.ini
