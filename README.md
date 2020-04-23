@@ -1,10 +1,10 @@
 # RAccoon
 
-A genetic algorithm to designing distributed cell classifier circuits. Writen by Melania Nowicka
+A genetic algorithm to designing distributed cell classifier circuits. 
 
 ## Training and testing classifiers
 
-To train classifier run: 
+To train a classifier run: 
 
 ```
 python run_GA.py --train train_data.csv 
