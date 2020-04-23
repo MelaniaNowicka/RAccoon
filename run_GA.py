@@ -31,8 +31,8 @@ def check_params(args):
     # adding arguments
     parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train", help='data set file name')
     parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", default=None, help='data set file name')
-    parser.add_argument('--filter', '--filter-data', dest="filter_data", type=bool, default=True, help='filter data')
-    parser.add_argument('--discretize', '--discretize-data', dest="discretize_data", type=bool, default=False, help='discretize data')
+    parser.add_argument('--filter', '--filter-data', dest="filter_data", type=str, default='t', help='filter data')
+    parser.add_argument('--discretize', '--discretize-data', dest="discretize_data", type=str, default='t', help='discretize data')
     parser.add_argument('--mbin', '--m-bin', dest="m_bin", type=int, default=50, help='m segments')
     parser.add_argument('--abin', '--a-bin', dest="a_bin", type=float, default=0.5, help='binarization alpha')
     parser.add_argument('--lbin', '--l-bin', dest="l_bin", type=float, default=0.1, help='binarization lambda')
@@ -226,6 +226,7 @@ if __name__ == "__main__":
 
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
+
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
     evaluation_threshold, bacc_weight, iterations, population_size, crossover_probability, mutation_probability, \
@@ -241,11 +242,13 @@ if __name__ == "__main__":
     annotation = train_dataset["Annots"]
 
     # discretize data
-    if discretize_data is True:
+    if discretize_data == 't':
         print("\n##DISCRETIZATION##")
         data_discretized, miRNAs, thresholds, miRNA_cdds = \
             preproc.discretize_train_data(train_dataset, m_bin, a_bin, l_bin, True)
     else:
+        data_discretized = train_dataset
+        miRNA_cdds = {}
         bacc_weight = 1.0
 
     classifier, best_classifiers = run_genetic_algorithm(data_discretized, filter_data, iterations, population_size,
@@ -273,9 +276,13 @@ if __name__ == "__main__":
         annotation = test_dataset["Annots"]
 
         # discretize data
-        if discretize_data is True:
+        if discretize_data == 't':
             print("\n##DISCRETIZATION##")
             data_discretized = preproc.discretize_test_data(test_dataset, thresholds)
+        else:
+            data_discretized = test_dataset
+            miRNA_cdds = {}
+            bacc_weight = 1.0
 
         # evaluate classifier
         classifier_score, test_bacc, errors, test_error_rates, test_additional_scores, cdd_score = \

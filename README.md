@@ -10,15 +10,17 @@ To train a classifier run:
 python run_GA.py --train train_data.csv 
 ```
 
+Use exemplary data to try it: train_data.csv, test_data.csv.
+
 Description of parameters:
 
 ***--train*** - training data set in the .csv format
 
 ***--test*** - testing data set in the .csv format (default: None)
 
-***--filter*** - filtering non-relevant features (default: True)
+***--filter*** - filtering non-relevant features (default: t, f to turn off)
 
-***--discretize*** - discretize the data (default: False)
+***--discretize*** - discretize the data (default: t, f to turn off)
 
 ***--mbin*** - discretization parameter: m segments (default: 50)
 
@@ -50,6 +52,7 @@ Run the analysis using:
 ```
 python run_tests.py --train train_data.csv --test test_data.csv --config config.ini
 ```
+Use exemplary data to try it: train_data.csv, test_data.csv.
 
 You may change all the parameters in config.ini.
 
