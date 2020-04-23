@@ -45,7 +45,7 @@ def write_generation_to_log(population, iteration, best_classifiers, log_message
 def write_final_scores(best_bacc, best_classifiers):
 
     # final score
-    print("BEST BACC:", best_bacc)
+    print("BEST DC SCORE:", best_bacc)
 
     best_classifiers_messages = []
 

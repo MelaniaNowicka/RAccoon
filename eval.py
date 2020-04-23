@@ -4,12 +4,14 @@ import pandas
 import math
 import sys
 
+
 # compare floats
 def is_close(x, y, tol=1e-5):
     if abs(x - y) <= tol:
         return True
     else:
         return False
+
 
 def is_higher(x, y, tol=1e-5):
     if y - x >= tol:

@@ -66,6 +66,7 @@ def remove_irrelevant_mirna(dataset):
     dataset = dataset.drop(irrelevant_mirna, axis=1)
 
     # creating log message
+    print("\n##FILTERING FEATURES##")
     print("Number of relevant miRNAs according to a given threshold: " + str(len(relevant_mirna)))
     print("Number of irrelevant miRNAs according to a given threshold: ", str(len(irrelevant_mirna)))
 
@@ -83,7 +84,6 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
     # calculate segment step
     segment_step = (max(miR_expr) - min(miR_expr))/m_segments
 
-    print(segment_step)
     # segments
     segments = []
 
@@ -96,7 +96,6 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
         if(m==m_segments): segment_threshold = Decimal(max(miR_expr))
         else: segment_threshold = Decimal(min(miR_expr)) + Decimal(segment_step)*m
         segment = [i for i in miR_expr_sorted if Decimal(i) <= Decimal(segment_threshold)]
-        #segments.append(segment_threshold)
 
         neg_class = annots_sorted[0:len(segment)].count(0)
         pos_class = annots_sorted[0:len(segment)].count(1)
@@ -147,7 +146,7 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
 
 
 # discretize train data set
-def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
+def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, print_results):
 
     if isinstance(train_dataset, pandas.DataFrame):
         dataset = train_dataset.__copy__()
@@ -195,8 +194,6 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
         # discretize miRNA
         threshold, global_cdd, pattern = discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_param, lambda_param)
 
-        print(miRNA, " ", global_cdd)
-
         # count miRNA expression patterns
         if pattern == 0:
             one_state_miRNAs += 1
@@ -220,16 +217,19 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param):
     # create a dictrionary of miRNAs and its cdds
     miRNA_cdds = dict(zip(miRNAs, global_cdds))
 
-    print("***miRNA CDDs***")
-    for miRNA in relevant:
-        print("miRNA ", miRNA, " : ", miRNA_cdds[miRNA])
-    cdd_list = [miRNA_cdds[miRNA] for miRNA in relevant]
-    print("AVG CDD: ", numpy.average(cdd_list))
-    print("STD CDD: ", numpy.std(cdd_list))
+    if print_results is True:
+        print("miRNA CDDs:")
+        for miRNA in relevant:
+            print("miRNA ", miRNA, " : ", miRNA_cdds[miRNA])
 
+    cdd_list = [miRNA_cdds[miRNA] for miRNA in relevant]
+    print("\nDISCRETIZATION RESULTS")
     print("ONE STATE miRNAs: ", one_state_miRNAs)
     print("TWO STATE miRNAs: ", two_states_miRNAs)
     print("COMPLICATED PATTERNS: ", complicated_pattern_miRNAs)
+    print("AVG CDD: ", numpy.average(cdd_list))
+    print("STD CDD: ", numpy.std(cdd_list))
+
 
     if not isinstance(train_dataset, pandas.DataFrame):
         # write data to a file
@@ -291,7 +291,7 @@ def discretize_test_data(test_dataset, thresholds):
 
 
 # discretize several data sets
-def discretize_data_for_tests(train_list, test_list, m_segments, alpha_param, lambda_param):
+def discretize_data_for_tests(train_list, test_list, m_segments, alpha_param, lambda_param, print_results):
 
     discretized_train_data = []
     discretized_test_data = []
@@ -304,18 +304,12 @@ def discretize_data_for_tests(train_list, test_list, m_segments, alpha_param, la
         print("\nDISCRETIZATION: ", fold)
         fold += 1
 
-        print("THRESHOLD INFORMATION")
+        #print("THRESHOLD INFORMATION")
         # discretize train data and return thresholds
-        data_discretized, miRNAs, thresholds, miRNA_cdds = discretize_train_data(train, m_segments, alpha_param, lambda_param)
+        data_discretized, miRNAs, thresholds, miRNA_cdds = discretize_train_data(train, m_segments, alpha_param, \
+                                                                                 lambda_param, print_results)
 
         discretized_train_data.append(data_discretized)
-
-        #print("miRNAs")
-        #print(miRNAs)
-
-        #print("Thresholds")
-        #print(thresholds)
-
 
         # discretize test data avvording to thresholds
         data_discretized = discretize_test_data(test, thresholds)

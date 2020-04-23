@@ -30,24 +30,29 @@ def check_params(args):
 
     # adding arguments
     parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train", help='data set file name')
-    parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", help='data set file name')
-    parser.add_argument('-f', '--filter-data', dest="filter_data", type=bool, default=True, help='filter data of not')
+    parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", default=None, help='data set file name')
+    parser.add_argument('--filter', '--filter-data', dest="filter_data", type=bool, default=True, help='filter data')
+    parser.add_argument('--discretize', '--discretize-data', dest="discretize_data", type=bool, default=False, help='discretize data')
+    parser.add_argument('--mbin', '--m-bin', dest="m_bin", type=int, default=50, help='m segments')
+    parser.add_argument('--abin', '--a-bin', dest="a_bin", type=float, default=0.5, help='binarization alpha')
+    parser.add_argument('--lbin', '--l-bin', dest="l_bin", type=float, default=0.1, help='binarization lambda')
+    parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5, help='classifier size')
+    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=0.45, type=float, help='evaluation threshold alpha')
+    parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float, help='bacc_weight')
     parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30, help='number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300, help='population size')
-    parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5, help='classifier size')
-    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=0.5, type=float, help='evaluation threshold alpha')
-    parser.add_argument('--cdds', '--miRNA-cdds', dest="miRNA_cdds", default={}, type=dict, help='miRNA cdds list')
-    parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.9, type=float, help='probability of crossover')
+    parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.8, type=float, help='probability of crossover')
     parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float, help='probability of mutation')
     parser.add_argument('-t', '--tournament-size', dest="tournament_size", default=0.2, type=float, help='tournament size')
-    parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float, help='bacc_weight')
 
     # parse arguments
     params = parser.parse_args(args)
 
-    return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, params.iterations, \
-           params.population_size, params.classifier_size, params.evaluation_threshold, params.miRNA_cdds, params.crossover_probability, \
-           params.mutation_probability, params.tournament_size, params.bacc_weight
+    return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, params.discretize_data, \
+           params.m_bin, params.a_bin, params.l_bin, \
+           params.classifier_size, params.evaluation_threshold, params.bacc_weight, \
+           params.iterations, params.population_size, params.crossover_probability, \
+           params.mutation_probability, params.tournament_size
 
 
 def measure_runtimes(train_data,  # name of train datafile
@@ -210,7 +215,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     # show best scores
     shortest_classifier = classifier_sizes.index(min(classifier_sizes))
-    print("SHORTEST CLASSIFIER: ")
+    print("##TRAINED CLASSIFIER## ")
     log.write_final_scores(best_score, [best_classifiers[shortest_classifier]])
     return best_classifiers[shortest_classifier], best_classifiers
 
@@ -219,88 +224,70 @@ if __name__ == "__main__":
 
     start = time.time()
 
-    train_datafile, test_datafile, filter_data, iterations, population_size, classifier_size, evaluation_threshold, \
-    cdds, crossover_probability, mutation_probability, tournament_size, bacc_weight = check_params(sys.argv[1:])
+    print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
+          'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
+    # process parameters
+    train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
+    evaluation_threshold, bacc_weight, iterations, population_size, crossover_probability, mutation_probability, \
+    tournament_size = check_params(sys.argv[1:])
 
-    train_bacc_avg = []
-    train_tpr_avg = []
-    train_tnr_avg = []
-    train_fpr_avg = []
-    train_fnr_avg = []
-    train_f1_avg = []
-    train_mcc_avg = []
-    train_ppv_avg = []
-    train_fdr_avg = []
-    test_bacc_avg = []
-    test_tpr_avg = []
-    test_tnr_avg = []
-    test_fpr_avg = []
-    test_fnr_avg = []
-    test_f1_avg = []
-    test_mcc_avg = []
-    test_ppv_avg = []
-    test_fdr_avg = []
+    print("##PARAMETERS##")
+    print("EVALUATION THRESHOLD: ", evaluation_threshold)
+    print("WEIGHT: ", bacc_weight)
 
+    print("\n##TRAIN DATA##")
+    # read the data
     train_dataset, negatives, positives, mirnas = preproc.read_data(train_datafile)
     annotation = train_dataset["Annots"]
 
-    for i in range(0, 1):
-        #print("TEST ", i+1)
-        print("TRAINING DATA")
-        classifier, best_classifiers = run_genetic_algorithm(train_dataset,
-                                           filter_data,
-                                           iterations,
-                                           population_size,
-                                           classifier_size,
-                                           evaluation_threshold,
-                                           cdds,
-                                           crossover_probability,
-                                           mutation_probability,
-                                           tournament_size,
-                                           bacc_weight)
+    # discretize data
+    if discretize_data is True:
+        print("\n##DISCRETIZATION##")
+        data_discretized, miRNAs, thresholds, miRNA_cdds = \
+            preproc.discretize_train_data(train_dataset, m_bin, a_bin, l_bin, True)
+    else:
+        bacc_weight = 1.0
 
-        print("TRAIN DATA")
-        classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
-            eval.evaluate_classifier(classifier, annotation, train_dataset, evaluation_threshold, cdds, bacc_weight)
+    classifier, best_classifiers = run_genetic_algorithm(data_discretized, filter_data, iterations, population_size,
+                                                         classifier_size, evaluation_threshold, miRNA_cdds,
+                                                         crossover_probability, mutation_probability, tournament_size,
+                                                         bacc_weight)
 
-        train_bacc_avg.append(train_bacc)
-        train_tpr_avg.append(train_error_rates["tpr"])
-        train_tnr_avg.append(train_error_rates["tnr"])
-        train_fpr_avg.append(train_error_rates["fpr"])
-        train_fnr_avg.append(train_error_rates["fnr"])
-        train_f1_avg.append(train_additional_scores["f1"])
-        train_mcc_avg.append(train_additional_scores["mcc"])
-        train_ppv_avg.append(train_additional_scores["ppv"])
-        train_fdr_avg.append(train_additional_scores["fdr"])
+    # evaluate best classifier
+    classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
+        eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds, bacc_weight)
 
-        print("TEST DATA")
+    print("\n##TRAIN DATA SCORES##")
+    print("BACC: ", train_bacc)
+    print("CDD SCORE: ", cdd_score)
+    print("TPR: ", train_error_rates["tpr"])
+    print("TNR: ", train_error_rates["tnr"])
+    print("FNR: ", train_error_rates["fpr"])
+    print("FPR: ", train_error_rates["fnr"])
+
+    if test_datafile is not None:
+
+        print("\n##TEST DATA##")
+        # read test data
         test_dataset, negatives, positives, mirnas = preproc.read_data(test_datafile)
         annotation = test_dataset["Annots"]
+
+        # discretize data
+        if discretize_data is True:
+            print("\n##DISCRETIZATION##")
+            data_discretized = preproc.discretize_test_data(test_dataset, thresholds)
+
+        # evaluate classifier
         classifier_score, test_bacc, errors, test_error_rates, test_additional_scores, cdd_score = \
-            eval.evaluate_classifier(classifier, annotation, test_dataset, evaluation_threshold, cdds, bacc_weight)
-        test_bacc_avg.append(test_bacc)
+        eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds, bacc_weight)
 
-    #print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
-    #print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg))
-    #print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
-    #print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
-    #print("TRAIN AVG FPR: ", numpy.average(train_fpr_avg))
-    #print("TRAIN AVG FNR: ", numpy.average(train_fnr_avg))
-    #print("TRAIN AVG TPR: ", numpy.average(train_f1_avg))
-    #print("TRAIN AVG TNR: ", numpy.average(train_mcc_avg))
-    #print("TRAIN AVG FPR: ", numpy.average(train_ppv_avg))
-    #print("TRAIN AVG FNR: ", numpy.average(train_fdr_avg))
-
-    #print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
-    #print("TEST AVG STDEV: ", numpy.std(test_bacc_avg))
-    #print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
-    #print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
-    #print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
-    #print("TEST AVG FNR: ", numpy.average(test_fnr_avg))
-    #print("TEST AVG TPR: ", numpy.average(test_f1_avg))
-    #print("TEST AVG TNR: ", numpy.average(test_mcc_avg))
-    #print("TEST AVG FPR: ", numpy.average(test_ppv_avg))
-    #print("TEST AVG FNR: ", numpy.average(test_fdr_avg))
+        print("\n##TEST DATA SCORES##")
+        print("BACC: ", test_bacc)
+        print("CDD SCORE: ", cdd_score)
+        print("TPR: ", test_error_rates["tpr"])
+        print("TNR: ", test_error_rates["tnr"])
+        print("FNR: ", test_error_rates["fpr"])
+        print("FPR: ", test_error_rates["fnr"])
 
     end = time.time()
     print("TIME: ", end - start)
