@@ -2,6 +2,25 @@
 
 A genetic algorithm to designing distributed cell classifier circuits. 
 
+## Data format
+
+Continuous data:
+
+| ID | Annots | miR-1 |
+| -- | ------ | ----- |
+| 1 | 0 | 34 |
+| 2 | 1 | 475 |
+
+If you use continuous data, keep the discretization on.
+
+Discretized data:
+
+| ID | Annots | miR-1 |
+| -- | ------ | ----- |
+| 1 | 0 | 0 |
+| 2 | 1 | 1 |
+
+
 ## Training and testing classifiers
 
 To train a classifier run: 

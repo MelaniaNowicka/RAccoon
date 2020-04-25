@@ -178,7 +178,8 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
                                                                     crossover_probability=cp,
                                                                     mutation_probability=mp,
                                                                     tournament_size=ts,
-                                                                    bacc_weight=bacc_weight)
+                                                                    bacc_weight=bacc_weight,
+                                                                    print_results=print_results)
 
         # get annotation
         annotation = training_fold["Annots"].tolist()
@@ -227,7 +228,6 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
         inputs_avg.append(number_of_inputs)
         rules_avg.append(number_of_rules)
 
-
     if print_results==True:
         # average scores
         print("\n###AVERAGE SCORES###")
@@ -266,8 +266,8 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
         print("MEDIAN OF INPUTS: ", numpy.median(inputs_avg))
         print("MEDIAN OF RULES: ", numpy.median(rules_avg))
 
-    test_bacc_avg = numpy.average(test_bacc_avg)
     test_std_avg = numpy.std(test_bacc_avg)
+    test_bacc_avg = numpy.average(test_bacc_avg)
 
     return test_bacc_avg, test_std_avg
 
@@ -344,15 +344,9 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
         parameter_set_number += 1
         print("\nTESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
 
-        fold = 1
-        # iterate over folds
-        #for training_fold, testing_fold in zip(training_cv_datasets, testing_cv_datasets):
-
-        #print("\nTESTING FOLD: ", fold)
-        #fold += 1
-
         cv_datasets = zip(training_cv_datasets, testing_cv_datasets)
 
+        # train and test on each fold
         if(processes>1):
             with Pool(processes) as p:
                 cv_results = p.map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
@@ -365,18 +359,12 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
                                            print_results=False), cv_datasets))
 
         test_bacc_cv, test_std_cv = zip(*cv_results)
-        # train and test classifiers
-        #test_bacc, test_std = train_and_test(training_fold, testing_fold, parameter_set, classifier_size,
-        #evaluation_threshold, miRNA_cdds, test_repeats, False)
 
-        #test_bacc_cv.append(test_bacc)
-        #test_std_cv.append(test_std)
-
-        # calculate average bacc scores
+        # calculate average bacc scores for folds
         test_bacc_avg = numpy.average(test_bacc_cv)
         test_std_avg = numpy.std(test_std_cv)
 
-        print("RESULTS PARAMETER SET ", parameter_set_number,": ", parameter_set)
+        print("RESULTS PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         print("TEST AVG BACC: ", test_bacc_avg, ", STD: ", test_std_avg)
 
         # improvement check
@@ -385,13 +373,13 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
             best_avg_test_bacc = test_bacc_avg
             best_avg_test_std = test_std_avg
 
-            if eval.is_close(test_bacc_avg, best_avg_test_bacc) and eval.is_higher(best_avg_test_std, test_std_avg):
-                best_parameter_set = parameter_set
-                best_avg_test_bacc = test_bacc_avg
-                best_avg_test_std = test_std_avg
+            #if eval.is_close(test_bacc_cv, best_avg_test_bacc) and eval.is_higher(best_avg_test_std, test_std_cv):
+                #best_parameter_set = parameter_set
+                #best_avg_test_bacc = test_bacc_cv
+                #best_avg_test_std = test_std_cv
 
-        if eval.is_close(best_avg_test_bacc, 1.0) and eval.is_close(best_avg_test_std, 0.0):
-            return best_parameter_set, best_avg_test_bacc, best_avg_test_std
+        #if eval.is_close(best_avg_test_bacc, 1.0) and eval.is_close(best_avg_test_std, 0.0):
+            #return best_parameter_set, best_avg_test_bacc, best_avg_test_std
 
     return best_parameter_set, best_avg_test_bacc, best_avg_test_std
 
@@ -494,7 +482,7 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
     w, tc, ps, cp, mp, ts = best_parameters
 
     print("\n##BEST PARAMETERS##")
-    print("WEIGHT: ", w, ", TC: ", tc, ", PS: ", ps, ", CP: ", cp, ", MP: ", mp, ", TS: ", ts)
+    print("WEIGHT: ", w, " TC: ", tc, " PS: ", ps, " CP: ", cp, " MP: ", mp, " TS: ", ts)
     print("BEST SCORE: ", best_bacc, " STD: ", best_std)
 
     print("\n###########FINAL TEST###########")
@@ -538,8 +526,8 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
 
 if __name__ == "__main__":
 
-    #numpy.random.seed(1)
-    #random.seed(1)
+    numpy.random.seed(1)
+    random.seed(1)
 
     start_global = time.time()
 

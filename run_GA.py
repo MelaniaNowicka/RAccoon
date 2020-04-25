@@ -3,10 +3,8 @@ A genetic algorithm (GA) optimizing a set of miRNA-based cell classifiers for in
 Written by Melania Nowicka, FU Berlin, 2019.
 '''
 
-import datetime
 import sys
 import random
-import numpy
 import pandas
 import preproc
 import popinit
@@ -17,7 +15,6 @@ import mutation
 import log
 import time
 import argparse
-import toolbox
 
 
 # algorithm parameters read from the command line
@@ -55,37 +52,6 @@ def check_params(args):
            params.mutation_probability, params.tournament_size
 
 
-def measure_runtimes(train_data,  # name of train datafile
-                    filter_data,  # a flag whether data should be filtered or not
-                    iterations,  # number of iterations
-                    population_size,  # size of a population
-                    classifier_size,  # max size of a classifier
-                    evaluation_threshold,  # evaluation function
-                    miRNA_cdds,  # miRNA cdds
-                    crossover_probability,  # probability of crossover
-                    mutation_probability,  # probability of mutation
-                    tournament_size,  # size of a tournament
-                    bacc_weight):  # bacc weight
-
-    start = time.time()
-
-    for i in range(0, 10):
-        run_genetic_algorithm(train_data,
-                              filter_data,
-                              iterations,
-                              population_size,
-                              classifier_size,
-                              evaluation_threshold,
-                              miRNA_cdds,
-                              crossover_probability,
-                              mutation_probability,
-                              tournament_size,
-                              bacc_weight)
-
-    end = time.time()
-    print((end-start)/10)
-
-
 # run genetic algorithm
 def run_genetic_algorithm(train_data,  # name of train datafile
                           filter_data,  # a flag whether data should be filtered or not
@@ -97,7 +63,8 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           crossover_probability,  # probability of crossover
                           mutation_probability,  # probability of mutation
                           tournament_size,  # size of a tournament
-                          bacc_weight):  # bacc weight
+                          bacc_weight,  # bacc weight
+                          print_results):
 
     # initialize of best classifier
     best_score = 0.0  # best classifier BACC
@@ -137,9 +104,6 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     # run as long as there is score change
     run_algorithm = True
     while run_algorithm == True:
-
-        # show progress, the current best score and average score
-        #print(int(iteration/iterations*100), "% | BACC: ", best_score, "|  AVG BACC: ", avg_bacc)
 
         # SELECTION
         selected_parents = []
@@ -195,46 +159,54 @@ def run_genetic_algorithm(train_data,  # name of train datafile
             eval.evaluate_individuals(population, dataset, evaluation_threshold, bacc_weight, miRNA_cdds, best_score,
                                       best_classifiers)
 
-        if best_score == global_best_score:
+        if eval.is_close(global_best_score, best_score):
             iteration_counter = iteration_counter + 1
         else:
             iteration_counter = 0
+            if print_results:
+                print("best score: ", best_score)
 
         if iteration_counter == iterations:
             run_algorithm = False
 
+    # check classifer sizes
     classifier_sizes = []
     for classifier in best_classifiers:
-        inputs = 0
-        for rule in classifier.rule_set:
-            for input in rule.pos_inputs:
-                inputs = inputs + 1
-            for input in rule.neg_inputs:
-                inputs = inputs + 1
-        classifier_sizes.append(inputs)
+        classifier_sizes.append(len(classifier.get_input_list()))
 
     # show best scores
-    shortest_classifier = classifier_sizes.index(min(classifier_sizes))
     print("##TRAINED CLASSIFIER## ")
-    log.write_final_scores(best_score, [best_classifiers[shortest_classifier]])
+    shortest_classifier = classifier_sizes.index(min(classifier_sizes))  # find shortest classifier
+    log.write_final_scores(best_score, [best_classifiers[shortest_classifier]])  # shortest classifier
+
     return best_classifiers[shortest_classifier], best_classifiers
 
 
-if __name__ == "__main__":
-
-    start = time.time()
-
-    print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
-          'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
+# process parameters and data and run algorithm
+def process_and_run(args):
 
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
     evaluation_threshold, bacc_weight, iterations, population_size, crossover_probability, mutation_probability, \
-    tournament_size = check_params(sys.argv[1:])
+    tournament_size = check_params(args)
 
     print("##PARAMETERS##")
+    if filter_data == 't':
+        print("FILTERING: ", "on")
+    else:
+        print("FILTERING: ", "off")
+    if discretize_data == 't':
+        print("DISCRETIZE: ", "on")
+        print("DISCRETIZATION M: ", m_bin)
+        print("DISCRETIZATION ALPHA: ", a_bin)
+        print("DISCRETIZATION LAMBDA: ", l_bin)
+    else:
+        print("DISCRETIZE: ", "off")
     print("EVALUATION THRESHOLD: ", evaluation_threshold)
+    print("MAX SIZE: ", classifier_size)
     print("WEIGHT: ", bacc_weight)
+    print("GA PARAMETERS: ", "TC: ", iterations, ", PS: ", population_size, ", CP: ", crossover_probability, ", MP: ", \
+          mutation_probability, ", TS: ", tournament_size)
 
     print("\n##TRAIN DATA##")
     # read the data
@@ -251,14 +223,17 @@ if __name__ == "__main__":
         miRNA_cdds = {}
         bacc_weight = 1.0
 
+    print("\nTRAINING...")
+
     classifier, best_classifiers = run_genetic_algorithm(data_discretized, filter_data, iterations, population_size,
                                                          classifier_size, evaluation_threshold, miRNA_cdds,
                                                          crossover_probability, mutation_probability, tournament_size,
-                                                         bacc_weight)
+                                                         bacc_weight, True)
 
     # evaluate best classifier
     classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
-        eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds, bacc_weight)
+        eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds,
+                                 bacc_weight)
 
     print("\n##TRAIN DATA SCORES##")
     print("BACC: ", train_bacc)
@@ -286,7 +261,8 @@ if __name__ == "__main__":
 
         # evaluate classifier
         classifier_score, test_bacc, errors, test_error_rates, test_additional_scores, cdd_score = \
-        eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds, bacc_weight)
+            eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds,
+                                     bacc_weight)
 
         print("\n##TEST DATA SCORES##")
         print("BACC: ", test_bacc)
@@ -295,6 +271,16 @@ if __name__ == "__main__":
         print("TNR: ", test_error_rates["tnr"])
         print("FNR: ", test_error_rates["fpr"])
         print("FPR: ", test_error_rates["fnr"])
+
+
+if __name__ == "__main__":
+
+    start = time.time()
+
+    print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
+          'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
+
+    process_and_run(sys.argv[1:])
 
     end = time.time()
     print("TIME: ", end - start)
