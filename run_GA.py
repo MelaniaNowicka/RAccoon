@@ -103,7 +103,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     # ITERATE OVER GENERATIONS
     # run as long as there is score change
     run_algorithm = True
-    while run_algorithm == True:
+    while run_algorithm:
 
         # SELECTION
         selected_parents = []
@@ -173,6 +173,8 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     classifier_sizes = []
     for classifier in best_classifiers:
         classifier_sizes.append(len(classifier.get_input_list()))
+
+    log.write_final_scores(best_score, best_classifiers)
 
     # show best scores
     print("##TRAINED CLASSIFIER## ")
@@ -276,6 +278,8 @@ def process_and_run(args):
 if __name__ == "__main__":
 
     start = time.time()
+
+    #random.seed(1)
 
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')

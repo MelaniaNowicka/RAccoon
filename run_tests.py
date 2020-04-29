@@ -1,5 +1,3 @@
-import random
-import numpy
 from multiprocessing import Pool
 from functools import partial
 import configparser
@@ -10,6 +8,8 @@ import sys
 import toolbox
 import run_GA
 import eval
+import random
+import numpy
 
 
 # divide data into train and test
@@ -373,10 +373,10 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
             best_avg_test_bacc = test_bacc_avg
             best_avg_test_std = test_std_avg
 
-            #if eval.is_close(test_bacc_cv, best_avg_test_bacc) and eval.is_higher(best_avg_test_std, test_std_cv):
+            #if eval.is_close(test_bacc_cv, best_avg_test_bacc) and eval.is_higher(best_avg_test_std, test_std_avg):
                 #best_parameter_set = parameter_set
-                #best_avg_test_bacc = test_bacc_cv
-                #best_avg_test_std = test_std_cv
+                #best_avg_test_bacc = test_bacc_avg
+                #best_avg_test_std = test_std_avg
 
         #if eval.is_close(best_avg_test_bacc, 1.0) and eval.is_close(best_avg_test_std, 0.0):
             #return best_parameter_set, best_avg_test_bacc, best_avg_test_std
