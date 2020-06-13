@@ -15,6 +15,7 @@ import mutation
 import log
 import time
 import argparse
+import numpy
 
 
 # algorithm parameters read from the command line
@@ -38,6 +39,8 @@ def check_params(args):
     parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float, help='bacc_weight')
     parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30, help='number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300, help='population size')
+    parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
+                        help='List of pre-optimized rules')
     parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.8, type=float, help='probability of crossover')
     parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float, help='probability of mutation')
     parser.add_argument('-t', '--tournament-size', dest="tournament_size", default=0.2, type=float, help='tournament size')
@@ -45,11 +48,11 @@ def check_params(args):
     # parse arguments
     params = parser.parse_args(args)
 
-    return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, params.discretize_data, \
-           params.m_bin, params.a_bin, params.l_bin, \
+    return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, \
+           params.discretize_data, params.m_bin, params.a_bin, params.l_bin, \
            params.classifier_size, params.evaluation_threshold, params.bacc_weight, \
-           params.iterations, params.population_size, params.crossover_probability, \
-           params.mutation_probability, params.tournament_size
+           params.iterations, params.population_size, params.rule_list, \
+           params.crossover_probability, params.mutation_probability, params.tournament_size
 
 
 # run genetic algorithm
@@ -57,6 +60,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           filter_data,  # a flag whether data should be filtered or not
                           iterations,  # number of iterations
                           population_size,  # size of a population
+                          rule_list,  # list of pre-optimized rules
                           classifier_size,  # max size of a classifier
                           evaluation_threshold,  # evaluation function
                           miRNA_cdds,  # miRNA cdds
@@ -66,11 +70,12 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           bacc_weight,  # bacc weight
                           print_results):
 
-    # initialize of best classifier
-    best_score = 0.0  # best classifier BACC
+    # initialize best classifier (empty)
+    global_best_score = 0.0  # best classifier BACC
 
     # first best classifier
-    best_classifier = popinit.Classifier(rule_set=[], errors={}, error_rates={}, score=0.0, bacc=0.0, cdd_score=0.0, additional_scores={})
+    best_classifier = popinit.Classifier(rule_set=[], errors={}, error_rates={}, score=0.0, bacc=0.0, cdd_score=0.0,
+                                         additional_scores={})
     best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
     # check if the data comes from file or data frame
@@ -83,26 +88,35 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         dataset, negatives, positives, mirnas = preproc.read_data(train_data)
 
     # REMOVE IRRELEVANT miRNAs
-    if filter_data == True:
+    if filter_data is True:
         dataset, mirnas = preproc.remove_irrelevant_mirna(dataset)
 
     # INITIALIZE POPULATION
-    population = popinit.initialize_population(population_size, mirnas, classifier_size)
+    if rule_list is None:
+        population = popinit.initialize_population(population_size, mirnas, classifier_size)
+    else:
+        rule_list = popinit.read_rules_from_file(rule_list)
+        population = popinit.initialize_population_from_rules(population_size, mirnas, rule_list, classifier_size)
 
     # REMOVE RULE DUPLICATES
     for classifier in population:
         classifier.remove_duplicates()
 
     # EVALUATE INDIVIDUALS
-    best_score, avg_bacc, best_classifiers = eval.evaluate_individuals(population, dataset,
+    first_global_best_score, first_avg_population_score, best_classifiers = eval.evaluate_individuals(population, dataset,
                                                                        evaluation_threshold, bacc_weight, miRNA_cdds,
-                                                                       best_score, best_classifiers)
+                                                                       global_best_score, best_classifiers)
+    if print_results:
+        print("first global best score: ", first_global_best_score)
+        print("average population score: ", first_avg_population_score)
+
     # count iterations without a change of scores
     iteration_counter = 0
+    run_algorithm = True
+    updates = 0
 
     # ITERATE OVER GENERATIONS
     # run as long as there is score change
-    run_algorithm = True
     while run_algorithm:
 
         # SELECTION
@@ -152,36 +166,80 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         for classifier in population:
             classifier.remove_duplicates()
 
-        global_best_score = best_score
+        # EVALUATION OF THE POPULATION
+        new_global_best_score, avg_population_score, best_classifiers = eval.evaluate_individuals(population, dataset,
+                            evaluation_threshold, bacc_weight, miRNA_cdds, global_best_score, best_classifiers)
 
-        # evaluation of population
-        best_score, avg_bacc, best_classifiers = \
-            eval.evaluate_individuals(population, dataset, evaluation_threshold, bacc_weight, miRNA_cdds, best_score,
-                                      best_classifiers)
+        if print_results:
+            print("average population score: ", avg_population_score)
 
-        if eval.is_close(global_best_score, best_score):
-            iteration_counter = iteration_counter + 1
-        else:
+        # CHECK IMPROVEMENT
+        if eval.is_higher(global_best_score, new_global_best_score):  # if there was improvement
+            updates += 1
             iteration_counter = 0
-            if print_results:
-                print("best score: ", best_score)
 
+            global_best_score = new_global_best_score
+            if print_results:
+                print("new best score: ", global_best_score)
+
+        else:  # if there is improvement increase the number of updates and reset the iteration counter
+            iteration_counter = iteration_counter + 1
+
+        # if the iteration_counter reaches the maximal number of allowed iterations stop the algorithm
         if iteration_counter == iterations:
             run_algorithm = False
+
+    if print_results:
+        print("Number of score updates: ", updates)
 
     # check classifer sizes
     classifier_sizes = []
     for classifier in best_classifiers:
         classifier_sizes.append(len(classifier.get_input_list()))
 
-    log.write_final_scores(best_score, best_classifiers)
+    #log.write_final_scores(global_best_score, best_classifiers)
 
     # show best scores
     print("##TRAINED CLASSIFIER## ")
     shortest_classifier = classifier_sizes.index(min(classifier_sizes))  # find shortest classifier
-    log.write_final_scores(best_score, [best_classifiers[shortest_classifier]])  # shortest classifier
+    log.write_final_scores(global_best_score, [best_classifiers[shortest_classifier]])  # shortest classifier
 
-    return best_classifiers[shortest_classifier], best_classifiers
+    return best_classifiers[shortest_classifier], best_classifiers, updates, first_global_best_score, \
+           first_avg_population_score
+
+
+def repeat(repeats, args):
+
+    train_scores = []
+    test_scores = []
+    time = []
+    updates_list = []
+    first_scores = []
+    first_avg_population_scores = []
+
+    test_bacc = None
+
+    for i in range(0, repeats):
+        print("\nREPEAT ", i+1)
+        train_bacc, test_bacc, updates, train_time, first_score, first_avg_pop = process_and_run(args)
+        train_scores.append(train_bacc)
+        test_scores.append(test_bacc)
+        time.append(train_time)
+        updates_list.append(updates)
+        first_scores.append(first_score)
+        first_avg_population_scores.append(first_avg_pop)
+
+    print("\nRESULTS")
+    print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores))
+    if test_bacc is not None:
+        print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores))
+    print("AVG UPDATES: ", numpy.average(updates_list))
+    print("AVG TRAINING TIME: ", numpy.average(time))
+    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores))
+    print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores))
+
+    print("CSV;", numpy.average(train_scores), ";", numpy.average(test_scores), ";", numpy.average(updates_list), ";",
+          numpy.average(time), ";", numpy.average(first_scores), ";", numpy.average(first_avg_population_scores))
 
 
 # process parameters and data and run algorithm
@@ -189,14 +247,16 @@ def process_and_run(args):
 
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
-    evaluation_threshold, bacc_weight, iterations, population_size, crossover_probability, mutation_probability, \
-    tournament_size = check_params(args)
+    evaluation_threshold, bacc_weight, iterations, population_size, rule_list, \
+    crossover_probability, mutation_probability, tournament_size = check_params(args)
 
     print("##PARAMETERS##")
     if filter_data == 't':
         print("FILTERING: ", "on")
+        filter_data = True
     else:
         print("FILTERING: ", "off")
+        filter_data = False
     if discretize_data == 't':
         print("DISCRETIZE: ", "on")
         print("DISCRETIZATION M: ", m_bin)
@@ -207,6 +267,8 @@ def process_and_run(args):
     print("EVALUATION THRESHOLD: ", evaluation_threshold)
     print("MAX SIZE: ", classifier_size)
     print("WEIGHT: ", bacc_weight)
+    if rule_list is not None:
+        print("POPULATION PRE-OPTIMIZATION: ", "on")
     print("GA PARAMETERS: ", "TC: ", iterations, ", PS: ", population_size, ", CP: ", crossover_probability, ", MP: ", \
           mutation_probability, ", TS: ", tournament_size)
 
@@ -226,11 +288,16 @@ def process_and_run(args):
         bacc_weight = 1.0
 
     print("\nTRAINING...")
+    start_train = time.time()
+    classifier, best_classifiers, updates, first_global, first_avg_pop = \
+        run_genetic_algorithm(data_discretized, filter_data, iterations, population_size,
+                              rule_list, classifier_size, evaluation_threshold, miRNA_cdds,
+                              crossover_probability, mutation_probability, tournament_size,
+                              bacc_weight, True)
 
-    classifier, best_classifiers = run_genetic_algorithm(data_discretized, filter_data, iterations, population_size,
-                                                         classifier_size, evaluation_threshold, miRNA_cdds,
-                                                         crossover_probability, mutation_probability, tournament_size,
-                                                         bacc_weight, True)
+    end_train = time.time()
+    training_time = end_train - start_train
+    print("TRAINING TIME: ", end_train - start_train)
 
     # evaluate best classifier
     classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
@@ -274,17 +341,24 @@ def process_and_run(args):
         print("FNR: ", test_error_rates["fpr"])
         print("FPR: ", test_error_rates["fnr"])
 
+    else:
+        test_bacc = None
+
+    return train_bacc, test_bacc, updates, training_time, first_global, first_avg_pop
+
 
 if __name__ == "__main__":
 
     start = time.time()
 
+    #numpy.random.seed(1)
     #random.seed(1)
 
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
 
-    process_and_run(sys.argv[1:])
+    #process_and_run(sys.argv[1:])
+    repeat(100, sys.argv[1:])
 
     end = time.time()
     print("TIME: ", end - start)

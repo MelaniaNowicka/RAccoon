@@ -1,4 +1,6 @@
 import random
+import pandas
+import sys
 
 
 # single boolean function class
@@ -99,11 +101,15 @@ class Classifier:
                 for j in range(i+1, len(multi_input)):
                     # for rules with two positive inputs
                     if len(multi_input[i][0].pos_inputs) == 2 and len(multi_input[j][0].pos_inputs) == 2:
-                        if multi_input[i][0].pos_inputs == multi_input[j][0].pos_inputs:  # if inputs are identical
+                        pos_list1 = sorted(multi_input[i][0].pos_inputs)
+                        pos_list2 = sorted(multi_input[j][0].pos_inputs)
+                        if pos_list1 == pos_list2:  # if inputs are identical
                             to_del.append(multi_input[j][1])  # add rule for removal
                     # for rules with two negative inputs
                     elif len(multi_input[i][0].neg_inputs) == 2 and len(multi_input[j][0].neg_inputs) == 2:
-                        if multi_input[i][0].neg_inputs == multi_input[j][0].neg_inputs:  # if inputs are identical
+                        neg_list1 = sorted(multi_input[i][0].neg_inputs)
+                        neg_list2 = sorted(multi_input[j][0].neg_inputs)
+                        if neg_list1 == neg_list2:  # if inputs are identical
                             to_del.append(multi_input[j][1])  # add rule for removal
                     # for rules with mixed inputs
                     elif len(multi_input[i][0].pos_inputs) == 1 and len(multi_input[i][0].neg_inputs) == 1:
@@ -165,6 +171,8 @@ def initialize_classifier(classifier_size, mirnas):
 
     # initialization of new rules
     for i in range(0, size):
+        if len(temp_mirnas) <= 3:
+            temp_mirnas = mirnas.copy()
         rule, temp_mirnas = initialize_single_rule(temp_mirnas)
         rule_set.append(rule)
 
@@ -183,6 +191,73 @@ def initialize_population(population_size,
 
     # initialization of n=population_size classifiers
     for i in range(0, population_size):
+        classifier = initialize_classifier(classifier_size, mirnas)
+        population.append(classifier)
+
+    return population
+
+
+def read_rules_from_file(rule_file):
+
+    # reading the data
+    # throws an exception when datafile not found
+    try:
+        data = pandas.read_csv(rule_file, sep=';', header=0)
+    except IOError:
+        print("Error: No such file or directory.")
+        sys.exit(0)
+
+    header = data.columns.values.tolist()
+    rules = []
+
+    for i in range(0, len(data.index)):
+        new_rule = SingleRule([], [])
+        rule = data.iloc[i]
+
+        if rule["size"] == 1:
+            if rule["sign1"] == 0:
+                new_rule.neg_inputs.append(rule["miRNA1"])
+            else:
+                new_rule.pos_inputs.append(rule["miRNA1"])
+
+        if rule["size"] == 2:
+            if rule["sign1"] == 0:
+                new_rule.neg_inputs.append(rule["miRNA1"])
+            else:
+                new_rule.pos_inputs.append(rule["miRNA1"])
+
+            if rule["sign2"] == 0:
+                new_rule.neg_inputs.append(rule["miRNA2"])
+            else:
+                new_rule.pos_inputs.append(rule["miRNA2"])
+
+        rules.append(new_rule)
+
+    return rules
+
+
+def initialize_population_from_rules(population_size, mirnas, rule_list, classifier_size):
+
+    population = []
+
+    #list_of_rules = read_rules_from_file(rule_file)
+
+    # initialization of population_size*fraction individuals built from pre-optimized rules
+    fraction = int(population_size*0.5)
+    for i in range(0, fraction):
+        # size of a classifier
+        size = random.randrange(1, classifier_size + 1)
+        rule_set = []
+        for i in range(0, size):
+            new_rule = random.randrange(0, len(rule_list))
+            rule_set.append(rule_list[new_rule])
+
+        classifier = Classifier(rule_set, errors={}, error_rates={}, score={}, bacc={}, additional_scores={},
+                                cdd_score={})
+        population.append(classifier)
+
+    # initialization of random individuals
+    for i in range(0, population_size - fraction):
         classifier = initialize_classifier(classifier_size, mirnas)
         population.append(classifier)
 

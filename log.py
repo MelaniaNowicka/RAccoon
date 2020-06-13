@@ -78,6 +78,7 @@ def write_final_scores(best_bacc, best_classifiers):
 
     for classifier in best_classifiers_messages:
         print("BEST CLASSIFIER: ", classifier)
+
         log_message = "\nBEST SCORE: " + str(best_bacc) + "| BEST CLASSIFIER: " + str(classifier)
 
     return log_message

@@ -1,6 +1,7 @@
 import popinit
 import random
 
+
 # mutate single rule
 def mutate_rule(rule, mirnas):
 
@@ -133,6 +134,7 @@ def mutate_rule(rule, mirnas):
 
             mutated = True
 
+
 # mutate classifier
 def mutate_classifier(population, classifier, mirnas):
 
@@ -147,6 +149,7 @@ def mutate_classifier(population, classifier, mirnas):
 
     # create temporary list of miRNAs
     temp_mirnas = mirnas.copy()
+
     # remove from miRNAs miRNAs existing in the classifier
     for rule in classifier.rule_set:
         for input in rule.pos_inputs:
@@ -155,6 +158,9 @@ def mutate_classifier(population, classifier, mirnas):
         for input in rule.neg_inputs:
             if input in temp_mirnas:
                 temp_mirnas.remove(input)
+
+    if len(temp_mirnas) == 0:
+        temp_mirnas = mirnas.copy()
 
     # add rule
     if mutation_type == 1:

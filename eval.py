@@ -1,6 +1,6 @@
 from decimal import *
 import toolbox
-import pandas
+import numpy
 import math
 import sys
 
@@ -170,45 +170,39 @@ def evaluate_classifier(classifier,
         if annotation[i] == 0 and outputs[i] == 1:
             false_positives = false_positives + 1
 
-    # get the list of inputs in classifier
-    inputs = []
-    inputs = classifier.get_input_list()
+    errors = dict(zip(["tp", "tn", "fp", "fn"], [true_positives, true_negatives, false_negatives, false_positives]))
 
     # calculate and assign scores
-    errors = dict(zip(["tp", "tn", "fp", "fn"], [true_positives, true_negatives, false_negatives, false_positives]))
     error_rates = calculate_error_rates(true_positives, true_negatives, positives, negatives)
     bacc = calculate_balanced_accuracy(true_positives, true_negatives, positives, negatives)
     additional_scores = calculate_additional_scores(true_positives, true_negatives, false_positives, false_negatives)
 
-    # determine the classifier score
-    classifier_score = 0
+    # get the list of inputs in classifier
+    inputs = classifier.get_input_list()
 
-    # if bacc_weight is equal 1 the function has only one objective
-    if bacc_weight == 1.0:
-        classifier_score = bacc
-        if len(miRNA_cdds) == 0:
-            cdd_score = 0
-        else:
-            cdd_score = calculate_cdd_score(inputs, miRNA_cdds)
-    else:  # else calculate a multi-objective score
+    if len(miRNA_cdds) == 0:  # if no miRNA cdds provided
+        cdd_score = 0
+    else:  # else calculate cdd_score
         cdd_score = calculate_cdd_score(inputs, miRNA_cdds)
-        classifier_score = calculate_multi_objective_score(bacc, cdd_score, bacc_weight)
+
+    # calculate cdd score
+    classifier_score = calculate_multi_objective_score(bacc, cdd_score, bacc_weight)
 
     return classifier_score, bacc, errors, error_rates, additional_scores, cdd_score
 
 
 # comparing new score to the best score
-def update_best_classifier(new_classifier, best_score, best_classifiers):
+def update_best_classifier(new_classifier, global_best_score, best_classifiers):
 
-    if is_higher(best_score, new_classifier.score):  # if new score is better
-        best_score = new_classifier.score  # assign new best score
+    if is_close(global_best_score, new_classifier.score):  # if new score == the best
+        best_classifiers.append(new_classifier.__copy__())  # add new classifier to best classifiers
+
+    if is_higher(global_best_score, new_classifier.score):  # if new score is better
+        global_best_score = new_classifier.score  # assign new best score
         best_classifiers.clear()  # clear the list of best classifiers
         best_classifiers.append(new_classifier.__copy__())  # add new classifier
 
-    if is_close(best_score, new_classifier.score):  # if new score == the best
-        best_classifiers.append(new_classifier.__copy__())  # add new classifier to best classifiers
-
-    return best_score, best_classifiers
+    return global_best_score, best_classifiers
 
 
 # evaluation of the population
@@ -217,7 +211,7 @@ def evaluate_individuals(population,
                          evaluation_threshold,
                          bacc_weight,
                          miRNA_cdds,
-                         best_score,
+                         global_best_score,
                          best_classifiers):
 
     # sum of bacc for the population
@@ -225,6 +219,8 @@ def evaluate_individuals(population,
 
     # get annotation
     annotation = dataset["Annots"].tolist()
+    individual_scores = []
+    update = False
 
     # evaluate all classifiers in the population
     for classifier in population:
@@ -240,12 +236,12 @@ def evaluate_individuals(population,
         classifier.cdd_score = cdd_score
         classifier.additional_scores = additional_scores
 
-        best_score, best_classifiers = update_best_classifier(classifier, best_score, best_classifiers)
+        global_best_score, best_classifiers = update_best_classifier(classifier, global_best_score, best_classifiers)
 
-        sum_bacc = sum_bacc + classifier.bacc
+        individual_scores.append(classifier_score)
 
-    # calculate average BACC in population
-    avg_bacc = sum_bacc / len(population)
+    # calculate average score in population
+    avg_population_score = numpy.average(individual_scores)
 
-    return best_score, avg_bacc, best_classifiers
+    return global_best_score, avg_population_score, best_classifiers
 

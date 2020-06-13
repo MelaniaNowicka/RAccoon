@@ -8,6 +8,7 @@ import sys
 import toolbox
 import run_GA
 import eval
+import popinit
 import random
 import numpy
 
@@ -126,7 +127,7 @@ def divide_into_cv_folds(dataset, kfolds):
 
 # train and test classifiers
 def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_threshold,
-                   miRNA_cdds, repeats, print_results):
+                   rule_list, miRNA_cdds, repeats, print_results):
 
     # parameter set
     bacc_weight, iter, pop, cp, mp, ts = parameter_set
@@ -163,23 +164,37 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
 
     print("TRAINING ON DATA FOLD...")
     # repeat tests
+    train_times = []
+    update_numb = []
+
     for i in range(0, repeats):
 
         print("REPEAT: ", i+1)
 
+        # measure time
+        start_test = time.time()
+
         # run the algorithm
-        classifier, best_classifiers = run_GA.run_genetic_algorithm(train_data=training_fold,
-                                                                    filter_data=False,
-                                                                    iterations=iter,
-                                                                    population_size=pop,
-                                                                    classifier_size=classifier_size,
-                                                                    evaluation_threshold=evaluation_threshold,
-                                                                    miRNA_cdds=miRNA_cdds,
-                                                                    crossover_probability=cp,
-                                                                    mutation_probability=mp,
-                                                                    tournament_size=ts,
-                                                                    bacc_weight=bacc_weight,
-                                                                    print_results=print_results)
+        classifier, best_classifiers, updates, first_global_best_score, first_avg_population_score \
+            = run_GA.run_genetic_algorithm(train_data=training_fold,
+                                           filter_data=False,
+                                           iterations=iter,
+                                           population_size=pop,
+                                           rule_list=rule_list,
+                                           classifier_size=classifier_size,
+                                           evaluation_threshold=evaluation_threshold,
+                                           miRNA_cdds=miRNA_cdds,
+                                           crossover_probability=cp,
+                                           mutation_probability=mp,
+                                           tournament_size=ts,
+                                           bacc_weight=bacc_weight,
+                                           print_results=print_results)
+
+        # measure time
+        end_test = time.time()
+
+        train_times.append(end_test-start_test)
+        update_numb.append(updates)
 
         # get annotation
         annotation = training_fold["Annots"].tolist()
@@ -190,6 +205,7 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
 
         train_bacc_avg.append(train_bacc)
         train_tpr_avg.append(train_error_rates["tpr"])
+
         train_tnr_avg.append(train_error_rates["tnr"])
         train_fpr_avg.append(train_error_rates["fpr"])
         train_fnr_avg.append(train_error_rates["fnr"])
@@ -266,6 +282,13 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
         print("MEDIAN OF INPUTS: ", numpy.median(inputs_avg))
         print("MEDIAN OF RULES: ", numpy.median(rules_avg))
 
+        print("\nRUNTIME")
+        print("RUN-TIME PER TRAINING: ", numpy.average(train_times))
+        print("UPDATES PER TRAINING:", numpy.average(update_numb))
+
+        print("CSV;", numpy.average(train_bacc_avg), ";", numpy.std(train_bacc_avg), ";", numpy.average(test_bacc_avg),
+              ";", numpy.std(test_bacc_avg), ";", numpy.average(rules_avg), ";", numpy.average(inputs_avg))
+
     test_std_avg = numpy.std(test_bacc_avg)
     test_bacc_avg = numpy.average(test_bacc_avg)
 
@@ -274,7 +297,7 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
 
 # parameter tuning
 def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifier_size, evaluation_threshold,
-                    miRNA_cdds, test_repeats):
+                    rule_list, miRNA_cdds, test_repeats):
 
     # get the parameters from configuration file
     tune_weights = config.getboolean("PARAMETER TUNING", "TuneWeights")
@@ -333,11 +356,8 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     best_avg_test_bacc = 0.0
     best_avg_test_std = 1.0
 
-    # list of test bacc scores and standard deviation
-    test_bacc_cv = []
-    test_std_cv = []
-
     parameter_set_number = 0
+
     # iterate over parameter sets
     for parameter_set in parameter_sets:
 
@@ -347,15 +367,15 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
         cv_datasets = zip(training_cv_datasets, testing_cv_datasets)
 
         # train and test on each fold
-        if(processes>1):
+        if(processes > 1):
             with Pool(processes) as p:
                 cv_results = p.map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
-                          evaluation_threshold=evaluation_threshold, miRNA_cdds=miRNA_cdds, repeats=test_repeats,
-                          print_results=False), cv_datasets)
+                          evaluation_threshold=evaluation_threshold, rule_list=rule_list, miRNA_cdds=miRNA_cdds,
+                          repeats=test_repeats, print_results=False), cv_datasets)
         else:
             cv_results = list(map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
-                                           evaluation_threshold=evaluation_threshold, miRNA_cdds=miRNA_cdds,
-                                           repeats=test_repeats,
+                                           evaluation_threshold=evaluation_threshold, rule_list=rule_list,
+                                           miRNA_cdds=miRNA_cdds, repeats=test_repeats,
                                            print_results=False), cv_datasets))
 
         test_bacc_cv, test_std_cv = zip(*cv_results)
@@ -384,7 +404,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
     return best_parameter_set, best_avg_test_bacc, best_avg_test_std
 
 
-def run_test(train_dataset_filename, test_dataset_filename, config_filename):
+def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_filename):
 
     # parse configuration file
     config = configparser.ConfigParser()
@@ -443,9 +463,24 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
         preproc.discretize_data_for_tests(training_cv_datasets, testing_cv_datasets, m_segments, alpha_bin, lambda_bin,
                                           print_results=False)
 
+    classifier_size = float(config["CLASSIFIER PARAMETERS"]["ClassifierSize"])
+    evaluation_threshold = float(config["CLASSIFIER PARAMETERS"]["Alpha"])
+    test_repeats = int(config["RUN PARAMETERS"]["SingleTestRepeats"])
+
+    # read rules from file
+    if rule_list is not None:
+        rule_list = popinit.read_rules_from_file(rule_list)
+
+    # remove irrelevant miRNAs
+    training_cv_datasets_bin_filtered = []
+    for train_set in training_cv_datasets_bin:
+
+        train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
+        training_cv_datasets_bin_filtered.append(train_set_filtered)
+
     # save to files
     fold = 1
-    for train_set, test_set in zip(training_cv_datasets_bin, testing_cv_datasets_bin):
+    for train_set, test_set in zip(training_cv_datasets_bin_filtered, testing_cv_datasets_bin):
 
         new_name = "_train_" + str(fold) + "_bin.csv"
         filename = train_dataset_filename.replace(".csv", new_name)
@@ -457,25 +492,14 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
 
         fold = fold + 1
 
-    classifier_size = float(config["CLASSIFIER PARAMETERS"]["ClassifierSize"])
-    evaluation_threshold = float(config["CLASSIFIER PARAMETERS"]["Alpha"])
-    test_repeats = int(config["RUN PARAMETERS"]["SingleTestRepeats"])
-    bacc_weight = float(config["OBJECTIVE FUNCTION"]["BaccWeight"])
-
-    # remove irrelevant miRNAs
-    training_cv_datasets_bin_filtered = []
-    for train_set in training_cv_datasets_bin:
-
-        train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
-        training_cv_datasets_bin_filtered.append(train_set_filtered)
-
     # parameter tuning
     print("\n***PARAMETER TUNING***")
-    best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin,
+    best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin_filtered,
                                                            testing_cv_datasets_bin,
                                                            config,
                                                            classifier_size,
                                                            evaluation_threshold,
+                                                           rule_list,
                                                            miRNA_cdds,
                                                            test_repeats)
 
@@ -512,16 +536,10 @@ def run_test(train_dataset_filename, test_dataset_filename, config_filename):
     print("EVALUATION THRESHOLD: ", evaluation_threshold)
     print("SINGLE TEST REPEATS: ", test_repeats, "\n")
 
-    # measure time
-    start_test = time.time()
-
     #run test
     train_and_test((discretized_train_data[0], discretized_test_data[0]), best_parameters, classifier_size,
-                   evaluation_threshold, miRNA_cdds, test_repeats, True)
-    # measure time
-    end_test = time.time()
-    print("\nRUNTIME")
-    print("TIME (AVG, ONE TEST): ", (end_test - start_test)/test_repeats)
+                   evaluation_threshold, rule_list, miRNA_cdds, test_repeats, True)
+
 
 
 if __name__ == "__main__":
@@ -539,6 +557,8 @@ if __name__ == "__main__":
                         dest="dataset_filename_train", help='data set file name')
     parser.add_argument('--test', '--dataset-filename-test',
                         dest="dataset_filename_test", help='data set file name')
+    parser.add_argument('--rules', '--rule-file', type=str, default=None,
+                        dest="rule_file", help='rules file name')
     parser.add_argument('--config', '--config_filename',
                         dest="config_filename", help='config file name')
 
@@ -546,9 +566,10 @@ if __name__ == "__main__":
 
     dataset_train = params.dataset_filename_train
     dataset_test = params.dataset_filename_test
+    rule_list = params.rule_file
     config_filename = params.config_filename
 
-    run_test(dataset_train, dataset_test, config_filename)
+    run_test(dataset_train, dataset_test, rule_list, config_filename)
 
     end_global = time.time()
     print("TIME (FULL TEST): ", end_global - start_global)

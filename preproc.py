@@ -248,7 +248,7 @@ def discretize_test_data(test_dataset, thresholds):
         positives = samples - negatives
     else:
         # read data
-        dataset, negatives, positives = read_data(test_dataset)
+        dataset, negatives, positives, mirnas = read_data(test_dataset)
 
     # create a new name for a discretized data set
     new_file = str(test_dataset.replace(".csv", "")) + "_discretized"
