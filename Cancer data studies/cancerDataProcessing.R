@@ -1,6 +1,22 @@
+
+#GSE22058/GPL10457
+set.seed(1)
+source("splitRealWorldData.R")
+data <- getGEO(filename="GSE22058/GPL10457/GPL10457_series_matrix.txt")
+count.matrix <- exprs(object = data)
+count.matrix.pos <- count.matrix[,c(seq(1,191,2))]
+count.matrix.neg <- count.matrix[,c(seq(2,192,2))]
+count.matrix <- cbind(count.matrix.neg, count.matrix.pos)
+rownames(count.matrix) <- data@featureData@data$miRNA_ID
+count.matrix <- count.matrix[c(grep("hsa*", data@featureData@data$miRNA_ID)),]
+annotationneg <- rep(0,96)
+annotationpos <- rep(1,96)
+annotation <- c(annotationneg, annotationpos)
+splitRealWorldData("GSE22058_GPL10457", count.matrix, annotation, 96, 96, 0.8)
+
 #GSE10694
 set.seed(1)
-source("C:/Users/melan/PycharmProjects/Real-world data/splitRealWorldData.R")
+source("splitRealWorldData.R")
 data <- getGEO(filename="GSE10694/GSE10694_series_matrix.txt")
 count.matrix <- exprs(object = data)
 count.matrix.pos <- count.matrix[,1:78]
@@ -14,33 +30,9 @@ annotation <- c(annotationneg, annotationpos)
 splitRealWorldData("GSE10694", count.matrix, annotation, 78, 78, 0.8)
 
 
-#GSE22058/GPL10457
-source("C:/Users/melan/PycharmProjects/Real-world data/splitRealWorldData.R")
-data <- getGEO(filename="GSE22058/GPL10457/GPL10457_series_matrix.txt")
-count.matrix <- exprs(object = data)
-count.matrix.pos <- count.matrix[,c(seq(1,191,2))]
-count.matrix.neg <- count.matrix[,c(seq(2,192,2))]
-count.matrix <- cbind(count.matrix.neg, count.matrix.pos)
-rownames(count.matrix) <- data@featureData@data$miRNA_ID
-count.matrix <- count.matrix[c(grep("hsa*", data@featureData@data$miRNA_ID)),]
-annotationneg <- rep(0,96)
-annotationpos <- rep(1,96)
-annotation <- c(annotationneg, annotationpos)
-splitRealWorldData("GSE22058_GPL10457", count.matrix, annotation, 96, 96, 0.8)
-
-#GSE31801
-source("C:/Users/melan/PycharmProjects/Real-world data/splitRealWorldData.R")
-data <- getGEO(filename="GSE31801/GSE31801_series_matrix.txt")
-count.matrix <- exprs(object = data)
-rownames(count.matrix) <- data@featureData@data$miRNA_ID
-#count.matrix <- count.matrix[c(grep("hsa*", data@featureData@data$miRNA_ID)),]
-annotation1 <- rep(1,63)
-annotation2 <- c(0,1,1,0,)
-annotation <- c(annotationpos,annotationneg)
-splitRealWorldData("GSE22058_GPL10457", count.matrix, annotation, 96, 96, 0.8)
-
 #GSE36681
-source("C:/Users/melan/PycharmProjects/Real-world data/splitRealWorldData.R")
+set.seed(1)
+source("splitRealWorldData.R")
 data <- getGEO(filename="GSE36681/GSE36681_series_matrix.txt")
 count.matrix <- exprs(object = data)
 rownames(count.matrix) <- data@featureData@data$miRNA_ID
