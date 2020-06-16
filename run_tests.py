@@ -1,4 +1,5 @@
 from multiprocessing import Pool
+from datetime import datetime
 from functools import partial
 import configparser
 import time
@@ -472,15 +473,15 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
         rule_list = popinit.read_rules_from_file(rule_list)
 
     # remove irrelevant miRNAs
-    training_cv_datasets_bin_filtered = []
-    for train_set in training_cv_datasets_bin:
+    #training_cv_datasets_bin_filtered = []
+    #for train_set in training_cv_datasets_bin:
 
-        train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
-        training_cv_datasets_bin_filtered.append(train_set_filtered)
+        #train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
+        #training_cv_datasets_bin_filtered.append(train_set_filtered)
 
     # save to files
     fold = 1
-    for train_set, test_set in zip(training_cv_datasets_bin_filtered, testing_cv_datasets_bin):
+    for train_set, test_set in zip(training_cv_datasets_bin, testing_cv_datasets_bin):
 
         new_name = "_train_" + str(fold) + "_bin.csv"
         filename = train_dataset_filename.replace(".csv", new_name)
@@ -494,7 +495,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
 
     # parameter tuning
     print("\n***PARAMETER TUNING***")
-    best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin_filtered,
+    best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin,
                                                            testing_cv_datasets_bin,
                                                            config,
                                                            classifier_size,
@@ -551,6 +552,8 @@ if __name__ == "__main__":
 
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
+
+    print("Log date: ", datetime.now())
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', '--dataset-filename-train',
