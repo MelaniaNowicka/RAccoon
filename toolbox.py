@@ -4,6 +4,7 @@ import pandas
 import math
 import random
 
+random.seed(1)
 
 # reading binarized data set.
 def read_data(dataset_filename):

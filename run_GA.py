@@ -17,6 +17,8 @@ import time
 import argparse
 import numpy
 
+numpy.random.seed(1)
+random.seed(1)
 
 # algorithm parameters read from the command line
 def check_params(args):
@@ -108,7 +110,9 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                                                                        global_best_score, best_classifiers)
     if print_results:
         print("first global best score: ", first_global_best_score)
-        print("average population score: ", first_avg_population_score)
+        print("first average population score: ", first_avg_population_score)
+
+    global_best_score = first_global_best_score
 
     # count iterations without a change of scores
     iteration_counter = 0
@@ -200,7 +204,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     #log.write_final_scores(global_best_score, best_classifiers)
 
     # show best scores
-    print("##TRAINED CLASSIFIER## ")
+    print("\n##TRAINED CLASSIFIER## ")
     shortest_classifier = classifier_sizes.index(min(classifier_sizes))  # find shortest classifier
     log.write_final_scores(global_best_score, [best_classifiers[shortest_classifier]])  # shortest classifier
 
@@ -350,9 +354,6 @@ def process_and_run(args):
 if __name__ == "__main__":
 
     start = time.time()
-
-    #numpy.random.seed(1)
-    #random.seed(1)
 
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')

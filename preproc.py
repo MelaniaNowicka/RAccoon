@@ -5,6 +5,7 @@ import math
 import toolbox
 from decimal import Decimal, ROUND_HALF_UP
 
+numpy.random.seed(1)
 
 # reading binarized data set.
 def read_data(dataset_filename):

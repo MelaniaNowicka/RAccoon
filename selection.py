@@ -1,5 +1,6 @@
 import random
 
+random.seed(1)
 
 # one parent selection function
 def select_parent(population, tournament_size, first_parent_id):

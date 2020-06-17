@@ -2,6 +2,7 @@ import random
 import pandas
 import sys
 
+random.seed(1)
 
 # single boolean function class
 # inputs are connected with and AND

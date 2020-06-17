@@ -1,6 +1,7 @@
 import popinit
 import random
 
+random.seed(1)
 
 # crossover
 def crossover(first_parent, second_parent):

@@ -1,6 +1,7 @@
 import popinit
 import random
 
+random.seed(1)
 
 # mutate single rule
 def mutate_rule(rule, mirnas):

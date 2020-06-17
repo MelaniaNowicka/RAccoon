@@ -13,6 +13,9 @@ import popinit
 import random
 import numpy
 
+numpy.random.seed(1)
+random.seed(1)
+
 
 # divide data into train and test
 def divide_into_train_test(dataset_filename, train_frac):
@@ -163,14 +166,14 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
     inputs_avg = []
     rules_avg = []
 
-    print("TRAINING ON DATA FOLD...")
+    print("\nTRAINING ON DATA FOLD...")
     # repeat tests
     train_times = []
     update_numb = []
 
     for i in range(0, repeats):
 
-        print("REPEAT: ", i+1)
+        print("\nREPEAT: ", i+1)
 
         # measure time
         start_test = time.time()
@@ -204,6 +207,8 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
         train_classifier_score, train_bacc, train_errors, train_error_rates, train_additional_scores, train_cdd = \
             eval.evaluate_classifier(classifier, annotation, training_fold, evaluation_threshold, miRNA_cdds, bacc_weight)
 
+        print("TRAIN BACC: ", train_bacc)
+
         train_bacc_avg.append(train_bacc)
         train_tpr_avg.append(train_error_rates["tpr"])
 
@@ -232,6 +237,8 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
         test_mcc_avg.append(test_additional_scores["mcc"])
         test_ppv_avg.append(test_additional_scores["ppv"])
         test_fdr_avg.append(test_additional_scores["fdr"])
+
+        print("TEST BACC: ", test_bacc)
 
         # calculate classifier size
         number_of_inputs = 0
@@ -385,7 +392,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
         test_bacc_avg = numpy.average(test_bacc_cv)
         test_std_avg = numpy.std(test_std_cv)
 
-        print("RESULTS PARAMETER SET ", parameter_set_number, ": ", parameter_set)
+        print("\nRESULTS PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         print("TEST AVG BACC: ", test_bacc_avg, ", STD: ", test_std_avg)
 
         # improvement check
@@ -473,15 +480,15 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
         rule_list = popinit.read_rules_from_file(rule_list)
 
     # remove irrelevant miRNAs
-    #training_cv_datasets_bin_filtered = []
-    #for train_set in training_cv_datasets_bin:
+    training_cv_datasets_bin_filtered = []
+    for train_set in training_cv_datasets_bin:
 
-        #train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
-        #training_cv_datasets_bin_filtered.append(train_set_filtered)
+        train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
+        training_cv_datasets_bin_filtered.append(train_set_filtered)
 
     # save to files
     fold = 1
-    for train_set, test_set in zip(training_cv_datasets_bin, testing_cv_datasets_bin):
+    for train_set, test_set in zip(training_cv_datasets_bin_filtered, testing_cv_datasets_bin):
 
         new_name = "_train_" + str(fold) + "_bin.csv"
         filename = train_dataset_filename.replace(".csv", new_name)
@@ -495,7 +502,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
 
     # parameter tuning
     print("\n***PARAMETER TUNING***")
-    best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin,
+    best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin_filtered,
                                                            testing_cv_datasets_bin,
                                                            config,
                                                            classifier_size,
@@ -542,18 +549,14 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
                    evaluation_threshold, rule_list, miRNA_cdds, test_repeats, True)
 
 
-
 if __name__ == "__main__":
-
-    numpy.random.seed(1)
-    random.seed(1)
 
     start_global = time.time()
 
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
 
-    print("Log date: ", datetime.now())
+    print("Log date: ", datetime.now(), "\n")
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', '--dataset-filename-train',
