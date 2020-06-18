@@ -160,7 +160,7 @@ def mutate_classifier(population, classifier, mirnas):
             if input in temp_mirnas:
                 temp_mirnas.remove(input)
 
-    if len(temp_mirnas) <= 3:
+    if len(mirnas) < 10 and len(temp_mirnas) <= 3:
         temp_mirnas = mirnas.copy()
 
     # add rule

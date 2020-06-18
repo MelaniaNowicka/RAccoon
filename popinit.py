@@ -172,7 +172,7 @@ def initialize_classifier(classifier_size, mirnas):
 
     # initialization of new rules
     for i in range(0, size):
-        if len(temp_mirnas) <= 3:
+        if len(mirnas) < 10 and len(temp_mirnas) <= 3:
             temp_mirnas = mirnas.copy()
         rule, temp_mirnas = initialize_single_rule(temp_mirnas)
         rule_set.append(rule)
