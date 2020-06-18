@@ -43,6 +43,8 @@ def check_params(args):
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300, help='population size')
     parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
                         help='List of pre-optimized rules')
+    parser.add_argument('--poptfrac', '--p-opt-frac', dest="p_opt_frac", type=float, default=0.5,
+                        help='List of pre-optimized rules')
     parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.8, type=float, help='probability of crossover')
     parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float, help='probability of mutation')
     parser.add_argument('-t', '--tournament-size', dest="tournament_size", default=0.2, type=float, help='tournament size')
@@ -53,7 +55,7 @@ def check_params(args):
     return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, \
            params.discretize_data, params.m_bin, params.a_bin, params.l_bin, \
            params.classifier_size, params.evaluation_threshold, params.bacc_weight, \
-           params.iterations, params.population_size, params.rule_list, \
+           params.iterations, params.population_size, params.rule_list, params.p_opt_frac, \
            params.crossover_probability, params.mutation_probability, params.tournament_size
 
 
@@ -63,6 +65,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           iterations,  # number of iterations
                           population_size,  # size of a population
                           rule_list,  # list of pre-optimized rules
+                          popt_fraction,  # fraction of population that is pre-optimized
                           classifier_size,  # max size of a classifier
                           evaluation_threshold,  # evaluation function
                           miRNA_cdds,  # miRNA cdds
@@ -98,7 +101,8 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         population = popinit.initialize_population(population_size, mirnas, classifier_size)
     else:
         rule_list = popinit.read_rules_from_file(rule_list)
-        population = popinit.initialize_population_from_rules(population_size, mirnas, rule_list, classifier_size)
+        population = popinit.initialize_population_from_rules(population_size, mirnas, rule_list, popt_fraction,
+                                                              classifier_size)
 
     # REMOVE RULE DUPLICATES
     for classifier in population:
@@ -237,13 +241,25 @@ def repeat(repeats, args):
     print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores))
     if test_bacc is not None:
         print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores))
-    print("AVG UPDATES: ", numpy.average(updates_list))
-    print("AVG TRAINING TIME: ", numpy.average(time))
-    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores))
-    print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores))
+    print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", numpy.std(updates_list))
+    print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", numpy.std(time))
+    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", numpy.std(first_scores))
+    print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores), " STDEV: ",
+          numpy.std(first_avg_population_scores))
 
-    print("CSV;", numpy.average(train_scores), ";", numpy.average(test_scores), ";", numpy.average(updates_list), ";",
-          numpy.average(time), ";", numpy.average(first_scores), ";", numpy.average(first_avg_population_scores))
+    if test_bacc is not None:
+        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
+          numpy.average(test_scores), ";", numpy.std(test_scores), ";",
+          numpy.average(updates_list), ";", numpy.std(updates_list), ";",
+          numpy.average(time), ";", numpy.std(time), ";",
+          numpy.average(first_scores), ";", numpy.std(first_scores), ";",
+          numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
+    else:
+        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
+              numpy.average(updates_list), ";", numpy.std(updates_list), ";",
+              numpy.average(time), ";", numpy.std(time), ";",
+              numpy.average(first_scores), ";", numpy.std(first_scores), ";",
+              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
 
 
 # process parameters and data and run algorithm
@@ -251,7 +267,7 @@ def process_and_run(args):
 
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
-    evaluation_threshold, bacc_weight, iterations, population_size, rule_list, \
+    evaluation_threshold, bacc_weight, iterations, population_size, rule_list, popt_fraction, \
     crossover_probability, mutation_probability, tournament_size = check_params(args)
 
     print("##PARAMETERS##")
@@ -273,6 +289,7 @@ def process_and_run(args):
     print("WEIGHT: ", bacc_weight)
     if rule_list is not None:
         print("POPULATION PRE-OPTIMIZATION: ", "on")
+        print("POPULATION PRE-OPTIMIZED FRACTION: ", popt_fraction)
     print("GA PARAMETERS: ", "TC: ", iterations, ", PS: ", population_size, ", CP: ", crossover_probability, ", MP: ", \
           mutation_probability, ", TS: ", tournament_size)
 
@@ -295,7 +312,7 @@ def process_and_run(args):
     start_train = time.time()
     classifier, best_classifiers, updates, first_global, first_avg_pop = \
         run_genetic_algorithm(data_discretized, filter_data, iterations, population_size,
-                              rule_list, classifier_size, evaluation_threshold, miRNA_cdds,
+                              rule_list, popt_fraction, classifier_size, evaluation_threshold, miRNA_cdds,
                               crossover_probability, mutation_probability, tournament_size,
                               bacc_weight, True)
 

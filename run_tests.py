@@ -185,6 +185,7 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
                                            iterations=iter,
                                            population_size=pop,
                                            rule_list=rule_list,
+                                           popt_fraction=0,
                                            classifier_size=classifier_size,
                                            evaluation_threshold=evaluation_threshold,
                                            miRNA_cdds=miRNA_cdds,

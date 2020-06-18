@@ -237,14 +237,14 @@ def read_rules_from_file(rule_file):
     return rules
 
 
-def initialize_population_from_rules(population_size, mirnas, rule_list, classifier_size):
+def initialize_population_from_rules(population_size, mirnas, rule_list, popt_fraction, classifier_size):
 
     population = []
 
     #list_of_rules = read_rules_from_file(rule_file)
 
     # initialization of population_size*fraction individuals built from pre-optimized rules
-    fraction = int(population_size*0.5)
+    fraction = int(population_size*popt_fraction)
     for i in range(0, fraction):
         # size of a classifier
         size = random.randrange(1, classifier_size + 1)
