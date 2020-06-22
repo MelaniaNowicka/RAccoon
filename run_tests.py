@@ -183,6 +183,7 @@ def train_and_test(cv_datasets, parameter_set, classifier_size, evaluation_thres
             = run_GA.run_genetic_algorithm(train_data=training_fold,
                                            filter_data=False,
                                            iterations=iter,
+                                           fixed_iterations=None,
                                            population_size=pop,
                                            rule_list=rule_list,
                                            popt_fraction=0,
