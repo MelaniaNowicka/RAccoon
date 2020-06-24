@@ -94,7 +94,8 @@ def discretize_miRNA(miR_expr, annots, negatives, positives, m_segments, alpha_p
     # calculate segment thresholds
     for m in range(1, m_segments+1):
 
-        if(m==m_segments): segment_threshold = Decimal(max(miR_expr))
+        if m == m_segments:
+            segment_threshold = Decimal(max(miR_expr))
         else: segment_threshold = Decimal(min(miR_expr)) + Decimal(segment_step)*m
         segment = [i for i in miR_expr_sorted if Decimal(i) <= Decimal(segment_threshold)]
 
