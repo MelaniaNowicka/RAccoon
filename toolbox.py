@@ -6,6 +6,7 @@ import random
 
 random.seed(1)
 
+
 # reading binarized data set.
 def read_data(dataset_filename):
 
@@ -40,6 +41,19 @@ def read_data(dataset_filename):
         sys.exit(0)
 
     return dataset, negatives, positives
+
+
+def compare_folds(fold1, fold2):
+
+    data1, negatives, positives = read_data(fold1)
+    data2, negatives, positives = read_data(fold2)
+
+    samples1 = list(data1["ID"])
+    samples2 = list(data2["ID"])
+
+    print("SAMPLES MATCH: ", samples1 == samples2)
+
+    print("DATA MATCH: ", data1.equals(data2))
 
 
 # removal of irrelevant (non-regulated) miRNAs (filled with only 0/1).
