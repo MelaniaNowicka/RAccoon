@@ -7,7 +7,7 @@
 # The test data set is normalized using a reference sample found for 
 # the train data set to prevent information leakage.
 
-# Libraries necessary ti run the script: compcodeR, edgeR, matrixStats
+# Libraries necessary to run the script: compcodeR, edgeR, matrixStats
 
 #load packages
 library("compcodeR")

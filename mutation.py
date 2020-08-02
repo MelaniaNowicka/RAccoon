@@ -3,6 +3,7 @@ import random
 
 random.seed(1)
 
+
 # mutate single rule
 def mutate_rule(rule, mirnas):
 
@@ -139,7 +140,7 @@ def mutate_rule(rule, mirnas):
 # mutate classifier
 def mutate_classifier(population, classifier, mirnas):
 
-    mutation_type = random.randrange(0, 3)
+    mutation_type = random.randrange(0, 4)
 
     # copy rule from one classifier to another
     if mutation_type == 0:
@@ -174,6 +175,11 @@ def mutate_classifier(population, classifier, mirnas):
         if len(classifier.rule_set) >= 2:  # if classifier is not too small
             rule_to_remove = random.randrange(0, len(classifier.rule_set))  # choose rule to remove
             del classifier.rule_set[rule_to_remove]  # remove rule
+
+    if mutation_type == 3:
+        thresholds = [0.25, 0.45, 0.50, 0.75, 1.0]
+        thresholds.remove(classifier.evaluation_threshold)
+        evaluation_threshold = random.choice(thresholds)
 
 
 # mutation

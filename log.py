@@ -71,6 +71,7 @@ def write_final_scores(best_bacc, best_classifiers):
 
             classifier_message = classifier_message + rule_message
 
+        classifier_message = classifier_message + " | THRESHOLD: " + str(classifier.evaluation_threshold)
         best_classifiers_messages.append(classifier_message)
 
     # removing duplicates

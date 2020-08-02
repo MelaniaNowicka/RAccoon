@@ -20,6 +20,7 @@ import numpy
 numpy.random.seed(1)
 random.seed(1)
 
+
 # algorithm parameters read from the command line
 def check_params(args):
 
@@ -37,7 +38,7 @@ def check_params(args):
     parser.add_argument('--abin', '--a-bin', dest="a_bin", type=float, default=0.5, help='binarization alpha')
     parser.add_argument('--lbin', '--l-bin', dest="l_bin", type=float, default=0.1, help='binarization lambda')
     parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5, help='classifier size')
-    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=0.45, type=float, help='evaluation threshold alpha')
+    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=None, help='evaluation threshold alpha')
     parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float, help='bacc_weight')
     parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30, help='number of iterations without improvement')
     parser.add_argument('-f', '--fixed-iterations', dest="fixed_iterations", type=int, default=None, help='fixed number of iterations')
@@ -145,8 +146,8 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     global_best_score = 0.0  # best classifier BACC
 
     # first best classifier
-    best_classifier = popinit.Classifier(rule_set=[], errors={}, error_rates={}, score=0.0, bacc=0.0, cdd_score=0.0,
-                                         additional_scores={})
+    best_classifier = popinit.Classifier(rule_set=[], evaluation_threshold=0.0, errors={}, error_rates={}, score=0.0,
+                                         bacc=0.0, cdd_score=0.0, additional_scores={})
     best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
     # check if the data comes from file or data frame
@@ -164,11 +165,11 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     # INITIALIZE POPULATION
     if rule_list is None:
-        population = popinit.initialize_population(population_size, mirnas, classifier_size)
+        population = popinit.initialize_population(population_size, mirnas, evaluation_threshold, classifier_size)
     else:
         rule_list = popinit.read_rules_from_file(rule_list)
-        population = popinit.initialize_population_from_rules(population_size, mirnas, rule_list, popt_fraction,
-                                                              classifier_size)
+        population = popinit.initialize_population_from_rules(population_size, mirnas, evaluation_threshold,
+                                                              rule_list, popt_fraction, classifier_size)
 
     # REMOVE RULE DUPLICATES
     for classifier in population:
@@ -402,7 +403,7 @@ if __name__ == "__main__":
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
 
     #process_and_run(sys.argv[1:])
-    repeat(100, sys.argv[1:])
+    repeat(10, sys.argv[1:])
 
     end = time.time()
     print("TIME: ", end - start)

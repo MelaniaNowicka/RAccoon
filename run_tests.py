@@ -392,7 +392,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
 
         # calculate average bacc scores for folds
         test_bacc_avg = numpy.average(test_bacc_cv)
-        test_std_avg = numpy.std(test_std_cv)
+        test_std_avg = numpy.std(test_bacc_avg)
 
         print("\nRESULTS PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         print("TEST AVG BACC: ", test_bacc_avg, ", STD: ", test_std_avg)
@@ -420,38 +420,42 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
     config = configparser.ConfigParser()
     config.read(config_filename)
 
-    #train_frac = int(config['DATA DIVISION']['TrainingFraction'])
+    # READING/CREATING TRAINING AND TESTING DATA
+    # create test data if not given
+    if test_dataset_filename is None:
+        train_frac = int(config['DATA DIVISION']['TrainingFraction'])
 
-    # division into training and testing data
-    #print("###########TESTS###########")
-    #print("\n***DIVISION INTO TRAINING AND TESTING DATA SETS***")
-    #training_data, testing_data = divide_into_train_test(dataset_filename, train_frac)
+        # division into training and testing data
+        print("###########READING DATA###########")
+        print("\n***DIVISION INTO TRAINING AND TESTING DATA SETS***")
+        training_data, testing_data = divide_into_train_test(train_dataset_filename, train_frac)
 
-    # save to files
-    #new_name = "_train_" + str(train_frac) + ".csv"
-    #filename = dataset_filename.replace(".csv", new_name)
-    #training_data.to_csv(filename, sep=";", index=False)
+        # save to files
+        new_name = "_train_" + str(train_frac) + ".csv"
+        filename = train_dataset_filename.replace(".csv", new_name)
+        training_data.to_csv(filename, sep=";", index=False)
 
-    #new_name = "_test_" + str(100 - train_frac) + ".csv"
-    #filename = dataset_filename.replace(".csv", new_name)
-    #testing_data.to_csv(filename, sep=";", index=False)
+        new_name = "_test_" + str(100 - train_frac) + ".csv"
+        filename = train_dataset_filename.replace(".csv", new_name)
+        testing_data.to_csv(filename, sep=";", index=False)
 
-    print("###########DATA###########")
-    #read the data
-    print("\nTRAIN DATA")
-    training_data, train_positives, train_negatives = toolbox.read_data(train_dataset_filename)
-    print("\nTEST DATA")
-    testing_data, test_positives, test_negatives = toolbox.read_data(test_dataset_filename)
+    else:
+        print("###########READING DATA###########")
+        #read the data
+        print("\nTRAIN DATA")
+        training_data, train_positives, train_negatives = toolbox.read_data(train_dataset_filename)
+        print("\nTEST DATA")
+        testing_data, test_positives, test_negatives = toolbox.read_data(test_dataset_filename)
 
-    # 10-fold cross-validation on the training data
+    # PARAMETER TUNING - CROSS-VALIDATION
     print("\n###########PARAMETER TUNING###########")
     print("\n***CROSSVALIDATION DATA DIVISION***")
     cv_folds = int(config['DATA DIVISION']['CVFolds'])
-    training_cv_datasets, testing_cv_datasets = divide_into_cv_folds(training_data, cv_folds)
+    training_cv_datasets, validation_cv_datasets = divide_into_cv_folds(training_data, cv_folds)  # data division
 
     # save to files
     fold = 1
-    for train_set, test_set in zip(training_cv_datasets, testing_cv_datasets):
+    for train_set, test_set in zip(training_cv_datasets, validation_cv_datasets):
 
         new_name = "_train_" + str(fold) + ".csv"
         filename = train_dataset_filename.replace(".csv", new_name)
@@ -463,34 +467,39 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
 
         fold = fold + 1
 
+    # discretize cv folds
     print("\n***DATA DISCRETIZATION***")
     m_segments = int(config["BINARIZATION PARAMETERS"]["MSegments"])
     alpha_bin = float(config["BINARIZATION PARAMETERS"]["AlphaBin"])
     lambda_bin = float(config["BINARIZATION PARAMETERS"]["LambdaBin"])
 
-    # binarize cv data sets
-    training_cv_datasets_bin, testing_cv_datasets_bin, miRNA_cdds = \
-        preproc.discretize_data_for_tests(training_cv_datasets, testing_cv_datasets, m_segments, alpha_bin, lambda_bin,
-                                          print_results=False)
+    training_cv_datasets_bin, validation_cv_datasets_bin, miRNA_cdds = \
+        preproc.discretize_data_for_tests(training_cv_datasets, validation_cv_datasets, m_segments, alpha_bin,
+                                          lambda_bin, print_results=False)
 
     classifier_size = float(config["CLASSIFIER PARAMETERS"]["ClassifierSize"])
-    evaluation_threshold = float(config["CLASSIFIER PARAMETERS"]["Alpha"])
+    set_alpha = config.getboolean("CLASSIFIER PARAMETERS", "SetAlpha")
+    if set_alpha is True:
+        evaluation_threshold = float(config["CLASSIFIER PARAMETERS"]["Alpha"])
+    else:
+        evaluation_threshold = None
+
     test_repeats = int(config["RUN PARAMETERS"]["SingleTestRepeats"])
 
     # read rules from file
     if rule_list is not None:
         rule_list = popinit.read_rules_from_file(rule_list)
 
-    # remove irrelevant miRNAs
-    #training_cv_datasets_bin_filtered = []
-    #for train_set in training_cv_datasets_bin:
+    # remove irrelevant features
+    training_cv_datasets_bin_filtered = []
+    for train_set in training_cv_datasets_bin:
 
-        #train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
-        #training_cv_datasets_bin_filtered.append(train_set_filtered)
+        train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
+        training_cv_datasets_bin_filtered.append(train_set_filtered)
 
     # save to files
     fold = 1
-    for train_set, test_set in zip(training_cv_datasets_bin, testing_cv_datasets_bin):
+    for train_set, test_set in zip(training_cv_datasets_bin, validation_cv_datasets_bin):
 
         new_name = "_train_" + str(fold) + "_bin.csv"
         filename = train_dataset_filename.replace(".csv", new_name)
@@ -505,7 +514,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
     # parameter tuning
     print("\n***PARAMETER TUNING***")
     best_parameters, best_bacc, best_std = tune_parameters(training_cv_datasets_bin,
-                                                           testing_cv_datasets_bin,
+                                                           validation_cv_datasets_bin,
                                                            config,
                                                            classifier_size,
                                                            evaluation_threshold,
@@ -562,9 +571,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', '--dataset-filename-train',
-                        dest="dataset_filename_train", help='data set file name')
-    parser.add_argument('--test', '--dataset-filename-test',
-                        dest="dataset_filename_test", help='data set file name')
+                        dest="dataset_filename_train", help='train data set file name')
+    parser.add_argument('--test', '--dataset-filename-test', default=None,
+                        dest="dataset_filename_test", help='test data set file name')
     parser.add_argument('--rules', '--rule-file', type=str, default=None,
                         dest="rule_file", help='rules file name')
     parser.add_argument('--config', '--config_filename',

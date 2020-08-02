@@ -4,6 +4,7 @@ import sys
 
 random.seed(1)
 
+
 # single boolean function class
 # inputs are connected with and AND
 class SingleRule:
@@ -31,10 +32,11 @@ class SingleRule:
 # classifier (individual)
 class Classifier:
 
-    def __init__(self, rule_set, errors, error_rates, score, bacc, cdd_score, additional_scores):
+    def __init__(self, rule_set, evaluation_threshold, errors, error_rates, score, bacc, cdd_score, additional_scores):
         self.rule_set = rule_set  # list of rules
+        self.evaluation_threshold = evaluation_threshold  # evaluation threshold alpha
         self.errors = errors  # dictionary of error (tp, tn, fp, fn)
-        self.error_rates = error_rates # dictionary of error rates (tpr, tnr, fpr, fnr)
+        self.error_rates = error_rates  # dictionary of error rates (tpr, tnr, fpr, fnr)
         self.score = score  # classifier score (may be bacc, may be other)
         self.bacc = bacc  # balanced accuracy
         self.cdd_score = cdd_score  # classifier class distribution diversity score
@@ -48,7 +50,8 @@ class Classifier:
         for rule in self.rule_set:
             new_rule_set.append(rule.__copy__())
 
-        return Classifier(new_rule_set, self.errors, self.error_rates, self.score, self.bacc, self.cdd_score, self.additional_scores)
+        return Classifier(new_rule_set, self.evaluation_threshold, self.errors, self.error_rates, self.score,
+                          self.bacc, self.cdd_score, self.additional_scores)
 
     # get a list of inputs
     def get_input_list(self):
@@ -159,7 +162,7 @@ def initialize_single_rule(temp_mirnas):
 
 
 # initialization of a new classifier
-def initialize_classifier(classifier_size, mirnas):
+def initialize_classifier(classifier_size, evaluation_threshold, mirnas):
 
     # size of a classifier
     size = random.randrange(1, classifier_size+1)
@@ -177,8 +180,13 @@ def initialize_classifier(classifier_size, mirnas):
         rule, temp_mirnas = initialize_single_rule(temp_mirnas)
         rule_set.append(rule)
 
+    if evaluation_threshold is None:
+        thresholds = [0.25, 0.45, 0.50, 0.75, 1.0]
+        evaluation_threshold = random.choice(thresholds)
+
     # initialization of a new classifier
-    classifier = Classifier(rule_set, errors={}, error_rates={}, score={}, bacc={}, additional_scores={}, cdd_score={})
+    classifier = Classifier(rule_set, evaluation_threshold=evaluation_threshold, errors={}, error_rates={}, score={},
+                            bacc={}, additional_scores={}, cdd_score={})
 
     return classifier
 
@@ -186,13 +194,14 @@ def initialize_classifier(classifier_size, mirnas):
 # population initialization
 def initialize_population(population_size,
                           mirnas,
+                          evaluation_threshold,
                           classifier_size):
 
     population = []  # empty population
 
     # initialization of n=population_size classifiers
     for i in range(0, population_size):
-        classifier = initialize_classifier(classifier_size, mirnas)
+        classifier = initialize_classifier(classifier_size, evaluation_threshold, mirnas)
         population.append(classifier)
 
     return population
@@ -237,11 +246,10 @@ def read_rules_from_file(rule_file):
     return rules
 
 
-def initialize_population_from_rules(population_size, mirnas, rule_list, popt_fraction, classifier_size):
+def initialize_population_from_rules(population_size, mirnas, evaluation_threshold, rule_list, popt_fraction,
+                                     classifier_size):
 
     population = []
-
-    #list_of_rules = read_rules_from_file(rule_file)
 
     # initialization of population_size*fraction individuals built from pre-optimized rules
     fraction = int(population_size*popt_fraction)
@@ -253,13 +261,13 @@ def initialize_population_from_rules(population_size, mirnas, rule_list, popt_fr
             new_rule = random.randrange(0, len(rule_list))
             rule_set.append(rule_list[new_rule])
 
-        classifier = Classifier(rule_set, errors={}, error_rates={}, score={}, bacc={}, additional_scores={},
-                                cdd_score={})
+        classifier = Classifier(rule_set, evaluation_threshold=evaluation_threshold, errors={}, error_rates={},
+                                score={}, bacc={}, additional_scores={}, cdd_score={})
         population.append(classifier)
 
     # initialization of random individuals
     for i in range(0, population_size - fraction):
-        classifier = initialize_classifier(classifier_size, mirnas)
+        classifier = initialize_classifier(classifier_size, evaluation_threshold, mirnas)
         population.append(classifier)
 
     return population

@@ -7,71 +7,90 @@ from decimal import Decimal, ROUND_HALF_UP
 
 numpy.random.seed(1)
 
+
 # reading binarized data set.
+# reading data set
 def read_data(dataset_filename):
 
     # reading the data
     # throws an exception when datafile not found
     try:
-        dataset = pandas.read_csv(dataset_filename, sep=';', header=0)
+        dataset = pandas.read_csv(dataset_filename, sep=';', header=None)
     except IOError:
-        print("Error: No such file or directory.")
+        print("Error: .", dataset_filename, " not found.")
         sys.exit(0)
+
+    dataset = dataset.rename(columns=dataset.iloc[0], copy=False).iloc[1:].reset_index(drop=True)
 
     # simple check whether data is in the right format
     # needs to be improved
     header = dataset.columns.values.tolist()
 
-    if header[0] != 'ID' or header[1] != 'Annots':
-        print("Error: wrong format. The first column must include sample IDs and the second "
-              "- the annotation of samples.")
+    # check whether sample IDs are unique
+    ids = dataset[header[0]]  # get sample IDs
+    if len(ids) > len(set(ids)):
+        print("Error: IDs of samples must be unique! Note, the first column must include IDs of samples and the second\
+         the annotation. Annotate samples as follows: 0 - negative class, 1 - positive class.")
         sys.exit(0)
 
-    # extract miRNA's names
+    # check whether the second column contains correct annotation
+    annotation = sorted(set(dataset[header[1]]))
+    if len(annotation) != 2:
+        print("Error: annotation consists of less or more than two classes.")
+        sys.exit(0)
+
+    if int(annotation[0]) != 0 or int(annotation[1]) != 1:
+        print("Error: annotate samples as follows: 0 - negative class, 1 - positive class.")
+        sys.exit(0)
+
     mirnas = header[2:]
+    if len(mirnas) > len(set(mirnas)):
+        print("Error: IDs of features must be unique!")
+        sys.exit(0)
+
     # counting negative and positive samples
     samples = len(dataset.index)
-    negatives = dataset[dataset["Annots"] == 0].count()["Annots"]
+    negatives = dataset[dataset[header[1]] == 0].count()[header[1]]
     positives = samples - negatives
 
-    print("Number of samples: " + str(samples))
+    print("DATA SET INFO")
+    print("Number of samples in the data set: " + str(samples))
     print("Number of negative samples: " + str(negatives))
     print("Number of positive samples: " + str(positives))
 
-    if negatives == 0 or positives == 0:
-        print("Error: no negative or positive samples in the dataset!")
-        sys.exit(0)
-
-    return dataset, negatives, positives, mirnas
+    return dataset, negatives, positives
 
 
 # removal of irrelevant (non-regulated) miRNAs (filled with only 0/1).
 def remove_irrelevant_mirna(dataset):
 
-    relevant_mirna = []
-    irrelevant_mirna = []
+    relevant_features = []  # list of relevant features
+    irrelevant_features = []  # list of irrelevant features
 
-    # sum of miRNA levels (0/1) in each column
+    # get header
+    header = dataset.columns.values.tolist()
+
+    # sum of feature levels (0/1) in each column
     column_sum = dataset.sum(axis=0, skipna=True)
 
-    # if miRNA levels sum up to 0 or the number of samples in the dataset - miRNA is irrelevant (non-regulated)
+    # if feature levels sum up to 0 or the number of samples in the dataset - feature is irrelevant (non-regulated)
     # (in other words: the whole column is filled in with 0s or 1s)
     for id, sum in column_sum.items():
-        if id not in ["ID", "Annots"]:
+        if id not in [header[0], header[1]]:  # skip IDs and annotation
             if sum == 0 or sum == len(dataset.index):
-                irrelevant_mirna.append(id)
+                irrelevant_features.append(id)
             else:
-                relevant_mirna.append(id)
+                relevant_features.append(id)
 
     # removing irrelevant miRNAs from the dataset
-    dataset = dataset.drop(irrelevant_mirna, axis=1)
+    dataset = dataset.drop(irrelevant_features, axis=1)
 
     # creating log message
     print("\n##FILTERING FEATURES##")
-    print("Number of relevant miRNAs according to a given threshold: " + str(len(relevant_mirna)))
-    print("Number of irrelevant miRNAs according to a given threshold: ", str(len(irrelevant_mirna)))
+    print("Number of relevant miRNAs according to a given threshold: ", str(len(relevant_features)))
+    print("Number of irrelevant miRNAs according to a given threshold: ", str(len(irrelevant_features)))
 
-    return dataset, relevant_mirna
+    return dataset, relevant_features
 
 
 # discretize miRNA expression levels

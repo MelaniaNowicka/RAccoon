@@ -1,52 +1,15 @@
 from decimal import Decimal, ROUND_HALF_UP
 import sys
+import preproc
 import pandas
-import math
 import random
 
 random.seed(1)
 
-
-# reading binarized data set.
-def read_data(dataset_filename):
-
-    # reading the data
-    # throws an exception when datafile not found
-    try:
-        dataset = pandas.read_csv(dataset_filename, sep=';', header=0)
-    except IOError:
-        print("Error: No such file or directory.")
-        sys.exit(0)
-
-    # simple check whether data is in the right format
-    # needs to be improved
-    header = dataset.columns.values.tolist()
-
-    if header[0] != 'ID' or header[1] != 'Annots':
-        print("Error: wrong format. The first column must include sample IDs and the second "
-              "- the annotation of samples.")
-        sys.exit(0)
-
-    # counting negative and positive samples
-    samples = len(dataset.index)
-    negatives = dataset[dataset["Annots"] == 0].count()["Annots"]
-    positives = samples - negatives
-
-    print("Number of samples: " + str(samples))
-    print("Number of negative samples: " + str(negatives))
-    print("Number of positive samples: " + str(positives))
-
-    if negatives == 0 or positives == 0:
-        print("Error: no negative or positive samples in the dataset!")
-        sys.exit(0)
-
-    return dataset, negatives, positives
-
-
 def compare_folds(fold1, fold2):
 
-    data1, negatives, positives = read_data(fold1)
-    data2, negatives, positives = read_data(fold2)
+    data1, negatives, positives = preproc.read_data(fold1)
+    data2, negatives, positives = preproc.read_data(fold2)
 
     samples1 = list(data1["ID"])
     samples2 = list(data2["ID"])
@@ -59,7 +22,7 @@ def compare_folds(fold1, fold2):
 # removal of irrelevant (non-regulated) miRNAs (filled with only 0/1).
 def remove_irrelevant_mirna(dataset_filename):
 
-    dataset, negatives, positives = read_data(dataset_filename)
+    dataset, negatives, positives = preproc.read_data(dataset_filename)
 
     relevant_mirna = []
     irrelevant_mirna = []
@@ -98,7 +61,7 @@ def remove_irrelevant_mirna(dataset_filename):
 
 def divide_into_train_test(dataset_filename, train_frac):
 
-    dataset, negatives, positives = read_data(dataset_filename)
+    dataset, negatives, positives = preproc.read_data(dataset_filename)
     header = dataset.columns.values.tolist()
 
     data_size = len(dataset.index)
@@ -138,7 +101,7 @@ def divide_into_train_test(dataset_filename, train_frac):
 
 def crossvalidation(dataset_filename, kfolds):
 
-    dataset, negatives, positives = read_data(dataset_filename)
+    dataset, negatives, positives = preproc.read_data(dataset_filename)
     header = dataset.columns.values.tolist()
     data_size = len(dataset.index)
 
@@ -239,7 +202,7 @@ def evaluate_classifier(classifier,
         positives = samples - negatives
     else:
         # read data
-        dataset, negatives, positives = read_data(dataset_filename)
+        dataset, negatives, positives = preproc.read_data(dataset_filename)
 
 
     annots = dataset["Annots"].tolist()

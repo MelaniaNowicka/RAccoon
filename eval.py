@@ -149,7 +149,7 @@ def evaluate_classifier(classifier,
         classifier_output = [i + j for i, j in zip(classifier_output, rule_output)]
 
     # calculate threshold
-    threshold = Decimal(evaluation_threshold * len(classifier.rule_set)).to_integral_value(rounding=ROUND_HALF_UP)
+    threshold = Decimal(float(classifier.evaluation_threshold) * len(classifier.rule_set)).to_integral_value(rounding=ROUND_HALF_UP)
 
     # calculate outputs
     outputs = []
