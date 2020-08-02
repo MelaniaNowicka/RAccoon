@@ -4,6 +4,10 @@ A genetic algorithm to designing distributed cell classifier circuits.
 
 ## Data format
 
+Use the following format of the .csv file: the first column includes unique IDs of samples, the second column includes 
+annotation (0 - negative samples, 1 - positive samples), the following columns include miRNA profiles. Use semicolon as 
+a separator. An example may be found below:
+
 Continuous data:
 
 | ID | Annots | miR-1 |

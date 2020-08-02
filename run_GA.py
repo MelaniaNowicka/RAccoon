@@ -161,7 +161,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     # REMOVE IRRELEVANT miRNAs
     if filter_data is True:
-        dataset, mirnas = preproc.remove_irrelevant_mirna(dataset)
+        dataset, mirnas = preproc.remove_irrelevant_features(dataset)
 
     # INITIALIZE POPULATION
     if rule_list is None:

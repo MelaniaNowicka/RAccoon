@@ -494,7 +494,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
     training_cv_datasets_bin_filtered = []
     for train_set in training_cv_datasets_bin:
 
-        train_set_filtered, mirnas = preproc.remove_irrelevant_mirna(train_set)
+        train_set_filtered, mirnas = preproc.remove_irrelevant_features(train_set)
         training_cv_datasets_bin_filtered.append(train_set_filtered)
 
     # save to files
@@ -536,7 +536,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
                                           print_results=True)
 
     #remove irrelevant miRNAs
-    discretized_train_data[0], relevant_mirnas = preproc.remove_irrelevant_mirna(discretized_train_data[0])
+    discretized_train_data[0], relevant_mirnas = preproc.remove_irrelevant_features(discretized_train_data[0])
 
     # save to files
     new_name = "_train_bin.csv"
