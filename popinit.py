@@ -1,12 +1,13 @@
 import random
 import pandas
 import sys
+import log
 
 random.seed(1)
 
 
 # single boolean function class
-# inputs are connected with and AND
+# inputs are connected with AND
 class SingleRule:
 
     def __init__(self, pos_inputs, neg_inputs):
@@ -75,52 +76,57 @@ class Classifier:
         to_del = []  # rules to be deleted
 
         # separating by rule type
-        for id in range(0, len(self.rule_set)):
-            # collecting positive single-input rules
-            if len(self.rule_set[id].pos_inputs) == 0 and len(self.rule_set[id].neg_inputs) == 1:
-                single_neg.append((self.rule_set[id], id))
+        for i in range(0, len(self.rule_set)):
             # collecting negative single-input rules
-            elif len(self.rule_set[id].pos_inputs) == 1 and len(self.rule_set[id].neg_inputs) == 0:
-                single_pos.append((self.rule_set[id], id))
+            if len(self.rule_set[i].pos_inputs) == 0 and len(self.rule_set[i].neg_inputs) == 1:
+                single_neg.append((self.rule_set[i], i))
+            # collecting positive single-input rules
+            elif len(self.rule_set[i].pos_inputs) == 1 and len(self.rule_set[i].neg_inputs) == 0:
+                single_pos.append((self.rule_set[i], i))
             # collecting mixed rules
             else:
-                multi_input.append((self.rule_set[id], id))
+                multi_input.append((self.rule_set[i], i))
 
         # collecting ids of rules for removal
         # for positive single-input rules
-        if len(single_pos) > 1:  # if more than one rule exist
+        if len(single_pos) > 1:  # if more than one rule exists
             for i in range(0, len(single_pos)-1):  # iterate over rules
                 for j in range(i+1, len(single_pos)):
                     if single_pos[i][0].pos_inputs == single_pos[j][0].pos_inputs:  # if inputs are identical
-                        to_del.append(single_pos[j][1])  # add rule for removal
+                        to_del.append(single_pos[j][1])  # add rule's id  for removal
+
         # for negative single-input rules
-        if len(single_neg) > 1:  # if more than one rule exist
+        if len(single_neg) > 1:  # if more than one rule exists
             for i in range(0, len(single_neg)-1):  # iterate over rules
                 for j in range(i+1, len(single_neg)):
                     if single_neg[i][0].neg_inputs == single_neg[j][0].neg_inputs:  # if inputs are identical
-                        to_del.append(single_neg[j][1])  # add rule for removal
+                        to_del.append(single_neg[j][1])  # add rule's id for removal
+
         # for mixed rules
-        if len(multi_input) > 1:  # if more than one rule exist
+        if len(multi_input) > 1:  # if more than one rule exists
             for i in range(0, len(multi_input)-1):  # iterate over rules
                 for j in range(i+1, len(multi_input)):
+
                     # for rules with two positive inputs
                     if len(multi_input[i][0].pos_inputs) == 2 and len(multi_input[j][0].pos_inputs) == 2:
                         pos_list1 = sorted(multi_input[i][0].pos_inputs)
                         pos_list2 = sorted(multi_input[j][0].pos_inputs)
                         if pos_list1 == pos_list2:  # if inputs are identical
-                            to_del.append(multi_input[j][1])  # add rule for removal
+                            to_del.append(multi_input[j][1])  # add rule's id for removal
+
                     # for rules with two negative inputs
                     elif len(multi_input[i][0].neg_inputs) == 2 and len(multi_input[j][0].neg_inputs) == 2:
                         neg_list1 = sorted(multi_input[i][0].neg_inputs)
                         neg_list2 = sorted(multi_input[j][0].neg_inputs)
                         if neg_list1 == neg_list2:  # if inputs are identical
-                            to_del.append(multi_input[j][1])  # add rule for removal
+                            to_del.append(multi_input[j][1])  # add rule's id for removal
+
                     # for rules with mixed inputs
                     elif len(multi_input[i][0].pos_inputs) == 1 and len(multi_input[i][0].neg_inputs) == 1:
                         if len(multi_input[j][0].pos_inputs) == 1 and len(multi_input[j][0].neg_inputs) == 1:
                             if multi_input[i][0].pos_inputs == multi_input[j][0].pos_inputs:  # if inputs are identical
                                 if multi_input[i][0].neg_inputs == multi_input[j][0].neg_inputs:
-                                    to_del.append(multi_input[j][1])  # add rule for removal
+                                    to_del.append(multi_input[j][1])  # add rule's id for removal
 
         # sort indices in descending order for removal
         to_del = list(set(to_del))
@@ -131,58 +137,60 @@ class Classifier:
 
 
 # initialization of a single rule
-# temp_mirnas consists of mirnas that were not used in the classifier yet
-def initialize_single_rule(temp_mirnas):
+# temp_features consists of features that were not used in the classifier yet
+def initialize_single_rule(temp_features):
 
     pos_inputs = []  # list of positive inputs
     neg_inputs = []  # list of negative inputs
 
-    # size of a single rule
-    size = random.randrange(1, 3)
+    # size of a single rule (between 1 and 2 inputs)
+    size = random.randint(1, 2)
 
-    for i in range(0, size):  # drawing miRNAs for a rule (without replacement) respecting size
+    for i in range(0, size):  # drawing features for a rule (without replacement) respecting size
 
-        mirna_sign = random.randrange(0, 2)  # randomly choosing miRNA sign
-        mirna_id = random.randrange(0, len(temp_mirnas))  # randomly choosing miRNA ID
+        input_sign = random.randint(0, 1)  # randomly choosing input sign (0 - negative, 1 - positive)
+        feature_id = random.randrange(0, len(temp_features))  # randomly choosing feature ID
 
-        # checking the miRNA sign to assign inputs to positive or negative group
-        if mirna_sign == 0:
-            neg_inputs.append(temp_mirnas[mirna_id])
+        # checking the input sign to assign inputs to positive or negative group
+        if input_sign == 0:
+            neg_inputs.append(temp_features[feature_id])
 
-        if mirna_sign == 1:
-            pos_inputs.append(temp_mirnas[mirna_id])
+        if input_sign == 1:
+            pos_inputs.append(temp_features[feature_id])
 
-        # removal of used miRNAs (rule must consist of i=unique miRNA IDs)
-        del temp_mirnas[mirna_id]
+        # removal of used features (rule must consist of i=unique features IDs)
+        del temp_features[feature_id]
 
-    # initialization of a new single rule
+    # initialization of new single rule
     single_rule = SingleRule(pos_inputs, neg_inputs)
 
-    return single_rule, temp_mirnas
+    return single_rule, temp_features
 
 
 # initialization of a new classifier
-def initialize_classifier(classifier_size, evaluation_threshold, mirnas):
+def initialize_classifier(classifier_size, evaluation_threshold, features):
 
     # size of a classifier
-    size = random.randrange(1, classifier_size+1)
+    size = random.randint(1, classifier_size)
 
     # rules
     rule_set = []
 
-    # copy of mirna list
-    temp_mirnas = mirnas.copy()
+    # copy of feature list
+    temp_features = features.copy()
 
     # initialization of new rules
     for i in range(0, size):
-        if len(mirnas) < 10 and len(temp_mirnas) <= 3:
-            temp_mirnas = mirnas.copy()
-        rule, temp_mirnas = initialize_single_rule(temp_mirnas)
-        rule_set.append(rule)
+        if len(features) < 10 and len(temp_features) <= 3:  # if there is not enough features to choose from
+            temp_features = features.copy()
 
+        rule, temp_features = initialize_single_rule(temp_features)  # initialize single rule and remove used features
+        rule_set.append(rule)  # add rule to rule set
+
+    # if no threshold is set
     if evaluation_threshold is None:
         thresholds = [0.25, 0.45, 0.50, 0.75, 1.0]
-        evaluation_threshold = random.choice(thresholds)
+        evaluation_threshold = random.choice(thresholds)  # randomly choose threshold
 
     # initialization of a new classifier
     classifier = Classifier(rule_set, evaluation_threshold=evaluation_threshold, errors={}, error_rates={}, score={},
@@ -193,7 +201,7 @@ def initialize_classifier(classifier_size, evaluation_threshold, mirnas):
 
 # population initialization
 def initialize_population(population_size,
-                          mirnas,
+                          features,
                           evaluation_threshold,
                           classifier_size):
 
@@ -201,12 +209,13 @@ def initialize_population(population_size,
 
     # initialization of n=population_size classifiers
     for i in range(0, population_size):
-        classifier = initialize_classifier(classifier_size, evaluation_threshold, mirnas)
+        classifier = initialize_classifier(classifier_size, evaluation_threshold, features)
         population.append(classifier)
 
     return population
 
 
+# read rules from file
 def read_rules_from_file(rule_file):
 
     # reading the data
@@ -217,57 +226,68 @@ def read_rules_from_file(rule_file):
         print("Error: No such file or directory.")
         sys.exit(0)
 
-    header = data.columns.values.tolist()
-    rules = []
+    header = data.columns.values.tolist()  # get the header
+    rules = []  # list of rules
 
     for i in range(0, len(data.index)):
-        new_rule = SingleRule([], [])
-        rule = data.iloc[i]
+        new_rule = SingleRule([], [])  # create empty rule
+        rule = data.iloc[i]  # get rule from data
 
-        if rule["size"] == 1:
-            if rule["sign1"] == 0:
-                new_rule.neg_inputs.append(rule["miRNA1"])
+        # check rule's size
+        if rule["size"] == 1:  # 1-input rules
+            if rule["sign1"] == 0:  # check sign
+                new_rule.neg_inputs.append(rule["feature1"])
             else:
-                new_rule.pos_inputs.append(rule["miRNA1"])
+                new_rule.pos_inputs.append(rule["feature1"])
 
-        if rule["size"] == 2:
+        if rule["size"] == 2:  # 2-input rules
             if rule["sign1"] == 0:
-                new_rule.neg_inputs.append(rule["miRNA1"])
+                new_rule.neg_inputs.append(rule["feature1"])
             else:
-                new_rule.pos_inputs.append(rule["miRNA1"])
+                new_rule.pos_inputs.append(rule["feature1"])
 
             if rule["sign2"] == 0:
-                new_rule.neg_inputs.append(rule["miRNA2"])
+                new_rule.neg_inputs.append(rule["feature2"])
             else:
-                new_rule.pos_inputs.append(rule["miRNA2"])
+                new_rule.pos_inputs.append(rule["feature2"])
 
-        rules.append(new_rule)
+        rules.append(new_rule)  # add rule to the list of rules
 
     return rules
 
 
-def initialize_population_from_rules(population_size, mirnas, evaluation_threshold, rule_list, popt_fraction,
+# create population based on list of pre-optimized rules
+def initialize_population_from_rules(population_size, features, evaluation_threshold, rule_list, popt_fraction,
                                      classifier_size):
 
-    population = []
+    population = []  # create empty population
 
     # initialization of population_size*fraction individuals built from pre-optimized rules
     fraction = int(population_size*popt_fraction)
     for i in range(0, fraction):
         # size of a classifier
-        size = random.randrange(1, classifier_size + 1)
+        size = random.randint(1, classifier_size)
         rule_set = []
-        for i in range(0, size):
+        for j in range(0, size):
             new_rule = random.randrange(0, len(rule_list))
             rule_set.append(rule_list[new_rule])
 
-        classifier = Classifier(rule_set, evaluation_threshold=evaluation_threshold, errors={}, error_rates={},
+        # if no threshold is set
+        if evaluation_threshold is None:
+            thresholds = [0.25, 0.45, 0.50, 0.75, 1.0]
+            temp_evaluation_threshold = random.choice(thresholds)  # randomly choose threshold
+        else:
+            temp_evaluation_threshold = evaluation_threshold
+
+        # create a classifier
+        classifier = Classifier(rule_set, evaluation_threshold=temp_evaluation_threshold, errors={}, error_rates={},
                                 score={}, bacc={}, additional_scores={}, cdd_score={})
-        population.append(classifier)
+
+        population.append(classifier)  # add classifier to the population
 
     # initialization of random individuals
     for i in range(0, population_size - fraction):
-        classifier = initialize_classifier(classifier_size, evaluation_threshold, mirnas)
+        classifier = initialize_classifier(classifier_size, evaluation_threshold, features)
         population.append(classifier)
 
     return population
