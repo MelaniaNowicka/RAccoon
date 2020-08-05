@@ -1,11 +1,11 @@
 from decimal import *
-import toolbox
+import preproc
 import numpy
 import math
 import sys
 
 
-# compare floats
+# compare floats - is close with 1e-5 tolerance
 def is_close(x, y, tol=1e-5):
     if abs(x - y) <= tol:
         return True
@@ -13,6 +13,7 @@ def is_close(x, y, tol=1e-5):
         return False
 
 
+# compare floats - is y is higher than x with 1e-5 tolerance
 def is_higher(x, y, tol=1e-5):
     if y - x >= tol:
         return True
@@ -39,19 +40,25 @@ def calculate_cdd_score(inputs, miRNA_cdds):
     # sum up cdds for each miRNA in the classifier
     classifier_cdd_sum = 0
     for input in inputs:
-        classifier_cdd_sum += miRNA_cdds.get(input)
+        try:
+            classifier_cdd_sum += miRNA_cdds.get(input)
+        except TypeError:
+            print("Error: cdd score. Feature:", input, " - score not found.")
+            sys.exit(0)
 
+    # calculate cdd score
     classifier_cdd_score = 0
     try:
         classifier_cdd_score = classifier_cdd_sum / len(inputs)
     except ZeroDivisionError:
-        print("Error: cdd score - division by zero! No inputs in a classifier! ")
+        print("Error: cdd score - division by zero! No inputs in the classifier.")
+        sys.exit(0)
 
     return classifier_cdd_score
 
 
 # calculate multi-objective score
-# balanced accuracy with cdd score
+# balanced accuracy and cdd score
 def calculate_multi_objective_score(bacc, cdd_score, bacc_weight):
 
     classifier_score = bacc * bacc_weight + cdd_score * (1-bacc_weight)
@@ -68,14 +75,11 @@ def calculate_error_rates(tp, tn, p, n):
         fpr = 1-tnr  # false positive rate
         fnr = 1-tpr  # false negative rate
     except ZeroDivisionError:
-        print("Error: balanced accuracy - division by zero! No negatives or positives in the dataset!")
+        print("Error: error rates - division by zero! No negatives or positives in the dataset!")
         sys.exit(0)
 
-    error_rates = {}
-    error_rates["tpr"] = tpr
-    error_rates["tnr"] = tnr
-    error_rates["fpr"] = fpr
-    error_rates["fnr"] = fnr
+    # create dictionary
+    error_rates = {"tpr": tpr, "tnr": tnr, "fpr": fpr, "fnr": fnr}
 
     return error_rates
 
@@ -112,16 +116,16 @@ def calculate_additional_scores(tp, tn, fp, fn):
 
 # evaluation of single classifier
 def evaluate_classifier(classifier,
-                        annotation,
                         dataset,
+                        annotation,
+                        negatives,
+                        positives,
                         evaluation_threshold,
-                        miRNA_cdds,
+                        feature_cdds,
                         bacc_weight):
 
+    # get data info
     dataset = dataset.__copy__()
-    samples = len(dataset.index)
-    negatives = dataset[dataset["Annots"] == 0].count()["Annots"]
-    positives = samples - negatives
 
     # classifier output
     classifier_output = [0] * len(annotation)
@@ -133,30 +137,33 @@ def evaluate_classifier(classifier,
     false_negatives = 0
 
     for rule in classifier.rule_set:  # evaluate every rule in the classifier
+
         columns = []
         for input in rule.pos_inputs:  # add positive inputs
-            columns.append(dataset[input].tolist())
+            columns.append(dataset[input].tolist())  # get all feature levels across samples
 
         for input in rule.neg_inputs:  # add negative inputs
-            columns.append([not x for x in dataset[input].tolist()])
+            columns.append([not x for x in dataset[input].tolist()])  # get all feature levels across samples, negate
 
-        # rule output
+        # rule output across samples, fill with '1' as 1 AND 1 gives 1, 1 AND 0 gives 0
         rule_output = [1] * len(annotation)
 
-        for column in columns:
-            rule_output = [i and j for i, j in zip(rule_output, column)]
+        for column in columns:  # go through columns
+            rule_output = [i and j for i, j in zip(rule_output, column)]  # perform AND
 
-        classifier_output = [i + j for i, j in zip(classifier_output, rule_output)]
+        classifier_output = [i + j for i, j in zip(classifier_output, rule_output)]  # sum 'yes/1' outputs
 
     # calculate threshold
-    threshold = Decimal(float(classifier.evaluation_threshold) * len(classifier.rule_set)).to_integral_value(rounding=ROUND_HALF_UP)
+    classifier_size = len(classifier.rule_set)
+    threshold = \
+        Decimal(float(classifier.evaluation_threshold) * classifier_size).to_integral_value(rounding=ROUND_HALF_UP)
 
     # calculate outputs
     outputs = []
     for i in classifier_output:
-        if i >= threshold:
+        if i >= threshold:  # if the sum reaches threshold - yes/1
             outputs.append(1)
-        else:
+        else:  # otherwise no/0
             outputs.append(0)
 
     # count true positives, true negatives, false positives and false negatives
@@ -165,12 +172,12 @@ def evaluate_classifier(classifier,
             true_positives = true_positives + 1
         if annotation[i] == 0 and outputs[i] == 0:
             true_negatives = true_negatives + 1
-        if annotation[i] == 1 and outputs[i] == 0:
-            false_negatives = false_negatives + 1
         if annotation[i] == 0 and outputs[i] == 1:
             false_positives = false_positives + 1
+        if annotation[i] == 1 and outputs[i] == 0:
+            false_negatives = false_negatives + 1
 
-    errors = dict(zip(["tp", "tn", "fp", "fn"], [true_positives, true_negatives, false_negatives, false_positives]))
+    errors = dict(zip(["tp", "tn", "fp", "fn"], [true_positives, true_negatives, false_positives, false_negatives]))
 
     # calculate and assign scores
     error_rates = calculate_error_rates(true_positives, true_negatives, positives, negatives)
@@ -180,10 +187,10 @@ def evaluate_classifier(classifier,
     # get the list of inputs in classifier
     inputs = classifier.get_input_list()
 
-    if len(miRNA_cdds) == 0:  # if no miRNA cdds provided
+    if len(feature_cdds) == 0:  # if no feature cdds provided
         cdd_score = 0
     else:  # else calculate cdd_score
-        cdd_score = calculate_cdd_score(inputs, miRNA_cdds)
+        cdd_score = calculate_cdd_score(inputs, feature_cdds)
 
     # calculate cdd score
     classifier_score = calculate_multi_objective_score(bacc, cdd_score, bacc_weight)
@@ -210,23 +217,26 @@ def evaluate_individuals(population,
                          dataset,
                          evaluation_threshold,
                          bacc_weight,
-                         miRNA_cdds,
+                         feature_cdds,
                          global_best_score,
                          best_classifiers):
 
     # sum of bacc for the population
     sum_bacc = 0.0
 
-    # get annotation
-    annotation = dataset["Annots"].tolist()
-    individual_scores = []
-    update = False
+    # get data info
+    header = dataset.columns.values.tolist()
+    samples, annotation, negatives, positives = preproc.get_data_info(dataset, header)
+
+    individual_scores = []  # store scores of individuals
+    update = False  # check whether there was best score update
 
     # evaluate all classifiers in the population
     for classifier in population:
 
         classifier_score, bacc, errors, error_rates, additional_scores, cdd_score = \
-            evaluate_classifier(classifier, annotation, dataset, evaluation_threshold, miRNA_cdds, bacc_weight)
+            evaluate_classifier(classifier, dataset, annotation, negatives, positives,
+                                evaluation_threshold, feature_cdds, bacc_weight)
 
         # assigning classifier scores
         classifier.errors = errors
