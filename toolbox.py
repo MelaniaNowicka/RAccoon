@@ -6,10 +6,15 @@ import random
 
 random.seed(1)
 
+
 def compare_folds(fold1, fold2):
 
-    data1, negatives, positives = preproc.read_data(fold1)
-    data2, negatives, positives = preproc.read_data(fold2)
+    if isinstance(fold1, pandas.DataFrame) and isinstance(fold2, pandas.DataFrame):
+        data1 = fold1.__copy__()
+        data2 = fold2.__copy__()
+    else:
+        data1, negatives, positives = preproc.read_data(fold1)
+        data2, negatives, positives = preproc.read_data(fold2)
 
     samples1 = list(data1["ID"])
     samples2 = list(data2["ID"])
@@ -50,11 +55,6 @@ def remove_irrelevant_mirna(dataset_filename):
     # creating log message
     print("Number of relevant miRNAs according to a given threshold: " + str(len(relevant_mirna)))
     print("Number of irrelevant miRNAs according to a given threshold: " + str(len(irrelevant_mirna)))
-
-    #print("Relevant miRNAs: ")
-
-    #for mirna in relevant_mirna:
-     #   print(str(mirna), " ")
 
     dataset.to_csv(dataset_out_filename, sep=";", index=False)
 

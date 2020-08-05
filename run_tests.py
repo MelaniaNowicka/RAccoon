@@ -20,7 +20,7 @@ random.seed(1)
 # divide data into train and test
 def divide_into_train_test(dataset_filename, train_frac):
 
-    dataset, negatives, positives = toolbox.read_data(dataset_filename)
+    dataset, annotation, negatives, positives, features = preproc.read_data(dataset_filename)
     header = dataset.columns.values.tolist()
 
     data_size = len(dataset.index)
@@ -380,13 +380,14 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, config, classifie
         if(processes > 1):
             with Pool(processes) as p:
                 cv_results = p.map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
-                          evaluation_threshold=evaluation_threshold, rule_list=rule_list, miRNA_cdds=miRNA_cdds,
-                          repeats=test_repeats, print_results=False), cv_datasets)
-        else:
-            cv_results = list(map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
                                            evaluation_threshold=evaluation_threshold, rule_list=rule_list,
                                            miRNA_cdds=miRNA_cdds, repeats=test_repeats,
-                                           print_results=False), cv_datasets))
+                                           print_results=False), cv_datasets)
+        else:
+            cv_results = list(map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
+                                          evaluation_threshold=evaluation_threshold, rule_list=rule_list,
+                                          miRNA_cdds=miRNA_cdds, repeats=test_repeats,
+                                          print_results=False), cv_datasets))
 
         test_bacc_cv, test_std_cv = zip(*cv_results)
 
@@ -443,9 +444,11 @@ def run_test(train_dataset_filename, test_dataset_filename, rule_list, config_fi
         print("###########READING DATA###########")
         #read the data
         print("\nTRAIN DATA")
-        training_data, train_positives, train_negatives = toolbox.read_data(train_dataset_filename)
+        training_data, train_annotation, train_positives, train_negatives, train_features = \
+            preproc.read_data(train_dataset_filename)
         print("\nTEST DATA")
-        testing_data, test_positives, test_negatives = toolbox.read_data(test_dataset_filename)
+        testing_data, test_annotation, test_positives, test_negatives, test_features = \
+            preproc.read_data(test_dataset_filename)
 
     # PARAMETER TUNING - CROSS-VALIDATION
     print("\n###########PARAMETER TUNING###########")

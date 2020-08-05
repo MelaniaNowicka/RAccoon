@@ -7,6 +7,17 @@ from decimal import Decimal, ROUND_HALF_UP
 numpy.random.seed(1)
 
 
+# get the number of samples, annotation, number of negatives and positives in the data
+def get_data_info(dataset, header):
+
+    samples = len(dataset.index)  # get number of samples
+    annotation = list(dataset[header[1]])  # get annotation
+    negatives = annotation.count(0)  # count negative samples
+    positives = samples - negatives  # count positive samples
+
+    return samples, annotation, negatives, positives
+
+
 # reading binarized data set
 # reading data set
 def read_data(dataset_filename):
@@ -15,21 +26,26 @@ def read_data(dataset_filename):
     # throws an exception when datafile not found
     try:
         dataset = pandas.read_csv(dataset_filename, sep=';', header=None)
+        # rename the header with the first row
+        # must be done to check whether data contains duplicates of features
+        dataset = dataset.rename(columns=dataset.iloc[0], copy=False).iloc[1:].reset_index(drop=True)
+        header = dataset.columns.values.tolist()
+
+        # check whether sample IDs are unique
+        ids = dataset[header[0]]  # get sample IDs
+        if len(ids) > len(set(ids)):  # compare length of the set with the length of the ids list
+            print("Error: IDs of samples must be unique. Note, the first column must include IDs of samples and "
+                  "\nthe second their annotation. Annotate samples as follows: 0 - negative class, 1 - positive class.")
+            sys.exit(0)
+
     except IOError:
         print("Error: ", dataset_filename, " not found.")
         sys.exit(0)
 
-    # rename the header with the first row
-    # must be done to check whether data contains duplicates of features
-    dataset = dataset.rename(columns=dataset.iloc[0], copy=False).iloc[1:].reset_index(drop=True)
+    # if file found read the data set with header
+    # this allows to avoid type conversion
+    dataset = pandas.read_csv(dataset_filename, sep=';', header=0)
     header = dataset.columns.values.tolist()
-
-    # check whether sample IDs are unique
-    ids = dataset[header[0]]  # get sample IDs
-    if len(ids) > len(set(ids)):  # compare length of the set with the length of the ids list
-        print("Error: IDs of samples must be unique. Note, the first column must include IDs of samples and the second"
-              "\ntheir annotation. Annotate samples as follows: 0 - negative class, 1 - positive class.")
-        sys.exit(0)
 
     # check whether second column contains correct annotation
     annotation = sorted(set(dataset[header[1]]))
@@ -48,17 +64,14 @@ def read_data(dataset_filename):
         sys.exit(0)
 
     # counting negative and positive samples
-    samples = len(dataset.index)
-    annotation = list(dataset[header[1]])
-    negatives = annotation.count('0')  # count negative samples
-    positives = samples - negatives  # count positive samples
+    samples, annotation, negatives, positives = get_data_info(dataset, header)
 
     print("DATA SET INFO")
     print("Number of samples in the data set: " + str(samples))
     print("Number of negative samples: " + str(negatives))
     print("Number of positive samples: " + str(positives))
 
-    return dataset, negatives, positives, features
+    return dataset, annotation, negatives, positives, features
 
 
 # removal of irrelevant (non-regulated) features
@@ -97,7 +110,7 @@ def remove_irrelevant_features(dataset):
 # discretization according to Wang et al. (2014)
 # Wang, H.-Q.et al.(2014). Biology-constrained gene expression discretization for cancer classification.
 # Neurocomputing, 145, 30–36.
-def discretize_miRNA(feature_levels, annotation, negatives, positives, m_segments, alpha_param, lambda_param):
+def discretize_feature(feature_levels, annotation, negatives, positives, m_segments, alpha_param, lambda_param):
 
     # sort miRNA expression levels and annotation
     feature_levels_sorted, annotation_sorted = zip(*sorted(zip(feature_levels, annotation)))
@@ -107,21 +120,25 @@ def discretize_miRNA(feature_levels, annotation, negatives, positives, m_segment
 
     # class diversity distributions
     cdds = []
+    segment_thresholds = []
 
     # calculate segment thresholds
     for m in range(1, m_segments+1):
 
-        if m == m_segments:
-            segment_threshold = Decimal(max(feature_levels))
-        else:
+        if m == m_segments:  # if this is the last segment
+            segment_threshold = Decimal(max(feature_levels))  # add max level as threshold
+        else:  # otherwise calculate the segment threshold
             segment_threshold = Decimal(min(feature_levels)) + Decimal(segment_step) * m
+
+        segment_thresholds.append(segment_threshold)  # store segment threshold
+        # add all the levels between min level and threshold to the segment
         segment = [i for i in feature_levels_sorted if Decimal(i) <= Decimal(segment_threshold)]
 
-        neg_class = annotation_sorted[0:len(segment)].count(0)
-        pos_class = annotation_sorted[0:len(segment)].count(1)
+        neg_class = annotation_sorted[0:len(segment)].count(0)  # calculate number of negative samples in segment
+        pos_class = annotation_sorted[0:len(segment)].count(1)  # calculate number of positive samples in segment
 
-        cdd = neg_class / negatives - pos_class / positives
-        cdds.append(cdd)
+        cdd = neg_class / negatives - pos_class / positives  # calculate cdd
+        cdds.append(cdd)  # store cdd
 
     # max and min cdd
     cdd_max = max(cdds)
@@ -131,35 +148,35 @@ def discretize_miRNA(feature_levels, annotation, negatives, positives, m_segment
     cdd_max_abs = math.fabs(max(cdds))
     cdd_min_abs = math.fabs(min(cdds))
 
-    # difference between absolute values of max and min cdda
+    # calculate global cdd
     global_cdd = math.fabs(cdd_max-cdd_min)
 
-    # assign threshold = 0
+    # assign threshold = None
     threshold = None
     pattern = 0
+    index = 0
 
     # one state miRNAs
-    if global_cdd < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:
+    if global_cdd < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:  # critetion 1
         threshold = None
         pattern = 0
 
     # two states miRNAs
-    if global_cdd >= alpha_param:
+    if global_cdd >= alpha_param:  # criterion 2
         if max(cdd_max_abs, cdd_min_abs) >= lambda_param:
             if min(cdd_max_abs, cdd_min_abs) < lambda_param:
 
                 pattern = 1
                 if cdd_max_abs > cdd_min_abs:
-                    index = cdds.index(cdd_max) + 1
-                    threshold = min(feature_levels) + segment_step * index
-                    print(threshold)
+                    index = cdds.index(cdd_max)
 
                 if cdd_max_abs <= cdd_min_abs:
-                    index = cdds.index(cdd_min) + 1
-                    threshold = min(feature_levels) + segment_step * index
+                    index = cdds.index(cdd_min)
+
+                threshold = segment_thresholds[index]  # find threshold
 
     # complicated patterns
-    if global_cdd >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:
+    if global_cdd >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:  # criterion 3
         threshold = None
         pattern = 2
 
@@ -172,40 +189,33 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
     if isinstance(train_dataset, pandas.DataFrame):
         dataset = train_dataset.__copy__()
         header = dataset.columns.values.tolist()
-        samples = len(train_dataset.index)
-        negatives = train_dataset[train_dataset[header[1]] == 0].count()[header[1]]
-        positives = samples - negatives
+        samples, annotation, negatives, positives = get_data_info(dataset, header)
     else:
         # read data
-        dataset, negatives, positives, features = read_data(train_dataset)
-        header = dataset.columns.values.tolist()
+        dataset, annotation, negatives, positives, features = read_data(train_dataset)
 
     # create a new name for a discretized data set
     new_file = str(train_dataset.replace(".csv", "")) + "_discretized_" + str(m_segments) \
                + "_" + str(alpha_param) + "_" + str(lambda_param)
 
-    # list of sample annotation
-    header = dataset.columns.values.tolist()
-    annotation = dataset[header[1]].tolist()
-
-    # get miRNA IDs
+    # get feature IDs
     features = dataset.columns.values.tolist()[2:]
 
     # list of discretization thresholds
     thresholds = []
 
-    # global miRNA cdds
+    # global feature cdds
     global_cdds = []
 
-    # drop all the miRNAs from the train data set, keep the sample IDs and annotation
+    # drop all the feature from the train data set, keep the sample IDs and annotation
     data_discretized = dataset.drop(features, axis=1)
 
-    # count miRNAs with one/two states or another complicated pattern
+    # count feature with one/two states or another pattern
     one_state_features = 0
     two_states_features = 0
     other_pattern_features = 0
 
-    relevant = []  # list of relevant features
+    relevant_features = []  # list of relevant features
     feature_discretized = 0
 
     # iterate over miRNAs
@@ -215,62 +225,68 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
         feature_levels = dataset[feature].tolist()
 
         # discretize miRNA
-        threshold, global_cdd, pattern = discretize_miRNA(feature_levels, annotation, negatives, positives, m_segments,
-                                                          alpha_param, lambda_param)
+        threshold, global_cdd, pattern = discretize_feature(feature_levels, annotation, negatives, positives,
+                                                            m_segments, alpha_param, lambda_param)
 
         # count miRNA expression patterns
         if pattern == 0:
             one_state_features += 1
             feature_discretized = [0 for i in feature_levels]  # set all values to 0
+
         if pattern == 1:
             two_states_features += 1
-            relevant.append(feature)
             # discretize miRNAs according to thresholds
-            feature_discretized = [0 if i <= threshold else 1 for i in feature_levels]
+            feature_discretized = [0 if i < threshold else 1 for i in feature_levels]
+            relevant_features.append(feature)
+
         if pattern == 2:
             other_pattern_features += 1
             feature_discretized = [1 for i in feature_levels]  # set all values to 1
 
-        # add threshold to a list of thresholds
+        # add threshold to list of thresholds and global cdd to list of global cdds
         thresholds.append(threshold)
         global_cdds.append(global_cdd)
 
-        # add discretized miRNAs to the data
+        # add discretized feature to the data
         data_discretized[feature] = feature_discretized
 
-    # create a dictrionary of miRNAs and its cdds
-    miRNA_cdds = dict(zip(features, global_cdds))
+        print("feature: ", feature, " threshold:", threshold)
+
+    # create a dictrionary of features and cdds
+    cdds = dict(zip(features, global_cdds))
 
     if print_results is True:
         print("feature CDDs:")
-        for feature in relevant:
-            print("feature ", feature, " : ", miRNA_cdds[feature])
+        for feature in relevant_features:
+            print(feature, " : ", cdds[feature])
 
-    cdd_list = [miRNA_cdds[miRNA] for miRNA in relevant]
+    cdd_list = [cdds[feature] for feature in relevant_features]
+
     print("\nDISCRETIZATION RESULTS")
     print("ONE STATE FEATURES: ", one_state_features)
     print("TWO STATE FEATURES: ", two_states_features)
-    print("COMPLICATED FEATURES: ", other_pattern_features)
+    print("OTHER PATTERN FEATURES: ", other_pattern_features)
     print("AVG CDD: ", numpy.average(cdd_list))
     print("STD CDD: ", numpy.std(cdd_list))
-    print("AVG CDD ALL: ", numpy.average(list(miRNA_cdds.values())))
-    print("STD CDD ALL: ", numpy.std(list(miRNA_cdds.values())))
+    print("AVG CDD ALL: ", numpy.average(list(cdds.values())))
+    print("STD CDD ALL: ", numpy.std(list(cdds.values())))
 
     if not isinstance(train_dataset, pandas.DataFrame):
         # write data to a file
         data_discretized.to_csv(new_file+".csv", index=False, sep=";")
 
-    return data_discretized, features, thresholds, miRNA_cdds
+    return data_discretized, features, thresholds, cdds
 
 
 # discretize test data
 def discretize_test_data(test_dataset, thresholds):
 
+    # if the data set is a dataframe copy it
     if isinstance(test_dataset, pandas.DataFrame):
         dataset = test_dataset.__copy__()
     else:
-        # read data
-        dataset, negatives, positives, features = read_data(test_dataset)
+        # otherwise read data
+        dataset, annotation, negatives, positives, features = read_data(test_dataset)
 
     # create a new name for a discretized data set
     new_file = str(test_dataset.replace(".csv", "")) + "_discretized"
@@ -278,25 +294,27 @@ def discretize_test_data(test_dataset, thresholds):
     # get feature IDs
     features = dataset.columns.values.tolist()[2:]
 
-    # drop all the features from the data set
+    # drop all the features from the data set (keep the ids and annotation)
     data_discretized = dataset.drop(features, axis=1)
 
     # zip features and thresholds into a dictionary
-    feature_dict = dict(zip(features, thresholds))
+    threshold_dict = dict(zip(features, thresholds))
 
     feature_discretized = 0
 
     # iterate over miRNAs
     for feature in features:
 
-        # get single miRNA gene expression levels
+        print("feature: ", feature, " threshold:", threshold_dict[feature])
+
+        # get single feature gene expression levels
         feature_levels = dataset[feature].tolist()
 
-        if feature_dict[feature] == None:
-            feature_discretized = [1 for i in feature_levels]
+        if threshold_dict[feature] is None:  # if there is no threshold
+            feature_discretized = [0 for i in feature_levels]  # discretize into one state
         else:
-            # discretize miRNAs according to thresholds
-            feature_discretized = [0 if i <= feature_dict[feature] else 1 for i in feature_levels]
+            # discretize features according to thresholds
+            feature_discretized = [0 if i < threshold_dict[feature] else 1 for i in feature_levels]
 
         # add discretized miRNAs to the data
         data_discretized[feature] = feature_discretized
@@ -308,31 +326,33 @@ def discretize_test_data(test_dataset, thresholds):
     return data_discretized
 
 
-# discretize several data sets
-def discretize_data_for_tests(train_list, test_list, m_segments, alpha_param, lambda_param, print_results):
+# discretize several training and testing data sets (use lists: training_fold_list, testing_fold_list)
+def discretize_data_for_tests(training_fold_list, testing_fold_list, m_segments, alpha_param, lambda_param,
+                              print_results):
 
-    discretized_train_data = []
-    discretized_test_data = []
-    feature_cdds = []
+    discretized_train_data = []  # list of discretized train fractions
+    discretized_test_data = []  # list of discretized test fractions
+    feature_cdds = []  # list of feature's cdds
 
-    fold = 1
+    fold = 1  # count folds
 
     # iterate over train and test data
-    for train, test in zip(train_list, test_list):
+    for training_fold, testing_fold in zip(training_fold_list, testing_fold_list):
 
         print("\nDISCRETIZATION: ", fold)
         fold += 1
 
         # discretize train data and return thresholds
-        data_discretized, features, thresholds, feature_cdds \
-            = discretize_train_data(train, m_segments, alpha_param, lambda_param, print_results)
+        train_data_discretized, features, thresholds, cdds \
+            = discretize_train_data(training_fold, m_segments, alpha_param, lambda_param, print_results)
 
-        discretized_train_data.append(data_discretized)  # add fold to the list
+        discretized_train_data.append(train_data_discretized)  # add discretized fold to the list
+        feature_cdds.append(cdds)  # add feature cdds
 
-        # discretize test data avvording to thresholds
-        data_discretized = discretize_test_data(test, thresholds)
+        # discretize test data according to thresholds
+        test_data_discretized = discretize_test_data(testing_fold, thresholds)
 
-        discretized_test_data.append(data_discretized)  # add fold to the list
+        discretized_test_data.append(test_data_discretized)  # add discretized fold to the list
 
     return discretized_train_data, discretized_test_data, feature_cdds
 
