@@ -30,26 +30,44 @@ def check_params(args):
                                                  'Nowicka, FU Berlin, 2019.\n\n')
 
     # adding arguments
-    parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train", help='data set file name')
-    parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", default=None, help='data set file name')
-    parser.add_argument('--filter', '--filter-data', dest="filter_data", type=str, default='t', help='filter data')
-    parser.add_argument('--discretize', '--discretize-data', dest="discretize_data", type=str, default='t', help='discretize data')
-    parser.add_argument('--mbin', '--m-bin', dest="m_bin", type=int, default=50, help='m segments')
-    parser.add_argument('--abin', '--a-bin', dest="a_bin", type=float, default=0.5, help='binarization alpha')
-    parser.add_argument('--lbin', '--l-bin', dest="l_bin", type=float, default=0.1, help='binarization lambda')
-    parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5, help='classifier size')
-    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=None, help='evaluation threshold alpha')
-    parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float, help='bacc_weight')
-    parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30, help='number of iterations without improvement')
-    parser.add_argument('-f', '--fixed-iterations', dest="fixed_iterations", type=int, default=None, help='fixed number of iterations')
-    parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300, help='population size')
+    parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train",
+                        help='train data set file name')
+    parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", default=None,
+                        help=' test data set file name')
+    parser.add_argument('--filter', '--filter-data', dest="filter_data", type=str, default='t',
+                        help='filter data')
+    parser.add_argument('--discretize', '--discretize-data', dest="discretize_data", type=str, default='t',
+                        help='discretize data')
+    parser.add_argument('--mbin', '--m-bin', dest="m_bin", type=int, default=50,
+                        help='m segments')
+    parser.add_argument('--abin', '--a-bin', dest="a_bin", type=float, default=0.5,
+                        help='binarization alpha')
+    parser.add_argument('--lbin', '--l-bin', dest="l_bin", type=float, default=0.1,
+                        help='binarization lambda')
+    parser.add_argument('-c', '--classifier-size', dest="classifier_size", type=int, default=5,
+                        help='classifier size')
+    parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=None,
+                        help='evaluation threshold alpha')
+    parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float,
+                        help='bacc_weight')
+    parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30,
+                        help='number of iterations without improvement')
+    parser.add_argument('-f', '--fixed-iterations', dest="fixed_iterations", type=int, default=None,
+                        help='fixed number of iterations')
+    parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300,
+                        help='population size')
+    parser.add_argument('--elite_frac', '--elite-frac', dest="elite_frac", type=float, default=None,
+                        help='copy fraction of current best solutions to the population')
     parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
                         help='List of pre-optimized rules')
     parser.add_argument('--poptfrac', '--p-opt-frac', dest="p_opt_frac", type=float, default=0.5,
                         help='List of pre-optimized rules')
-    parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.8, type=float, help='probability of crossover')
-    parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float, help='probability of mutation')
-    parser.add_argument('-t', '--tournament-size', dest="tournament_size", default=0.2, type=float, help='tournament size')
+    parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.8, type=float,
+                        help='probability of crossover')
+    parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float,
+                        help='probability of mutation')
+    parser.add_argument('-t', '--tournament-size', dest="tournament_size", default=0.2, type=float,
+                        help='tournament size')
 
     # parse arguments
     params = parser.parse_args(args)
@@ -57,13 +75,13 @@ def check_params(args):
     return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, \
            params.discretize_data, params.m_bin, params.a_bin, params.l_bin, \
            params.classifier_size, params.evaluation_threshold, params.bacc_weight, \
-           params.iterations, params.fixed_iterations, params.population_size, params.rule_list, params.p_opt_frac, \
-           params.crossover_probability, params.mutation_probability, params.tournament_size
+           params.iterations, params.fixed_iterations, params.population_size, params.elite_frac, params.rule_list, \
+           params.p_opt_frac, params.crossover_probability, params.mutation_probability, params.tournament_size
 
 
-def run_iteration(dataset, population, evaluation_threshold, bacc_weight, miRNA_cdds, global_best_score,
-                  best_classifiers, mirnas, population_size, crossover_probability, mutation_probability,
-                  tournament_size, print_results):
+def run_iteration(dataset, features, feature_cdds, population, population_size, elite_fraction,
+                  evaluation_threshold, bacc_weight, global_best_score, best_classifiers,
+                  crossover_probability, mutation_probability, tournament_size, print_results):
 
     # SELECTION
     selected_parents = []
@@ -76,10 +94,11 @@ def run_iteration(dataset, population, evaluation_threshold, bacc_weight, miRNA_
         selected_parents.append(population[first_parent_id].__copy__())
         selected_parents.append(population[second_parent_id].__copy__())
 
+    old_population = population.copy()
     population.clear()  # empty population
 
     # CROSSOVER
-    for i in range(0, int(population_size / 2)):  # iterate through parents
+    for i in range(0, int(population_size / 2)):  # iterate through selected parents
 
         crossover_rand = random.random()  # randomly choose probability for crossover
 
@@ -93,21 +112,24 @@ def run_iteration(dataset, population, evaluation_threshold, bacc_weight, miRNA_
 
         del selected_parents[second_parent_id]  # remove parent from available parents
 
-        # if the crossover_rand is lower than probability - apply crossover
+        # if the crossover_rand is lower than or equal to probability - apply crossover
         if crossover_rand <= crossover_probability:
 
             # crossover
-            first_child, second_child = crossover.crossover(first_parent, second_parent)
+            first_child, second_child = crossover.crossover_parents(first_parent, second_parent)
 
-            population.append(first_child)  # add children to the new population
-            population.append(second_child)
+            population.append(first_child.__copy__())  # add children to the new population
+            population.append(second_child.__copy__())
 
         else:
             population.append(first_parent.__copy__())  # if crossover not allowed - copy parents
             population.append(second_parent.__copy__())
 
     # MUTATION
-    population = mutation.mutate(population, mirnas, mutation_probability)
+    population = mutation.mutate(population, features, mutation_probability, evaluation_threshold)
+
+    if elite_fraction is not None:
+        population = add_best_solutions(population, old_population, elite_fraction)
 
     # REMOVE RULE DUPLICATES
     for classifier in population:
@@ -115,8 +137,7 @@ def run_iteration(dataset, population, evaluation_threshold, bacc_weight, miRNA_
 
     # EVALUATION OF THE POPULATION
     new_global_best_score, avg_population_score, best_classifiers = eval.evaluate_individuals(population, dataset,
-                                                                                              evaluation_threshold,
-                                                                                              bacc_weight, miRNA_cdds,
+                                                                                              bacc_weight, feature_cdds,
                                                                                               global_best_score,
                                                                                               best_classifiers)
     if print_results:
@@ -125,17 +146,41 @@ def run_iteration(dataset, population, evaluation_threshold, bacc_weight, miRNA_
     return new_global_best_score
 
 
+# copy current best solutions to current population
+def add_best_solutions(population, old_population, elite_fraction):
+
+    fraction = int(len(old_population) * elite_fraction)  # calculate fraction of best solutions
+    score_list = []
+
+    for individual in old_population:
+        score_list.append(individual.score)  # create list of current scores
+
+    # sort population and scores
+    individual_ids = range(0, len(old_population))
+    scores_sorted, individual_ids_sorted = zip(*sorted(zip(score_list, individual_ids), reverse=True))
+
+    counter = 0
+    # copy fraction of best solutions to current population
+    for id in individual_ids_sorted:
+        if counter == fraction:
+            break
+        population.append(old_population[id].__copy__())
+
+    return population
+
+
 # run genetic algorithm
 def run_genetic_algorithm(train_data,  # name of train datafile
                           filter_data,  # a flag whether data should be filtered or not
-                          iterations,  # number of iterations without improvement
+                          iterations,  # number of iterations without improvement till termination
                           fixed_iterations,  # fixed number of iterations
                           population_size,  # size of a population
+                          elite_frac,  # fraction of elite solutions
                           rule_list,  # list of pre-optimized rules
                           popt_fraction,  # fraction of population that is pre-optimized
                           classifier_size,  # max size of a classifier
-                          evaluation_threshold,  # evaluation function
-                          miRNA_cdds,  # miRNA cdds
+                          evaluation_threshold,  # evaluation threshold
+                          feature_cdds,  # feature cdds
                           crossover_probability,  # probability of crossover
                           mutation_probability,  # probability of mutation
                           tournament_size,  # size of a tournament
@@ -150,25 +195,25 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                                          bacc=0.0, cdd_score=0.0, additional_scores={})
     best_classifiers = [best_classifier.__copy__()]  # list of best classifiers
 
-    # check if the data comes from file or data frame
+    # check if data comes from file or data frame
     if isinstance(train_data, pandas.DataFrame):
         dataset = train_data.__copy__()
         header = dataset.columns.values.tolist()
-        mirnas = header[2:]
+        features = header[2:]
     else:
         # read data
-        dataset, negatives, positives, mirnas = preproc.read_data(train_data)
+        dataset, negatives, positives, features = preproc.read_data(train_data)
 
     # REMOVE IRRELEVANT miRNAs
-    if filter_data is True:
-        dataset, mirnas = preproc.remove_irrelevant_features(dataset)
+    if filter_data:
+        dataset, features = preproc.remove_irrelevant_features(dataset)
 
     # INITIALIZE POPULATION
     if rule_list is None:
-        population = popinit.initialize_population(population_size, mirnas, evaluation_threshold, classifier_size)
+        population = popinit.initialize_population(population_size, features, evaluation_threshold, classifier_size)
     else:
         rule_list = popinit.read_rules_from_file(rule_list)
-        population = popinit.initialize_population_from_rules(population_size, mirnas, evaluation_threshold,
+        population = popinit.initialize_population_from_rules(population_size, features, evaluation_threshold,
                                                               rule_list, popt_fraction, classifier_size)
 
     # REMOVE RULE DUPLICATES
@@ -176,41 +221,41 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         classifier.remove_duplicates()
 
     # EVALUATE INDIVIDUALS
-    first_global_best_score, first_avg_population_score, best_classifiers = eval.evaluate_individuals(population, dataset,
-                                                                       evaluation_threshold, bacc_weight, miRNA_cdds,
-                                                                       global_best_score, best_classifiers)
+    first_global_best_score, first_avg_population_score, best_classifiers = \
+        eval.evaluate_individuals(population, dataset, bacc_weight, feature_cdds, global_best_score, best_classifiers)
+
     if print_results:
         print("first global best score: ", first_global_best_score)
         print("first average population score: ", first_avg_population_score)
 
     global_best_score = first_global_best_score
 
-    # count iterations without a change of scores
-    iteration_counter = 0
+    iteration_counter = 0  # count iterations without change of scores
+    updates = 0  # count number of score updates
     run_algorithm = True
-    updates = 0
 
     # ITERATE OVER GENERATIONS
     # run as long as there is score change
     while run_algorithm:
 
-        new_global_best_score = run_iteration(dataset, population, evaluation_threshold, bacc_weight, miRNA_cdds,
-                                              global_best_score, best_classifiers, mirnas, population_size,
+        new_global_best_score = run_iteration(dataset, features, feature_cdds, population, population_size, elite_frac,
+                                              evaluation_threshold, bacc_weight, global_best_score, best_classifiers,
                                               crossover_probability, mutation_probability, tournament_size,
                                               print_results)
 
         # CHECK IMPROVEMENT
         if eval.is_higher(global_best_score, new_global_best_score):  # if there was improvement
-            updates += 1
-            if fixed_iterations is None:
-                iteration_counter = 0
+            updates += 1  # add new update
+            if fixed_iterations is None:  # if there is no number of fixed iterations
+                iteration_counter = 0  # reset iteration without improvement counter
             else:
-                iteration_counter = iteration_counter + 1
+                iteration_counter = iteration_counter + 1  # else add iteration
 
-            global_best_score = new_global_best_score
+            global_best_score = new_global_best_score  # assign new global best score
 
             if print_results:
                 print("new best score: ", global_best_score)
+
         else:  # if there is no improvement increase the number of updates and reset the iteration counter
             iteration_counter = iteration_counter + 1
 
@@ -230,8 +275,6 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     for classifier in best_classifiers:
         classifier_sizes.append(len(classifier.get_input_list()))
 
-    #log.write_final_scores(global_best_score, best_classifiers)
-
     # show best scores
     print("\n##TRAINED CLASSIFIER## ")
     shortest_classifier = classifier_sizes.index(min(classifier_sizes))  # find shortest classifier
@@ -241,60 +284,13 @@ def run_genetic_algorithm(train_data,  # name of train datafile
            first_avg_population_score
 
 
-def repeat(repeats, args):
-
-    train_scores = []
-    test_scores = []
-    time = []
-    updates_list = []
-    first_scores = []
-    first_avg_population_scores = []
-
-    test_bacc = None
-
-    for i in range(0, repeats):
-        print("\nREPEAT ", i+1)
-        train_bacc, test_bacc, updates, train_time, first_score, first_avg_pop = process_and_run(args)
-        train_scores.append(train_bacc)
-        test_scores.append(test_bacc)
-        time.append(train_time)
-        updates_list.append(updates)
-        first_scores.append(first_score)
-        first_avg_population_scores.append(first_avg_pop)
-
-    print("\nRESULTS")
-    print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores))
-    if test_bacc is not None:
-        print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores))
-    print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", numpy.std(updates_list))
-    print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", numpy.std(time))
-    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", numpy.std(first_scores))
-    print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores), " STDEV: ",
-          numpy.std(first_avg_population_scores))
-
-    if test_bacc is not None:
-        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
-          numpy.average(test_scores), ";", numpy.std(test_scores), ";",
-          numpy.average(updates_list), ";", numpy.std(updates_list), ";",
-          numpy.average(time), ";", numpy.std(time), ";",
-          numpy.average(first_scores), ";", numpy.std(first_scores), ";",
-          numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
-    else:
-        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
-              numpy.average(updates_list), ";", numpy.std(updates_list), ";",
-              numpy.average(time), ";", numpy.std(time), ";",
-              numpy.average(first_scores), ";", numpy.std(first_scores), ";",
-              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
-
-
 # process parameters and data and run algorithm
 def process_and_run(args):
 
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
-    evaluation_threshold, bacc_weight, iterations, fixed_iterations, population_size, rule_list, popt_fraction, \
-    crossover_probability, mutation_probability, tournament_size = check_params(args)
-
+        evaluation_threshold, bacc_weight, iterations, fixed_iterations, population_size, elite_fraction, \
+        rule_list, popt_fraction, crossover_probability, mutation_probability, tournament_size = check_params(args)
 
     print("##PARAMETERS##")
     if filter_data == 't':
@@ -328,19 +324,19 @@ def process_and_run(args):
     # discretize data
     if discretize_data == 't':
         print("\n##DISCRETIZATION##")
-        data_discretized, miRNAs, thresholds, miRNA_cdds = \
+        data_discretized, miRNAs, thresholds, feature_cdds = \
             preproc.discretize_train_data(train_dataset, m_bin, a_bin, l_bin, True)
     else:
         data_discretized = train_dataset
-        miRNA_cdds = {}
+        feature_cdds = {}
         bacc_weight = 1.0
 
     print("\nTRAINING...")
     start_train = time.time()
     classifier, best_classifiers, updates, first_global, first_avg_pop = \
         run_genetic_algorithm(data_discretized, filter_data, iterations, fixed_iterations, population_size,
-                              rule_list, popt_fraction, classifier_size, evaluation_threshold, miRNA_cdds,
-                              crossover_probability, mutation_probability, tournament_size,
+                              elite_fraction, rule_list, popt_fraction, classifier_size, evaluation_threshold,
+                              feature_cdds, crossover_probability, mutation_probability, tournament_size,
                               bacc_weight, True)
 
     end_train = time.time()
@@ -349,7 +345,7 @@ def process_and_run(args):
 
     # evaluate best classifier
     classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
-        eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds,
+        eval.evaluate_classifier(classifier, data_discretized, evaluation_threshold, feature_cdds,
                                  bacc_weight)
 
     print("\n##TRAIN DATA SCORES##")
@@ -373,12 +369,12 @@ def process_and_run(args):
             data_discretized = preproc.discretize_test_data(test_dataset, thresholds)
         else:
             data_discretized = test_dataset
-            miRNA_cdds = {}
+            feature_cdds = {}
             bacc_weight = 1.0
 
         # evaluate classifier
         classifier_score, test_bacc, errors, test_error_rates, test_additional_scores, cdd_score = \
-            eval.evaluate_classifier(classifier, annotation, data_discretized, evaluation_threshold, miRNA_cdds,
+            eval.evaluate_classifier(classifier, data_discretized, evaluation_threshold, feature_cdds,
                                      bacc_weight)
 
         print("\n##TEST DATA SCORES##")
@@ -395,6 +391,53 @@ def process_and_run(args):
     return train_bacc, test_bacc, updates, training_time, first_global, first_avg_pop
 
 
+# repeat GA run
+def repeat(repeats, args):
+
+    train_scores = []
+    test_scores = []
+    time = []
+    updates_list = []
+    first_scores = []
+    first_avg_population_scores = []
+
+    test_bacc = None
+
+    for i in range(0, repeats):
+        print("\nREPEAT ", i+1)
+        train_bacc, test_bacc, updates, train_time, first_score, first_avg_pop = process_and_run(args)
+        train_scores.append(train_bacc)
+        test_scores.append(test_bacc)
+        time.append(train_time)
+        updates_list.append(updates)
+        first_scores.append(first_score)
+        first_avg_population_scores.append(first_avg_pop)
+
+    print("\nRESULTS")
+    print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores))
+    if test_bacc is not None:
+        print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores))
+    print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", numpy.std(updates_list))
+    print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", numpy.std(time))
+    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", numpy.std(first_scores))
+    print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores), " STDEV: ",
+          numpy.std(first_avg_population_scores))
+
+    if test_bacc is not None:
+        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
+              numpy.average(test_scores), ";", numpy.std(test_scores), ";",
+              numpy.average(updates_list), ";", numpy.std(updates_list), ";",
+              numpy.average(time), ";", numpy.std(time), ";",
+              numpy.average(first_scores), ";", numpy.std(first_scores), ";",
+              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
+    else:
+        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
+              numpy.average(updates_list), ";", numpy.std(updates_list), ";",
+              numpy.average(time), ";", numpy.std(time), ";",
+              numpy.average(first_scores), ";", numpy.std(first_scores), ";",
+              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
+
+
 if __name__ == "__main__":
 
     start = time.time()
@@ -402,7 +445,6 @@ if __name__ == "__main__":
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
 
-    #process_and_run(sys.argv[1:])
     repeat(10, sys.argv[1:])
 
     end = time.time()

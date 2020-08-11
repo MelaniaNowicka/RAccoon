@@ -41,7 +41,7 @@ def generate_parameters(tune_weights, weight_lower, weight_upper, weight_step,
 
 # parameter tuning
 def tune_parameters(training_cv_datasets, testing_cv_datasets, feature_cdds, config,
-                    classifier_size, evaluation_threshold, rule_list, test_repeats):
+                    classifier_size, evaluation_threshold, elite_fraction, rule_list, test_repeats):
 
     # get the parameters from configuration file
     tune_weights = config.getboolean("PARAMETER TUNING", "TuneWeights")
@@ -127,20 +127,20 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, feature_cdds, con
         # train and test on each fold
         if processes > 1:  # if more than one processor is available
             with Pool(processes) as p:
-                cv_results = p.map(partial(run_tests.train_and_test, parameter_set=parameter_set,
-                                           classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
-                                           rule_list=rule_list, repeats=test_repeats, print_results=False), cv_datasets)
+                val_bacc_cv = p.map(partial(run_tests.train_and_test, parameter_set=parameter_set,
+                                            classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
+                                            elite=elite_fraction, rules=rule_list, repeats=test_repeats,
+                                            print_results=False), cv_datasets)
         else:
-            cv_results = list(map(partial(run_tests.train_and_test, parameter_set=parameter_set,
-                                          classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
-                                          rule_list=rule_list, repeats=test_repeats, print_results=False), cv_datasets))
+            val_bacc_cv = list(map(partial(run_tests.train_and_test, parameter_set=parameter_set,
+                                           classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
+                                           elite=elite_fraction, rules=rule_list, repeats=test_repeats,
+                                           print_results=False), cv_datasets))
 
-        # unpack values
-        val_bacc_cv, val_std_cv = zip(*cv_results)
 
         # calculate average bacc scores for folds and std
         val_bacc_avg = numpy.average(val_bacc_cv)
-        val_std_avg = numpy.std(val_bacc_avg)
+        val_std_avg = numpy.std(val_bacc_cv)
 
         print("\nRESULTS PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         print("VALIDATION AVG BACC: ", val_bacc_avg, ", STD: ", val_std_avg)
