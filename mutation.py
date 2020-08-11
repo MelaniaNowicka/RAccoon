@@ -142,9 +142,12 @@ def mutate_rule(rule, features):
 
 
 # mutate classifier
-def mutate_classifier(population, classifier, features):
+def mutate_classifier(population, classifier, features, evaluation_threshold):
 
-    mutation_type = random.randrange(0, 4)  # choose mutation type
+    if evaluation_threshold is None:
+        mutation_type = random.randrange(0, 3)  # choose mutation type
+    else:
+        mutation_type = random.randrange(0, 4)  # choose mutation type
 
     # copy rule from one classifier to another
     if mutation_type == 0:
@@ -185,12 +188,12 @@ def mutate_classifier(population, classifier, features):
     if mutation_type == 3:
         thresholds = [0.25, 0.45, 0.50, 0.75, 1.0]
         thresholds.remove(classifier.evaluation_threshold)
-        evaluation_threshold = random.choice(thresholds)
-        classifier.evaluation_threshold = evaluation_threshold
+        temp_evaluation_threshold = random.choice(thresholds)
+        classifier.evaluation_threshold = temp_evaluation_threshold
 
 
 # mutation
-def mutate(population, features, mutation_probability):
+def mutate(population, features, mutation_probability, evaluation_threshold):
 
     # mutation for the population
     for classifier in population:
@@ -200,7 +203,7 @@ def mutate(population, features, mutation_probability):
             mutate_rule_or_classifier = random.randrange(0, 5)  # choose object to mutate: classifier or rule
 
             if mutate_rule_or_classifier == 0:  # mutate classifier
-                mutate_classifier(population, classifier, features)
+                mutate_classifier(population, classifier, features, evaluation_threshold)
             else:  # mutate rule
                 rule_id = random.randrange(0, len(classifier.rule_set))  # choose rule for mutation
                 rule = classifier.rule_set[rule_id]

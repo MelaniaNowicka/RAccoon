@@ -120,7 +120,6 @@ def evaluate_classifier(classifier,
                         annotation,
                         negatives,
                         positives,
-                        evaluation_threshold,
                         feature_cdds,
                         bacc_weight):
 
@@ -215,7 +214,6 @@ def update_best_classifier(new_classifier, global_best_score, best_classifiers):
 # evaluation of the population
 def evaluate_individuals(population,
                          dataset,
-                         evaluation_threshold,
                          bacc_weight,
                          feature_cdds,
                          global_best_score,
@@ -235,8 +233,7 @@ def evaluate_individuals(population,
     for classifier in population:
 
         classifier_score, bacc, errors, error_rates, additional_scores, cdd_score = \
-            evaluate_classifier(classifier, dataset, annotation, negatives, positives,
-                                evaluation_threshold, feature_cdds, bacc_weight)
+            evaluate_classifier(classifier, dataset, annotation, negatives, positives, feature_cdds, bacc_weight)
 
         # assigning classifier scores
         classifier.errors = errors

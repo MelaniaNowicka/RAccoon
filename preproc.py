@@ -250,8 +250,6 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
         # add discretized feature to the data
         data_discretized[feature] = feature_discretized
 
-        print("feature: ", feature, " threshold:", threshold)
-
     # create a dictrionary of features and cdds
     cdds = dict(zip(features, global_cdds))
 
@@ -304,8 +302,6 @@ def discretize_test_data(test_dataset, thresholds):
 
     # iterate over miRNAs
     for feature in features:
-
-        print("feature: ", feature, " threshold:", threshold_dict[feature])
 
         # get single feature gene expression levels
         feature_levels = dataset[feature].tolist()

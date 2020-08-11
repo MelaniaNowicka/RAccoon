@@ -190,11 +190,11 @@ def initialize_classifier(classifier_size, evaluation_threshold, features):
     # if no threshold is set
     if evaluation_threshold is None:
         thresholds = [0.25, 0.45, 0.50, 0.75, 1.0]
-        evaluation_threshold = random.choice(thresholds)  # randomly choose threshold
+        temp_evaluation_threshold = random.choice(thresholds)  # randomly choose threshold
 
     # initialization of a new classifier
-    classifier = Classifier(rule_set, evaluation_threshold=evaluation_threshold, errors={}, error_rates={}, score={},
-                            bacc={}, additional_scores={}, cdd_score={})
+    classifier = Classifier(rule_set, evaluation_threshold=temp_evaluation_threshold, errors={}, error_rates={},
+                            score=0.0, bacc=0.0, additional_scores={}, cdd_score=0.0)
 
     return classifier
 

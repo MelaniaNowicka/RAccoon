@@ -19,7 +19,6 @@ def uniform_crossover(first_parent_rule_set, second_parent_rule_set, first_child
 
         swap_maska.append(swap_mask)
 
-    print(swap_maska)
     return first_child.__copy__(), second_child.__copy__()
 
 
@@ -36,7 +35,6 @@ def index_based_crossover(first_parent_rule_set, second_parent_rule_set, first_c
     crossover_index_second_parent = random.randint(0, difference)
 
     swap_masks = []
-    print(crossover_index_second_parent)
 
     for i in range(0, len(first_parent_rule_set)):  # iterating through the first parent
 
@@ -61,12 +59,11 @@ def index_based_crossover(first_parent_rule_set, second_parent_rule_set, first_c
                 first_child.rule_set.append(first_parent_rule_set[i].__copy__())
                 second_child.rule_set.append(second_parent_rule_set[i - crossover_index_second_parent].__copy__())
 
-    print(swap_masks)
     return first_child.__copy__(), second_child.__copy__()
 
 
 # crossover
-def crossover(first_parent, second_parent):
+def crossover_parents(first_parent, second_parent):
 
     # checking size of parents and assigning rule sets
     # first parent - consists of more rules, second parents - less
