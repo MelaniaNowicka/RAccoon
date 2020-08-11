@@ -1,6 +1,7 @@
 import random
 import numpy
 import eval
+import run_tests
 from multiprocessing import Pool
 from functools import partial
 
@@ -109,8 +110,8 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, feature_cdds, con
 
     # test parameter sets
     best_parameter_set = parameter_sets[0]  # assign first set to best parameter set
-    best_avg_test_bacc = 0.0  # assign best bacc
-    best_avg_test_std = 1.0  # assign best std
+    best_avg_val_bacc = 0.0  # assign best bacc
+    best_avg_val_std = 1.0  # assign best std
 
     parameter_set_number = 0  # parameter set counter
 
@@ -120,39 +121,40 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, feature_cdds, con
         parameter_set_number += 1
         print("\nTESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
 
+        # zip training data sets, testing data sets and cdd scores
         cv_datasets = zip(training_cv_datasets, testing_cv_datasets, feature_cdds)
 
         # train and test on each fold
         if processes > 1:  # if more than one processor is available
             with Pool(processes) as p:
-                cv_results = p.map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
-                                           evaluation_threshold=evaluation_threshold, rule_list=rule_list,
-                                           repeats=test_repeats, print_results=False), cv_datasets)
+                cv_results = p.map(partial(run_tests.train_and_test, parameter_set=parameter_set,
+                                           classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
+                                           rule_list=rule_list, repeats=test_repeats, print_results=False), cv_datasets)
         else:
-            cv_results = list(map(partial(train_and_test, parameter_set=parameter_set, classifier_size=classifier_size,
-                                          evaluation_threshold=evaluation_threshold, rule_list=rule_list,
-                                          repeats=test_repeats, print_results=False), cv_datasets))
+            cv_results = list(map(partial(run_tests.train_and_test, parameter_set=parameter_set,
+                                          classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
+                                          rule_list=rule_list, repeats=test_repeats, print_results=False), cv_datasets))
 
         # unpack values
-        test_bacc_cv, test_std_cv = zip(*cv_results)
+        val_bacc_cv, val_std_cv = zip(*cv_results)
 
         # calculate average bacc scores for folds and std
-        test_bacc_avg = numpy.average(test_bacc_cv)
-        test_std_avg = numpy.std(test_bacc_avg)
+        val_bacc_avg = numpy.average(val_bacc_cv)
+        val_std_avg = numpy.std(val_bacc_avg)
 
         print("\nRESULTS PARAMETER SET ", parameter_set_number, ": ", parameter_set)
-        print("TEST AVG BACC: ", test_bacc_avg, ", STD: ", test_std_avg)
+        print("VALIDATION AVG BACC: ", val_bacc_avg, ", STD: ", val_std_avg)
 
         # check for improvement
-        if eval.is_higher(best_avg_test_bacc, test_bacc_avg):
+        if eval.is_higher(best_avg_val_bacc, val_bacc_avg):
             best_parameter_set = parameter_set
-            best_avg_test_bacc = test_bacc_avg
-            best_avg_test_std = test_std_avg
+            best_avg_val_bacc = val_bacc_avg
+            best_avg_val_std = val_std_avg
 
         # if new score is not higher but std is lower assign new parameter set as best
-        elif eval.is_close(best_avg_test_bacc, test_bacc_avg) and eval.is_higher(best_avg_test_std, test_std_avg):
+        elif eval.is_close(best_avg_val_bacc, val_bacc_avg) and eval.is_higher(val_std_avg, best_avg_val_std):
             best_parameter_set = parameter_set
-            best_avg_test_bacc = test_bacc_avg
-            best_avg_test_std = test_std_avg
+            best_avg_val_bacc = val_bacc_avg
+            best_avg_val_std = val_std_avg
 
-    return best_parameter_set, best_avg_test_bacc, best_avg_test_std
+    return best_parameter_set, best_avg_val_bacc, best_avg_val_std
