@@ -300,7 +300,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
 
     # parameter tuning
     print("\n***PARAMETER TUNING***")
-    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets_bin,
+    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets_bin_filtered,
                                                                  validation_cv_datasets_bin,
                                                                  feature_cdds,
                                                                  config_file,
