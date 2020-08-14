@@ -12,8 +12,8 @@ def compare_folds(fold1, fold2):
         data1 = fold1.__copy__()
         data2 = fold2.__copy__()
     else:
-        data1, negatives, positives = preproc.read_data(fold1)
-        data2, negatives, positives = preproc.read_data(fold2)
+        data1, annotation, negatives, positives, features = preproc.read_data(fold1)
+        data2, annotation, negatives, positives, features = preproc.read_data(fold2)
 
     samples1 = list(data1["ID"])
     samples2 = list(data2["ID"])

@@ -88,8 +88,7 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
 
     for i in range(0, int(population_size / 2)):  # iterate through population
 
-        first_parent_id, second_parent_id = selection.select(population,
-                                                             tournament_size)
+        first_parent_id, second_parent_id = selection.select(population, tournament_size)
         # add new parents to the selected parents
         selected_parents.append(population[first_parent_id].__copy__())
         selected_parents.append(population[second_parent_id].__copy__())
@@ -129,7 +128,7 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     population = mutation.mutate(population, features, mutation_probability, evaluation_threshold)
 
     if elite_fraction is not None:
-        population = add_best_solutions(population, old_population, elite_fraction)
+        population = add_best_solutions(population, population_size, old_population, elite_fraction)
 
     # REMOVE RULE DUPLICATES
     for classifier in population:
@@ -147,9 +146,9 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
 
 
 # copy current best solutions to current population
-def add_best_solutions(population, old_population, elite_fraction):
+def add_best_solutions(population, population_size, old_population, elite_fraction):
 
-    fraction = int(len(old_population) * elite_fraction)  # calculate fraction of best solutions
+    fraction = int(population_size * elite_fraction)  # calculate fraction of best solutions
     score_list = []
 
     for individual in old_population:
@@ -162,9 +161,10 @@ def add_best_solutions(population, old_population, elite_fraction):
     counter = 0
     # copy fraction of best solutions to current population
     for id in individual_ids_sorted:
-        if counter == fraction:
+        if counter >= fraction:
             break
         population.append(old_population[id].__copy__())
+        counter += 1
 
     return population
 
@@ -202,9 +202,9 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         features = header[2:]
     else:
         # read data
-        dataset, negatives, positives, features = preproc.read_data(train_data)
+        dataset, annotation, negatives, positives, features = preproc.read_data(train_data)
 
-    # REMOVE IRRELEVANT miRNAs
+    # REMOVE IRRELEVANT features
     if filter_data:
         dataset, features = preproc.remove_irrelevant_features(dataset)
 
@@ -318,13 +318,13 @@ def process_and_run(args):
 
     print("\n##TRAIN DATA##")
     # read the data
-    train_dataset, negatives, positives, mirnas = preproc.read_data(train_datafile)
+    train_dataset, annotation, negatives, positives, features = preproc.read_data(train_datafile)
     annotation = train_dataset["Annots"]
 
     # discretize data
     if discretize_data == 't':
         print("\n##DISCRETIZATION##")
-        data_discretized, miRNAs, thresholds, feature_cdds = \
+        data_discretized, features, thresholds, feature_cdds = \
             preproc.discretize_train_data(train_dataset, m_bin, a_bin, l_bin, True)
     else:
         data_discretized = train_dataset
@@ -345,7 +345,7 @@ def process_and_run(args):
 
     # evaluate best classifier
     classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
-        eval.evaluate_classifier(classifier, data_discretized, evaluation_threshold, feature_cdds,
+        eval.evaluate_classifier(classifier, data_discretized, annotation, positives, negatives, feature_cdds,
                                  bacc_weight)
 
     print("\n##TRAIN DATA SCORES##")
@@ -360,7 +360,7 @@ def process_and_run(args):
 
         print("\n##TEST DATA##")
         # read test data
-        test_dataset, negatives, positives, mirnas = preproc.read_data(test_datafile)
+        test_dataset, annotation, negatives, positives, features = preproc.read_data(test_datafile)
         annotation = test_dataset["Annots"]
 
         # discretize data
@@ -374,7 +374,7 @@ def process_and_run(args):
 
         # evaluate classifier
         classifier_score, test_bacc, errors, test_error_rates, test_additional_scores, cdd_score = \
-            eval.evaluate_classifier(classifier, data_discretized, evaluation_threshold, feature_cdds,
+            eval.evaluate_classifier(classifier, data_discretized, annotation, positives, negatives, feature_cdds,
                                      bacc_weight)
 
         print("\n##TEST DATA SCORES##")
