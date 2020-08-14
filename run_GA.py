@@ -49,7 +49,9 @@ def check_params(args):
     parser.add_argument('-a', '--evaluation-threshold', dest="evaluation_threshold", default=None,
                         help='evaluation threshold alpha')
     parser.add_argument('-w', '--bacc-weight', dest="bacc_weight", default=0.5, type=float,
-                        help='bacc_weight')
+                        help='multi-objective function weight')
+    parser.add_argument('-u', '--uniqueness', dest="uniqueness", default='t', type=str,
+                        help='uniqueness of inputs')
     parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30,
                         help='number of iterations without improvement')
     parser.add_argument('-f', '--fixed-iterations', dest="fixed_iterations", type=int, default=None,
@@ -74,13 +76,13 @@ def check_params(args):
 
     return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, \
            params.discretize_data, params.m_bin, params.a_bin, params.l_bin, \
-           params.classifier_size, params.evaluation_threshold, params.bacc_weight, \
+           params.classifier_size, params.evaluation_threshold, params.bacc_weight, params.uniqueness, \
            params.iterations, params.fixed_iterations, params.population_size, params.elite_frac, params.rule_list, \
            params.p_opt_frac, params.crossover_probability, params.mutation_probability, params.tournament_size
 
 
 def run_iteration(dataset, features, feature_cdds, population, population_size, elite_fraction,
-                  evaluation_threshold, bacc_weight, global_best_score, best_classifiers,
+                  evaluation_threshold, bacc_weight, uniqueness, global_best_score, best_classifiers,
                   crossover_probability, mutation_probability, tournament_size, print_results):
 
     # SELECTION
@@ -137,6 +139,7 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     # EVALUATION OF THE POPULATION
     new_global_best_score, avg_population_score, best_classifiers = eval.evaluate_individuals(population, dataset,
                                                                                               bacc_weight, feature_cdds,
+                                                                                              uniqueness,
                                                                                               global_best_score,
                                                                                               best_classifiers)
     if print_results:
@@ -185,6 +188,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           mutation_probability,  # probability of mutation
                           tournament_size,  # size of a tournament
                           bacc_weight,  # bacc weight
+                          uniqueness,  # whether only unique inputs are taken into account in cdd score
                           print_results):
 
     # initialize best classifier (empty)
@@ -222,7 +226,8 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     # EVALUATE INDIVIDUALS
     first_global_best_score, first_avg_population_score, best_classifiers = \
-        eval.evaluate_individuals(population, dataset, bacc_weight, feature_cdds, global_best_score, best_classifiers)
+        eval.evaluate_individuals(population, dataset, bacc_weight, feature_cdds, uniqueness, global_best_score,
+                                  best_classifiers)
 
     if print_results:
         print("first global best score: ", first_global_best_score)
@@ -239,9 +244,9 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     while run_algorithm:
 
         new_global_best_score = run_iteration(dataset, features, feature_cdds, population, population_size, elite_frac,
-                                              evaluation_threshold, bacc_weight, global_best_score, best_classifiers,
-                                              crossover_probability, mutation_probability, tournament_size,
-                                              print_results)
+                                              evaluation_threshold, bacc_weight, uniqueness, global_best_score,
+                                              best_classifiers, crossover_probability, mutation_probability,
+                                              tournament_size, print_results)
 
         # CHECK IMPROVEMENT
         if eval.is_higher(global_best_score, new_global_best_score):  # if there was improvement
@@ -289,7 +294,7 @@ def process_and_run(args):
 
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
-        evaluation_threshold, bacc_weight, iterations, fixed_iterations, population_size, elite_fraction, \
+        evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations, population_size, elite_fraction, \
         rule_list, popt_fraction, crossover_probability, mutation_probability, tournament_size = check_params(args)
 
     print("##PARAMETERS##")
@@ -309,6 +314,12 @@ def process_and_run(args):
     print("EVALUATION THRESHOLD: ", evaluation_threshold)
     print("MAX SIZE: ", classifier_size)
     print("WEIGHT: ", bacc_weight)
+    if uniqueness == 't':
+        print("UNIQUENESS: ", "on")
+        uniqueness = True
+    else:
+        print("UNIQUENESS: ", "off")
+        uniqueness = False
 
     if rule_list is not None:
         print("POPULATION PRE-OPTIMIZATION: ", "on")
@@ -337,7 +348,7 @@ def process_and_run(args):
         run_genetic_algorithm(data_discretized, filter_data, iterations, fixed_iterations, population_size,
                               elite_fraction, rule_list, popt_fraction, classifier_size, evaluation_threshold,
                               feature_cdds, crossover_probability, mutation_probability, tournament_size,
-                              bacc_weight, True)
+                              bacc_weight, uniqueness, True)
 
     end_train = time.time()
     training_time = end_train - start_train
@@ -346,7 +357,7 @@ def process_and_run(args):
     # evaluate best classifier
     classifier_score, train_bacc, errors, train_error_rates, train_additional_scores, cdd_score = \
         eval.evaluate_classifier(classifier, data_discretized, annotation, positives, negatives, feature_cdds,
-                                 bacc_weight)
+                                 uniqueness, bacc_weight)
 
     print("\n##TRAIN DATA SCORES##")
     print("BACC: ", train_bacc)
@@ -375,7 +386,7 @@ def process_and_run(args):
         # evaluate classifier
         classifier_score, test_bacc, errors, test_error_rates, test_additional_scores, cdd_score = \
             eval.evaluate_classifier(classifier, data_discretized, annotation, positives, negatives, feature_cdds,
-                                     bacc_weight)
+                                     uniqueness, bacc_weight)
 
         print("\n##TEST DATA SCORES##")
         print("BACC: ", test_bacc)

@@ -17,7 +17,8 @@ random.seed(1)
 
 
 # train and test classifiers
-def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, elite, rules, repeats, print_results):
+def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, elite, rules, uniqueness, repeats,
+                   print_results):
 
     # parameter set
     weight, iter, pop, cp, mp, ts = parameter_set
@@ -82,6 +83,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
                                            mutation_probability=mp,
                                            tournament_size=ts,
                                            bacc_weight=weight,
+                                           uniqueness=uniqueness,
                                            print_results=print_results)
 
         # measure time
@@ -97,7 +99,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         # calculate best train BACC
         train_score, train_bacc, train_errors, train_error_rates, train_additional_scores, train_cdd = \
             eval.evaluate_classifier(classifier, training_fold, annotation, negatives, positives, feature_cdd_fold,
-                                     weight)
+                                     uniqueness, weight)
 
         print("TRAIN BACC: ", train_bacc)
 
@@ -123,7 +125,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         # calculate best test BACC
         test_score, test_bacc, test_errors, test_error_rates, test_additional_scores, train_cdd = \
             eval.evaluate_classifier(classifier, testing_fold, annotation, negatives, positives, feature_cdd_fold,
-                                     weight)
+                                     uniqueness, weight)
 
         test_bacc_avg.append(test_bacc)
 
@@ -271,6 +273,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
         evaluation_threshold = None
 
     elite_fraction = float(config_file["ALGORITHM PARAMETERS"]["EliteFraction"])
+    uniqueness = config_file.getboolean("OBJECTIVE FUNCTION", "Uniqueness")
     test_repeats = int(config_file["RUN PARAMETERS"]["SingleTestRepeats"])
 
     # read rules from file
@@ -307,6 +310,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
                                                                  classifier_size,
                                                                  evaluation_threshold,
                                                                  elite_fraction,
+                                                                 uniqueness,
                                                                  rules,
                                                                  test_repeats)
 
@@ -349,7 +353,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
 
     #run test
     train_and_test((discretized_train_data[0], discretized_test_data[0], feature_cdds[0]), best_parameters,
-                   classifier_size, evaluation_threshold, elite_fraction, rules, test_repeats, True)
+                   classifier_size, evaluation_threshold, elite_fraction, rules, uniqueness, test_repeats, True)
 
 
 if __name__ == "__main__":
