@@ -40,7 +40,7 @@ def generate_parameters(tune_weights, weight_lower, weight_upper, weight_step,
 
 
 # parameter tuning
-def tune_parameters(training_cv_datasets, testing_cv_datasets, feature_cdds, config,
+def tune_parameters(training_cv_datasets, validation_cv_datasets, feature_cdds, config,
                     classifier_size, evaluation_threshold, elite_fraction, rule_list, test_repeats):
 
     # get the parameters from configuration file
@@ -122,7 +122,7 @@ def tune_parameters(training_cv_datasets, testing_cv_datasets, feature_cdds, con
         print("\nTESTING PARAMETER SET ", parameter_set_number, ": ", parameter_set)
 
         # zip training data sets, testing data sets and cdd scores
-        cv_datasets = zip(training_cv_datasets, testing_cv_datasets, feature_cdds)
+        cv_datasets = zip(training_cv_datasets, validation_cv_datasets, feature_cdds)
 
         # train and test on each fold
         if processes > 1:  # if more than one processor is available
