@@ -35,13 +35,17 @@ def calculate_balanced_accuracy(tp, tn, p, n):
 
 # calculate classifier cdd score
 # class distribution divergence score
-def calculate_cdd_score(inputs, miRNA_cdds):
+def calculate_cdd_score(inputs, feature_cdds, uniqueness):
 
     # sum up cdds for each miRNA in the classifier
     classifier_cdd_sum = 0
+
+    if uniqueness is True:
+        inputs = set(inputs)
+
     for input in inputs:
         try:
-            classifier_cdd_sum += miRNA_cdds.get(input)
+            classifier_cdd_sum += feature_cdds.get(input)
         except TypeError:
             print("Error: cdd score. Feature:", input, " - score not found.")
             sys.exit(0)
@@ -121,6 +125,7 @@ def evaluate_classifier(classifier,
                         negatives,
                         positives,
                         feature_cdds,
+                        uniqueness,
                         bacc_weight):
 
     # get data info
@@ -189,7 +194,7 @@ def evaluate_classifier(classifier,
     if len(feature_cdds) == 0:  # if no feature cdds provided
         cdd_score = 0
     else:  # else calculate cdd_score
-        cdd_score = calculate_cdd_score(inputs, feature_cdds)
+        cdd_score = calculate_cdd_score(inputs, feature_cdds, uniqueness)
 
     # calculate cdd score
     classifier_score = calculate_multi_objective_score(bacc, cdd_score, bacc_weight)
@@ -216,6 +221,7 @@ def evaluate_individuals(population,
                          dataset,
                          bacc_weight,
                          feature_cdds,
+                         uniqueness,
                          global_best_score,
                          best_classifiers):
 
@@ -233,7 +239,8 @@ def evaluate_individuals(population,
     for classifier in population:
 
         classifier_score, bacc, errors, error_rates, additional_scores, cdd_score = \
-            evaluate_classifier(classifier, dataset, annotation, negatives, positives, feature_cdds, bacc_weight)
+            evaluate_classifier(classifier, dataset, annotation, negatives, positives, feature_cdds, uniqueness,
+                                bacc_weight)
 
         # assigning classifier scores
         classifier.errors = errors
