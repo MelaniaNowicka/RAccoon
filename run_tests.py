@@ -238,21 +238,10 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
     print("\n###########PARAMETER TUNING###########")
     print("\n***CROSSVALIDATION DATA DIVISION***")
     cv_folds = int(config_file['DATA DIVISION']['CVFolds'])
-    training_cv_datasets, validation_cv_datasets = toolbox.divide_into_cv_folds(training_data, cv_folds)
-
-    # save to files
-    fold = 1
-    for train_set, val_set in zip(training_cv_datasets, validation_cv_datasets):
-
-        new_name = "_train_" + str(fold) + ".csv"
-        filename = train_dataset_filename.replace(".csv", new_name)
-        train_set.to_csv(filename, sep=";", index=False)
-
-        new_name = "_val_" + str(fold) + ".csv"
-        filename = train_dataset_filename.replace(".csv", new_name)
-        val_set.to_csv(filename, sep=";", index=False)
-
-        fold = fold + 1
+    pairing = config_file.getboolean("DATA DIVISION", "Pairing")
+    set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
+    training_cv_datasets, validation_cv_datasets = \
+        toolbox.divide_into_cv_folds(train_dataset_filename, training_data, cv_folds, pairing, set_seed)
 
     # discretize cv folds
     print("\n***DATA DISCRETIZATION***")

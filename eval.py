@@ -43,11 +43,11 @@ def calculate_cdd_score(inputs, feature_cdds, uniqueness):
     if uniqueness is True:
         inputs = set(inputs)
 
-    for input in inputs:
+    for i in inputs:
         try:
-            classifier_cdd_sum += feature_cdds.get(input)
+            classifier_cdd_sum += feature_cdds.get(i)
         except TypeError:
-            print("Error: cdd score. Feature:", input, " - score not found.")
+            print("Error: cdd score. Feature:", i, " - score not found.")
             sys.exit(0)
 
     # calculate cdd score
