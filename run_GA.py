@@ -58,7 +58,7 @@ def check_params(args):
                         help='fixed number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300,
                         help='population size')
-    parser.add_argument('--elite_frac', '--elite-frac', dest="elite_frac", type=float, default=None,
+    parser.add_argument('--elite_frac', '--elite-frac', dest="elite_frac", type=float, default=0,
                         help='copy fraction of current best solutions to the population')
     parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
                         help='List of pre-optimized rules')
@@ -129,7 +129,7 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     # MUTATION
     population = mutation.mutate(population, features, mutation_probability, evaluation_threshold)
 
-    if elite_fraction is not None:
+    if elite_fraction > 0:
         population = add_best_solutions(population, population_size, old_population, elite_fraction)
 
     # REMOVE RULE DUPLICATES
