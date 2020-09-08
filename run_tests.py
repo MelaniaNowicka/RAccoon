@@ -284,7 +284,7 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
         filename = train_dataset_filename.replace(".csv", new_name)
         train_set.to_csv(filename, sep=";", index=False)
 
-        new_name = "_test_" + str(fold) + "_bin.csv"
+        new_name = "_val_" + str(fold) + "_bin.csv"
         filename = train_dataset_filename.replace(".csv", new_name)
         val_set.to_csv(filename, sep=";", index=False)
 
