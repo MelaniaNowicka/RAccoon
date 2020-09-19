@@ -265,9 +265,9 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
     print("TWO STATE FEATURES: ", two_states_features)
     print("OTHER PATTERN FEATURES: ", other_pattern_features)
     print("AVG CDD: ", numpy.average(cdd_list))
-    print("STD CDD: ", numpy.std(cdd_list))
+    print("STD CDD: ", numpy.std(cdd_list, ddof=1))
     print("AVG CDD ALL: ", numpy.average(list(cdds.values())))
-    print("STD CDD ALL: ", numpy.std(list(cdds.values())))
+    print("STD CDD ALL: ", numpy.std(list(cdds.values()), ddof=1))
 
     if not isinstance(train_dataset, pandas.DataFrame):
         # write data to a file
@@ -323,7 +323,7 @@ def discretize_test_data(test_dataset, thresholds):
 
 
 # discretize several training and testing data sets (use lists: training_fold_list, testing_fold_list)
-def discretize_data_for_tests(training_fold_list, testing_fold_list, m_segments, alpha_param, lambda_param,
+def discretize_data_for_tests(training_fold_list, validation_fold_list, m_segments, alpha_param, lambda_param,
                               print_results):
 
     discretized_train_data = []  # list of discretized train fractions
@@ -333,7 +333,7 @@ def discretize_data_for_tests(training_fold_list, testing_fold_list, m_segments,
     fold = 1  # count folds
 
     # iterate over train and test data
-    for training_fold, testing_fold in zip(training_fold_list, testing_fold_list):
+    for training_fold, testing_fold in zip(training_fold_list, validation_fold_list):
 
         print("\nDISCRETIZATION: ", fold)
         fold += 1

@@ -90,8 +90,9 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
 
     for i in range(0, int(population_size / 2)):  # iterate through population
 
+        # select two parents
         first_parent_id, second_parent_id = selection.select(population, tournament_size)
-        # add new parents to the selected parents
+        # add new parents to selected parents
         selected_parents.append(population[first_parent_id].__copy__())
         selected_parents.append(population[second_parent_id].__copy__())
 
@@ -137,11 +138,14 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
         classifier.remove_duplicates()
 
     # EVALUATION OF THE POPULATION
-    new_global_best_score, avg_population_score, best_classifiers = eval.evaluate_individuals(population, dataset,
-                                                                                              bacc_weight, feature_cdds,
-                                                                                              uniqueness,
-                                                                                              global_best_score,
-                                                                                              best_classifiers)
+    new_global_best_score, avg_population_score, best_classifiers = \
+        eval.evaluate_individuals(population=population,
+                                  dataset=dataset,
+                                  bacc_weight=bacc_weight,
+                                  feature_cdds=feature_cdds,
+                                  uniqueness=uniqueness,
+                                  global_best_score=global_best_score,
+                                  best_classifiers=best_classifiers)
     if print_results:
         print("average population score: ", avg_population_score)
 
@@ -178,7 +182,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           iterations,  # number of iterations without improvement till termination
                           fixed_iterations,  # fixed number of iterations
                           population_size,  # size of a population
-                          elite_frac,  # fraction of elite solutions
+                          elite_fraction,  # fraction of elite solutions
                           rule_list,  # list of pre-optimized rules
                           popt_fraction,  # fraction of population that is pre-optimized
                           classifier_size,  # max size of a classifier
@@ -204,6 +208,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         dataset = train_data.__copy__()
         header = dataset.columns.values.tolist()
         features = header[2:]
+        samples, annotation, negatives, positives = preproc.get_data_info(dataset, header)
     else:
         # read data
         dataset, annotation, negatives, positives, features = preproc.read_data(train_data)
@@ -226,8 +231,8 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     # EVALUATE INDIVIDUALS
     first_global_best_score, first_avg_population_score, best_classifiers = \
-        eval.evaluate_individuals(population, dataset, bacc_weight, feature_cdds, uniqueness, global_best_score,
-                                  best_classifiers)
+        eval.evaluate_individuals(population, dataset, bacc_weight, feature_cdds,
+                                  uniqueness, global_best_score, best_classifiers)
 
     if print_results:
         print("first global best score: ", first_global_best_score)
@@ -243,10 +248,21 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     # run as long as there is score change
     while run_algorithm:
 
-        new_global_best_score = run_iteration(dataset, features, feature_cdds, population, population_size, elite_frac,
-                                              evaluation_threshold, bacc_weight, uniqueness, global_best_score,
-                                              best_classifiers, crossover_probability, mutation_probability,
-                                              tournament_size, print_results)
+        new_global_best_score = run_iteration(dataset=dataset,
+                                              features=features,
+                                              feature_cdds=feature_cdds,
+                                              population=population,
+                                              population_size=population_size,
+                                              elite_fraction=elite_fraction,
+                                              evaluation_threshold=evaluation_threshold,
+                                              bacc_weight=bacc_weight,
+                                              uniqueness=uniqueness,
+                                              global_best_score=global_best_score,
+                                              best_classifiers=best_classifiers,
+                                              crossover_probability=crossover_probability,
+                                              mutation_probability=mutation_probability,
+                                              tournament_size=tournament_size,
+                                              print_results=print_results)
 
         # CHECK IMPROVEMENT
         if eval.is_higher(global_best_score, new_global_best_score):  # if there was improvement
@@ -261,7 +277,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
             if print_results:
                 print("new best score: ", global_best_score)
 
-        else:  # if there is no improvement increase the number of updates and reset the iteration counter
+        else:  # if there is no improvement increase the number of updates
             iteration_counter = iteration_counter + 1
 
         # if the iteration_counter reaches the maximal number of allowed iterations stop the algorithm
@@ -425,28 +441,28 @@ def repeat(repeats, args):
         first_avg_population_scores.append(first_avg_pop)
 
     print("\nRESULTS")
-    print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores))
+    print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores, ddof=1))
     if test_bacc is not None:
-        print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores))
-    print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", numpy.std(updates_list))
-    print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", numpy.std(time))
-    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", numpy.std(first_scores))
+        print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores, ddof=1))
+    print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", numpy.std(updates_list, ddof=1))
+    print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", numpy.std(time, ddof=1))
+    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", numpy.std(first_scores, ddof=1))
     print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores), " STDEV: ",
-          numpy.std(first_avg_population_scores))
+          numpy.std(first_avg_population_scores, ddof=1))
 
     if test_bacc is not None:
-        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
-              numpy.average(test_scores), ";", numpy.std(test_scores), ";",
-              numpy.average(updates_list), ";", numpy.std(updates_list), ";",
-              numpy.average(time), ";", numpy.std(time), ";",
-              numpy.average(first_scores), ";", numpy.std(first_scores), ";",
-              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
+        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores, ddof=1), ";",
+              numpy.average(test_scores), ";", numpy.std(test_scores, ddof=1), ";",
+              numpy.average(updates_list), ";", numpy.std(updates_list, ddof=1), ";",
+              numpy.average(time), ";", numpy.std(time, ddof=1), ";",
+              numpy.average(first_scores), ";", numpy.std(first_scores, ddof=1), ";",
+              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores, ddof=1))
     else:
-        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores), ";",
-              numpy.average(updates_list), ";", numpy.std(updates_list), ";",
-              numpy.average(time), ";", numpy.std(time), ";",
-              numpy.average(first_scores), ";", numpy.std(first_scores), ";",
-              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores))
+        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores, ddof=1), ";",
+              numpy.average(updates_list), ";", numpy.std(updates_list, ddof=1), ";",
+              numpy.average(time), ";", numpy.std(time, ddof=1), ";",
+              numpy.average(first_scores), ";", numpy.std(first_scores, ddof=1), ";",
+              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores, ddof=1))
 
 
 if __name__ == "__main__":

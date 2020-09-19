@@ -21,7 +21,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
                    print_results):
 
     # parameter set
-    weight, iter, pop, cp, mp, ts = parameter_set
+    weight, tc, pop, cp, mp, ts = parameter_set
 
     # unpack training data, testing data and feature cdds
     training_fold, testing_fold, feature_cdd_fold = data
@@ -50,7 +50,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
     test_ppv_avg = []
     test_fdr_avg = []
 
-    # number of inputs and rules
+    # lists of numbers of inputs and rules
     inputs_avg = []
     rules_avg = []
 
@@ -70,10 +70,10 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         classifier, best_classifiers, updates, first_global_best_score, first_avg_population_score \
             = run_GA.run_genetic_algorithm(train_data=training_fold,
                                            filter_data=False,
-                                           iterations=iter,
+                                           iterations=tc,
                                            fixed_iterations=None,
                                            population_size=pop,
-                                           elite_frac=elite,
+                                           elite_fraction=elite,
                                            rule_list=rules,
                                            popt_fraction=0,
                                            classifier_size=classifier_size,
@@ -94,12 +94,18 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 
         # get annotation
         header = training_fold.columns.values.tolist()
-        samples, annotation, negatives, positives = preproc.get_data_info(training_fold, header)
+        samples, annotation, negatives, positives = preproc.get_data_info(dataset=training_fold, header=header)
 
         # calculate best train BACC
         train_score, train_bacc, train_errors, train_error_rates, train_additional_scores, train_cdd = \
-            eval.evaluate_classifier(classifier, training_fold, annotation, negatives, positives, feature_cdd_fold,
-                                     uniqueness, weight)
+            eval.evaluate_classifier(classifier=classifier,
+                                     dataset=training_fold,
+                                     annotation=annotation,
+                                     negatives=negatives,
+                                     positives=positives,
+                                     feature_cdds=feature_cdd_fold,
+                                     uniqueness=uniqueness,
+                                     bacc_weight=weight)
 
         print("TRAIN BACC: ", train_bacc)
 
@@ -124,8 +130,14 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 
         # calculate best test BACC
         test_score, test_bacc, test_errors, test_error_rates, test_additional_scores, train_cdd = \
-            eval.evaluate_classifier(classifier, testing_fold, annotation, negatives, positives, feature_cdd_fold,
-                                     uniqueness, weight)
+            eval.evaluate_classifier(classifier=classifier,
+                                     dataset=testing_fold,
+                                     annotation=annotation,
+                                     negatives=negatives,
+                                     positives=positives,
+                                     feature_cdds=feature_cdd_fold,
+                                     uniqueness=uniqueness,
+                                     bacc_weight=weight)
 
         test_bacc_avg.append(test_bacc)
 
@@ -155,7 +167,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         # calculate train average scores
         print("\nTRAIN AVERAGE RESULTS")
         print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
-        print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg))
+        print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg, ddof=1))
         print("TRAIN AVG CDD: ", numpy.average(train_cdd_avg))
         print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
         print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
@@ -169,7 +181,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         # calculate test average scores
         print("\nTEST AVERAGE RESULTS")
         print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
-        print("TEST AVG STDEV: ", numpy.std(test_bacc_avg))
+        print("TEST AVG STDEV: ", numpy.std(test_bacc_avg, ddof=1))
         print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
         print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
         print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
@@ -190,8 +202,9 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         print("RUN-TIME PER TRAINING: ", numpy.average(train_runtimes))
         print("UPDATES PER TRAINING:", numpy.average(update_number))
 
-        print("CSV;", numpy.average(train_bacc_avg), ";", numpy.std(train_bacc_avg), ";", numpy.average(test_bacc_avg),
-              ";", numpy.std(test_bacc_avg), ";", numpy.average(rules_avg), ";", numpy.average(inputs_avg))
+        print("CSV;", numpy.average(train_bacc_avg), ";", numpy.std(train_bacc_avg, ddof=1), ";",
+              numpy.average(test_bacc_avg), ";", numpy.std(test_bacc_avg, ddof=1), ";",
+              numpy.average(rules_avg), ";", numpy.average(inputs_avg))
 
     test_bacc_avg = numpy.average(test_bacc_avg)
 
@@ -199,49 +212,56 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 
 
 # run test
-def run_test(train_dataset_filename, test_dataset_filename, rules, config_filename):
+def run_test(train_data_file_name, test_data_file_name, rules, config_file_name):
 
     # parse configuration file
     config_file = configparser.ConfigParser()
-    config_file.read(config_filename)
+    config_file.read(config_file_name)
 
     # READING/CREATING TRAINING AND TESTING DATA
     # create test data if not given
-    if test_dataset_filename is None:
-        train_frac = int(config_file['DATA DIVISION']['TrainingFraction'])
+    if test_data_file_name is None:
+        train_fraction = int(config_file['DATA DIVISION']['TrainingFraction'])
+        set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
 
         # division into training and testing data
         print("###########READING DATA###########")
         print("\n***DIVISION INTO TRAINING AND TESTING DATA SETS***")
-        training_data, testing_data = toolbox.divide_into_train_test(train_dataset_filename, train_frac)
+        training_data, testing_data = toolbox.divide_into_train_test(train_data_file_name, train_fraction, set_seed)
 
         # save to files
-        new_name = "_train_" + str(train_frac) + ".csv"
-        filename = train_dataset_filename.replace(".csv", new_name)
+        new_name = "_train_" + str(train_fraction) + ".csv"
+        filename = train_data_file_name.replace(".csv", new_name)
         training_data.to_csv(filename, sep=";", index=False)
 
-        new_name = "_test_" + str(100 - train_frac) + ".csv"
-        filename = train_dataset_filename.replace(".csv", new_name)
+        new_name = "_test_" + str(100 - train_fraction) + ".csv"
+        filename = train_data_file_name.replace(".csv", new_name)
         testing_data.to_csv(filename, sep=";", index=False)
 
     else:
         print("###########READING DATA###########")
-        # read the data
+        # read data
         print("\nTRAIN DATA")
         training_data, train_annotation, train_positives, train_negatives, train_features = \
-            preproc.read_data(train_dataset_filename)
+            preproc.read_data(train_data_file_name)
         print("\nTEST DATA")
         testing_data, test_annotation, test_positives, test_negatives, test_features = \
-            preproc.read_data(test_dataset_filename)
+            preproc.read_data(test_data_file_name)
 
     # PARAMETER TUNING - CROSS-VALIDATION
     print("\n###########PARAMETER TUNING###########")
+
     print("\n***CROSSVALIDATION DATA DIVISION***")
     cv_folds = int(config_file['DATA DIVISION']['CVFolds'])
     pairing = config_file.getboolean("DATA DIVISION", "Pairing")
     set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
+
     training_cv_datasets, validation_cv_datasets = \
-        toolbox.divide_into_cv_folds(train_dataset_filename, training_data, cv_folds, pairing, set_seed)
+        toolbox.divide_into_cv_folds(dataset_file_name=train_data_file_name,
+                                     dataset=training_data,
+                                     k_folds=cv_folds,
+                                     pairing=pairing,
+                                     set_seed=set_seed)
 
     # discretize cv folds
     print("\n***DATA DISCRETIZATION***")
@@ -250,10 +270,14 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
     lambda_bin = float(config_file["BINARIZATION PARAMETERS"]["LambdaBin"])
 
     training_cv_datasets_bin, validation_cv_datasets_bin, feature_cdds = \
-        preproc.discretize_data_for_tests(training_cv_datasets, validation_cv_datasets, m_segments, alpha_bin,
-                                          lambda_bin, print_results=False)
+        preproc.discretize_data_for_tests(training_fold_list=training_cv_datasets,
+                                          validation_fold_list=validation_cv_datasets,
+                                          m_segments=m_segments,
+                                          alpha_param=alpha_bin,
+                                          lambda_param=lambda_bin,
+                                          print_results=False)
 
-    classifier_size = float(config_file["CLASSIFIER PARAMETERS"]["ClassifierSize"])
+    classifier_size = int(config_file["CLASSIFIER PARAMETERS"]["ClassifierSize"])
     set_alpha = config_file.getboolean("CLASSIFIER PARAMETERS", "SetAlpha")
 
     if set_alpha is True:
@@ -281,27 +305,27 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
     for train_set, val_set in zip(training_cv_datasets_bin_filtered, validation_cv_datasets_bin):
 
         new_name = "_train_" + str(fold) + "_bin.csv"
-        filename = train_dataset_filename.replace(".csv", new_name)
+        filename = train_data_file_name.replace(".csv", new_name)
         train_set.to_csv(filename, sep=";", index=False)
 
         new_name = "_val_" + str(fold) + "_bin.csv"
-        filename = train_dataset_filename.replace(".csv", new_name)
+        filename = train_data_file_name.replace(".csv", new_name)
         val_set.to_csv(filename, sep=";", index=False)
 
         fold = fold + 1
 
     # parameter tuning
     print("\n***PARAMETER TUNING***")
-    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets_bin_filtered,
-                                                                 validation_cv_datasets_bin,
-                                                                 feature_cdds,
-                                                                 config_file,
-                                                                 classifier_size,
-                                                                 evaluation_threshold,
-                                                                 elite_fraction,
-                                                                 uniqueness,
-                                                                 rules,
-                                                                 test_repeats)
+    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin_filtered,
+                                                                 validation_cv_datasets=validation_cv_datasets_bin,
+                                                                 feature_cdds=feature_cdds,
+                                                                 config=config_file,
+                                                                 classifier_size=classifier_size,
+                                                                 evaluation_threshold=evaluation_threshold,
+                                                                 elite_fraction=elite_fraction,
+                                                                 uniqueness=uniqueness,
+                                                                 rule_list=rules,
+                                                                 test_repeats=test_repeats)
 
     w, tc, ps, cp, mp, ts = best_parameters
 
@@ -313,23 +337,27 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
     print("\n***DATA DISCRETIZATION***")
     # binarize training and testing data sets
     discretized_train_data, discretized_test_data, feature_cdds = \
-        preproc.discretize_data_for_tests([training_data], [testing_data], m_segments, alpha_bin, lambda_bin,
+        preproc.discretize_data_for_tests(training_fold_list=[training_data],
+                                          validation_fold_list=[testing_data],
+                                          m_segments=m_segments,
+                                          alpha_param=alpha_bin,
+                                          lambda_param=lambda_bin,
                                           print_results=True)
 
     new_name = "_train_bin.csv"
-    filename_train = train_dataset_filename.replace(".csv", new_name)
+    filename_train = train_data_file_name.replace(".csv", new_name)
     discretized_train_data[0].to_csv(filename_train, sep=";", index=False)
 
     #remove irrelevant miRNAs
-    discretized_train_data[0], relevant_features = preproc.remove_irrelevant_features(discretized_train_data[0])
+    discretized_train_data_filtered, relevant_features = preproc.remove_irrelevant_features(discretized_train_data[0])
 
     # save to files
     new_name = "_train_bin_filtered.csv"
-    filename_train = train_dataset_filename.replace(".csv", new_name)
-    discretized_train_data[0].to_csv(filename_train, sep=";", index=False)
+    filename_train = train_data_file_name.replace(".csv", new_name)
+    discretized_train_data_filtered.to_csv(filename_train, sep=";", index=False)
 
     new_name = "_test_bin.csv"
-    filename_test = test_dataset_filename.replace(".csv", new_name)
+    filename_test = test_data_file_name.replace(".csv", new_name)
     discretized_test_data[0].to_csv(filename_test, sep=";", index=False)
 
     # train and test
@@ -341,8 +369,15 @@ def run_test(train_dataset_filename, test_dataset_filename, rules, config_filena
     print("SINGLE TEST REPEATS: ", test_repeats, "\n")
 
     #run test
-    train_and_test((discretized_train_data[0], discretized_test_data[0], feature_cdds[0]), best_parameters,
-                   classifier_size, evaluation_threshold, elite_fraction, rules, uniqueness, test_repeats, True)
+    train_and_test(data=(discretized_train_data_filtered, discretized_test_data[0], feature_cdds[0]),
+                   parameter_set=best_parameters,
+                   classifier_size=classifier_size,
+                   evaluation_threshold=evaluation_threshold,
+                   elite=elite_fraction,
+                   rules=rules,
+                   uniqueness=uniqueness,
+                   repeats=test_repeats,
+                   print_results=True)
 
 
 if __name__ == "__main__":

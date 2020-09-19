@@ -109,11 +109,7 @@ def calculate_additional_scores(tp, tn, fp, fn):
         sys.exit(0)
 
     # create a dictionary for additional scores
-    additional_scores = {}
-    additional_scores["f1"] = f1
-    additional_scores["mcc"] = mcc
-    additional_scores["ppv"] = ppv
-    additional_scores["fdr"] = fdr
+    additional_scores = {"f1": f1, "mcc": mcc, "ppv": ppv, "fdr": fdr}
 
     return additional_scores
 

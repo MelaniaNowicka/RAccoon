@@ -8,7 +8,7 @@ from functools import partial
 
 # generate parameters
 def generate_parameters(tune_weights, weight_lower, weight_upper, weight_step,
-                        iter_lower, iter_upper, iter_step,
+                        tc_lower, tc_upper, tc_step,
                         pop_lower, pop_upper, pop_step,
                         cp_lower, cp_upper, cp_step,
                         mp_lower, mp_upper, mp_step,
@@ -21,20 +21,20 @@ def generate_parameters(tune_weights, weight_lower, weight_upper, weight_step,
             weight = random.randrange(weight_lower, weight_upper + 1, weight_step) / 100  # generate weight
         else:
             weight = weight_lower
-        iter = random.randrange(iter_lower, iter_upper+1, iter_step)  # iterations
+        tc = random.randrange(tc_lower, tc_upper + 1, tc_step)  # iterations
         pop = random.randrange(pop_lower, pop_upper+1, pop_step)  # population size
         cp = random.randrange(cp_lower, cp_upper+1, cp_step) / 100  # crossover probability
         mp = random.randrange(mp_lower, mp_upper+1, mp_step) / 100  # mutation probability
         ts = random.randrange(ts_lower, ts_upper+1, ts_step) / 100  # tournament size
-        while [iter, pop, cp, mp, ts] in parameter_sets:  # if parameter set is already listed
+        while [tc, pop, cp, mp, ts] in parameter_sets:  # if parameter set is already listed
             if tune_weights:
                 weight = random.randrange(weight_lower, weight_upper + 1, weight_step) / 100
-            iter = random.randrange(iter_lower, iter_upper + 1, iter_step)
+            tc = random.randrange(tc_lower, tc_upper + 1, tc_step)
             pop = random.randrange(pop_lower, pop_upper + 1, pop_step)
             cp = random.randrange(cp_lower, cp_upper + 1, cp_step) / 100
             mp = random.randrange(mp_lower, mp_upper + 1, mp_step) / 100
             ts = random.randrange(ts_lower, ts_upper + 1, ts_step) / 100
-        parameter_sets.append([weight, iter, pop, cp, mp, ts])  # add set to list
+        parameter_sets.append([weight, tc, pop, cp, mp, ts])  # add set to list
 
     return parameter_sets
 
@@ -50,7 +50,7 @@ def tune_parameters(training_cv_datasets, validation_cv_datasets, feature_cdds, 
         weight_lower_bound = int(config['PARAMETER TUNING']['WeightLowerBound'])
         weight_upper_bound = int(config['PARAMETER TUNING']['WeightUpperBound'])
         weight_step = int(config['PARAMETER TUNING']['WeightStep'])
-    else:  # otherwise assign weight
+    else:  # otherwise assign weight from config file
         weight_lower_bound = float(config['OBJECTIVE FUNCTION']['Weight'])
         weight_upper_bound = float(config['OBJECTIVE FUNCTION']['Weight'])
         weight_step = float(config['OBJECTIVE FUNCTION']['Weight'])
@@ -140,7 +140,7 @@ def tune_parameters(training_cv_datasets, validation_cv_datasets, feature_cdds, 
 
         # calculate average bacc scores for folds and std
         val_bacc_avg = numpy.average(val_bacc_cv)
-        val_std_avg = numpy.std(val_bacc_cv)
+        val_std_avg = numpy.std(val_bacc_cv, ddof=1)
 
         print("\nRESULTS PARAMETER SET ", parameter_set_number, ": ", parameter_set)
         print("VALIDATION AVG BACC: ", val_bacc_avg, ", STD: ", val_std_avg)
