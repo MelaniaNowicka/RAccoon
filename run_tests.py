@@ -11,6 +11,7 @@ import tuner
 import toolbox
 import random
 import numpy
+import os
 
 numpy.random.seed(1)
 random.seed(1)
@@ -218,6 +219,26 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     config_file = configparser.ConfigParser()
     config_file.read(config_file_name)
 
+    # create new directory
+    path_train = train_data_file_name
+    head_tail = os.path.split(path_train)
+    path_train = head_tail[0]
+    file_name_train = head_tail[1]
+    date = datetime.now()
+    dir_name = date.strftime("%Y-%m-%d_%H-%M-%S")
+    path = "/".join([path_train, dir_name])
+
+    path_test = test_data_file_name
+    head_tail = os.path.split(path_test)
+    path_test = head_tail[0]
+    file_name_test = head_tail[1]
+
+    if not os.path.exists(path):
+        os.mkdir(path)
+        print("Directory ", path, " Created ")
+    else:
+        print("Directory ", path, " already exists")
+
     # READING/CREATING TRAINING AND TESTING DATA
     # create test data if not given
     if test_data_file_name is None:
@@ -231,11 +252,13 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
         # save to files
         new_name = "_train_" + str(train_fraction) + ".csv"
-        filename = train_data_file_name.replace(".csv", new_name)
+        new_name = file_name_train.replace(".csv", new_name)
+        filename = "/".join([path, new_name])
         training_data.to_csv(filename, sep=";", index=False)
 
         new_name = "_test_" + str(100 - train_fraction) + ".csv"
-        filename = train_data_file_name.replace(".csv", new_name)
+        new_name = file_name_test.replace(".csv", new_name)
+        filename = "/".join([path, new_name])
         testing_data.to_csv(filename, sep=";", index=False)
 
     else:
@@ -305,11 +328,13 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     for train_set, val_set in zip(training_cv_datasets_bin_filtered, validation_cv_datasets_bin):
 
         new_name = "_train_" + str(fold) + "_bin.csv"
-        filename = train_data_file_name.replace(".csv", new_name)
+        new_name = file_name_train.replace(".csv", new_name)
+        filename = "/".join([path, new_name])
         train_set.to_csv(filename, sep=";", index=False)
 
         new_name = "_val_" + str(fold) + "_bin.csv"
-        filename = train_data_file_name.replace(".csv", new_name)
+        new_name = file_name_test.replace(".csv", new_name)
+        filename = "/".join([path, new_name])
         val_set.to_csv(filename, sep=";", index=False)
 
         fold = fold + 1
@@ -345,7 +370,8 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
                                           print_results=True)
 
     new_name = "_train_bin.csv"
-    filename_train = train_data_file_name.replace(".csv", new_name)
+    new_name = file_name_train.replace(".csv", new_name)
+    filename_train = "/".join([path, new_name])
     discretized_train_data[0].to_csv(filename_train, sep=";", index=False)
 
     #remove irrelevant miRNAs
@@ -353,11 +379,13 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
     # save to files
     new_name = "_train_bin_filtered.csv"
-    filename_train = train_data_file_name.replace(".csv", new_name)
+    new_name = file_name_train.replace(".csv", new_name)
+    filename_train = "/".join([path, new_name])
     discretized_train_data_filtered.to_csv(filename_train, sep=";", index=False)
 
     new_name = "_test_bin.csv"
-    filename_test = test_data_file_name.replace(".csv", new_name)
+    new_name = file_name_test.replace(".csv", new_name)
+    filename_test = "/".join([path, new_name])
     discretized_test_data[0].to_csv(filename_test, sep=";", index=False)
 
     # train and test
@@ -387,7 +415,7 @@ if __name__ == "__main__":
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
 
-    print("Log date: ", datetime.now(), "\n")
+    print("Log date: ", datetime.now().isoformat(), "\n")
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', '--dataset-filename-train',
