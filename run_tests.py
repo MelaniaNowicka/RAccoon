@@ -235,9 +235,11 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
     if not os.path.exists(path):
         os.mkdir(path)
-        print("Directory ", path, " Created ")
+        print("Directory ", path, " was created.\n")
     else:
-        print("Directory ", path, " already exists")
+        print("Directory ", path, " already exists.")
+
+    toolbox.write_config_to_log(config_file)
 
     # READING/CREATING TRAINING AND TESTING DATA
     # create test data if not given

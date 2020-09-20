@@ -6,6 +6,62 @@ import random
 random.seed(1)
 
 
+def write_config_to_log(config_file):
+
+    print("###########READING CONFIG###########\n")
+    print("CLASSIFIER PARAMETERS")
+    print("Classifier Size: ", int(config_file['CLASSIFIER PARAMETERS']['ClassifierSize']))
+    print("Set Alpha: ", config_file.getboolean("CLASSIFIER PARAMETERS", "SetAlpha"))
+    print("Alpha: ", float(config_file['CLASSIFIER PARAMETERS']['Alpha']))
+
+    print("\nDATA DIVISION")
+    print("Training Fraction: ", int(config_file['DATA DIVISION']['TrainingFraction']))
+    print("CV Folds: ", int(config_file['DATA DIVISION']['CVFolds']))
+    print("Pairing: ", config_file.getboolean("DATA DIVISION", "Pairing"))
+    print("Set Seed: ", config_file.getboolean("DATA DIVISION", "SetSeed"))
+
+    print("\nBINARIZATION PARAMETERS")
+    print("M Segments: ", int(config_file['BINARIZATION PARAMETERS']['MSegments']))
+    print("Alpha Bin: ", float(config_file['BINARIZATION PARAMETERS']['AlphaBin']))
+    print("Lambda Bin: ", float(config_file['BINARIZATION PARAMETERS']['LambdaBin']))
+
+    print("\nPARAMETER TUNING")
+    print("Number Of Sets: ", int(config_file['PARAMETER TUNING']['NumberOfSets']))
+    print("Tune Weights: ", config_file.getboolean("PARAMETER TUNING", "TuneWeights"))
+    print("Iteration Lower Bound: ", int(config_file['PARAMETER TUNING']['IterationLowerBound']))
+    print("Iteration Upper Bound: ", int(config_file['PARAMETER TUNING']['IterationUpperBound']))
+    print("Iteration Step: ", int(config_file['PARAMETER TUNING']['IterationStep']))
+    print("Population Lower Bound: ", int(config_file['PARAMETER TUNING']['PopulationLowerBound']))
+    print("Population Upper Bound: ", int(config_file['PARAMETER TUNING']['PopulationUpperBound']))
+    print("Population Step: ", int(config_file['PARAMETER TUNING']['PopulationStep']))
+    print("Crossover Lower Bound: ", int(config_file['PARAMETER TUNING']['CrossoverLowerBound']))
+    print("Crossover Upper Bound: ", int(config_file['PARAMETER TUNING']['CrossoverUpperBound']))
+    print("Crossover Step: ", int(config_file['PARAMETER TUNING']['CrossoverStep']))
+    print("Mutation Lower Bound: ", int(config_file['PARAMETER TUNING']['MutationLowerBound']))
+    print("Mutation Upper Bound: ", int(config_file['PARAMETER TUNING']['MutationUpperBound']))
+    print("Mutation Step: ", int(config_file['PARAMETER TUNING']['MutationStep']))
+    print("Tournament Lower Bound: ", int(config_file['PARAMETER TUNING']['TournamentLowerBound']))
+    print("Tournament Upper Bound: ", int(config_file['PARAMETER TUNING']['TournamentUpperBound']))
+    print("Tournament Step: ", int(config_file['PARAMETER TUNING']['TournamentStep']))
+    print("Weight Lower Bound: ", int(config_file['PARAMETER TUNING']['WeightLowerBound']))
+    print("Weight Upper Bound: ", int(config_file['PARAMETER TUNING']['WeightUpperBound']))
+    print("Weight Step: ", int(config_file['PARAMETER TUNING']['WeightStep']))
+
+    print("\nRUN PARAMETERS")
+    print("Single Test Repeats: ", int(config_file['RUN PARAMETERS']['SingleTestRepeats']))
+
+    print("\nALGORITHM PARAMETERS")
+    print("Elite Fraction: ", int(config_file['ALGORITHM PARAMETERS']['EliteFraction']))
+
+    print("\nOBJECTIVE FUNCTION")
+    print("Weight: ", float(config_file['OBJECTIVE FUNCTION']['Weight']))
+    print("Uniqueness: ", config_file.getboolean("OBJECTIVE FUNCTION", "Uniqueness"))
+
+    print("\nPARALELIZATION")
+    print("Proccessor Numb: ", int(config_file['PARALELIZATION']['ProccessorNumb']))
+    print("\n")
+
+
 def compare_folds(fold1, fold2):
 
     if isinstance(fold1, pandas.DataFrame) and isinstance(fold2, pandas.DataFrame):
