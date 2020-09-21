@@ -51,7 +51,7 @@ def write_config_to_log(config_file):
     print("Single Test Repeats: ", int(config_file['RUN PARAMETERS']['SingleTestRepeats']))
 
     print("\nALGORITHM PARAMETERS")
-    print("Elite Fraction: ", int(config_file['ALGORITHM PARAMETERS']['EliteFraction']))
+    print("Elite Fraction: ", float(config_file['ALGORITHM PARAMETERS']['EliteFraction']))
 
     print("\nOBJECTIVE FUNCTION")
     print("Weight: ", float(config_file['OBJECTIVE FUNCTION']['Weight']))
