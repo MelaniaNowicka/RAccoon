@@ -16,6 +16,7 @@ import log
 import time
 import argparse
 import numpy
+from decimal import *
 
 numpy.random.seed(1)
 random.seed(1)
@@ -155,11 +156,11 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
 # copy current best solutions to current population
 def add_best_solutions(population, population_size, old_population, elite_fraction):
 
-    fraction = int(population_size * elite_fraction)  # calculate fraction of best solutions
+    fraction = int(population_size*elite_fraction)  # calculate fraction of best solutions
     score_list = []
 
     for individual in old_population:
-        score_list.append(individual.score)  # create list of current scores
+        score_list.append(Decimal(individual.score))  # create list of current scores
 
     # sort population and scores
     individual_ids = range(0, len(old_population))
@@ -167,10 +168,10 @@ def add_best_solutions(population, population_size, old_population, elite_fracti
 
     counter = 0
     # copy fraction of best solutions to current population
-    for id in individual_ids_sorted:
+    for idx in individual_ids_sorted:
         if counter >= fraction:
             break
-        population.append(old_population[id].__copy__())
+        population.append(old_population[idx].__copy__())
         counter += 1
 
     return population
