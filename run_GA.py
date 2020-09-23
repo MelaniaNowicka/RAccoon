@@ -131,7 +131,7 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     # MUTATION
     population = mutation.mutate(population, features, mutation_probability, evaluation_threshold)
 
-    if elite_fraction > 0:
+    if eval.is_higher(0.0, elite_fraction):
         population = add_best_solutions(population, population_size, old_population, elite_fraction)
 
     # REMOVE RULE DUPLICATES
