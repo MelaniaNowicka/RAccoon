@@ -197,7 +197,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           print_results):
 
     # initialize best classifier (empty)
-    global_best_score = 0.0  # best classifier BACC
+    global_best_score = Decimal(0.0)  # best classifier BACC
 
     # first best classifier
     best_classifier = popinit.Classifier(rule_set=[], evaluation_threshold=0.0, errors={}, error_rates={}, score=0.0,
