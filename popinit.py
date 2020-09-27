@@ -10,9 +10,10 @@ random.seed(1)
 # inputs are connected with AND
 class SingleRule:
 
-    def __init__(self, pos_inputs, neg_inputs):
+    def __init__(self, pos_inputs, neg_inputs, gate):
         self.pos_inputs = pos_inputs  # non-negated inputs
         self.neg_inputs = neg_inputs  # negated inputs
+        self.gate = gate  # gate (0 - OR, 1 - AND)
 
     # copy object
     def __copy__(self):
@@ -27,7 +28,7 @@ class SingleRule:
         for input in self.neg_inputs:
             new_neg_inputs.append(input)
 
-        return SingleRule(new_pos_inputs, new_neg_inputs)
+        return SingleRule(new_pos_inputs, new_neg_inputs, self.gate)
 
 
 # classifier (individual)
@@ -140,11 +141,16 @@ class Classifier:
 # temp_features consists of features that were not used in the classifier yet
 def initialize_single_rule(temp_features):
 
-    pos_inputs = []  # list of positive inputs
-    neg_inputs = []  # list of negative inputs
-
     # size of a single rule (between 1 and 2 inputs)
     size = random.randint(1, 2)
+
+    if size == 2:
+        gate = random.randint(0, 1)
+    else:
+        gate = 1
+
+    pos_inputs = []  # list of positive inputs
+    neg_inputs = []  # list of negative inputs
 
     for i in range(0, size):  # drawing features for a rule (without replacement) respecting size
 
@@ -162,7 +168,7 @@ def initialize_single_rule(temp_features):
         del temp_features[feature_id]
 
     # initialization of new single rule
-    single_rule = SingleRule(pos_inputs, neg_inputs)
+    single_rule = SingleRule(pos_inputs, neg_inputs, gate)
 
     return single_rule, temp_features
 

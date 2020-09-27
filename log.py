@@ -28,7 +28,10 @@ def write_generation_to_log(population, iteration, best_classifiers, log_message
 
             rule_message = " [" + rule_message + "] "
 
-            rule_message = rule_message.replace(")(", ") AND (")
+            if rule.gate == 0:
+                rule_message = rule_message.replace(")(", ") OR (")
+            elif rule.gate == 1:
+                rule_message = rule_message.replace(")(", ") AND (")
 
             classifier_message = classifier_message + rule_message
 
@@ -67,7 +70,10 @@ def write_final_scores(best_bacc, best_classifiers):
 
             rule_message = " [" + rule_message + "] "
 
-            rule_message = rule_message.replace(")(", ") AND (")
+            if rule.gate == 0:
+                rule_message = rule_message.replace(")(", ") OR (")
+            elif rule.gate == 1:
+                rule_message = rule_message.replace(")(", ") AND (")
 
             classifier_message = classifier_message + rule_message
 

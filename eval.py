@@ -3,6 +3,7 @@ import preproc
 import numpy
 import math
 import sys
+import log
 
 
 # compare floats - is close with 1e-5 tolerance
@@ -145,11 +146,18 @@ def evaluate_classifier(classifier,
         for input in rule.neg_inputs:  # add negative inputs
             columns.append([not x for x in dataset[input].tolist()])  # get all feature levels across samples, negate
 
-        # rule output across samples, fill with '1' as 1 AND 1 gives 1, 1 AND 0 gives 0
-        rule_output = [1] * len(annotation)
+        rule_output = []
 
-        for column in columns:  # go through columns
-            rule_output = [i and j for i, j in zip(rule_output, column)]  # perform AND
+        if rule.gate == 0:
+            # rule output across samples, fill with '0' as 0 OR 0 gives 0, 0 OR 1 gives 1
+            rule_output = [0] * len(annotation)
+            for column in columns:  # go through columns
+                rule_output = [i or j for i, j in zip(rule_output, column)]  # perform AND
+        elif rule.gate == 1:
+            # rule output across samples, fill with '1' as 1 AND 1 gives 1, 1 AND 0 gives 0
+            rule_output = [1] * len(annotation)
+            for column in columns:  # go through columns
+                rule_output = [i and j for i, j in zip(rule_output, column)]  # perform AND
 
         classifier_output = [i + j for i, j in zip(classifier_output, rule_output)]  # sum 'yes/1' outputs
 
