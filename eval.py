@@ -248,7 +248,7 @@ def evaluate_individuals(population,
 
         global_best_score, best_classifiers = update_best_classifier(classifier, global_best_score, best_classifiers)
 
-        individual_scores.append(classifier_score)
+        individual_scores.append(float(classifier_score))
 
     # calculate average score in population
     avg_population_score = numpy.average(individual_scores)
