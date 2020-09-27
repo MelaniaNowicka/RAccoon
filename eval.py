@@ -65,7 +65,7 @@ def calculate_cdd_score(inputs, feature_cdds, uniqueness):
 # balanced accuracy and cdd score
 def calculate_multi_objective_score(bacc, cdd_score, bacc_weight):
 
-    classifier_score = bacc * bacc_weight + cdd_score * (1-bacc_weight)
+    classifier_score = Decimal(bacc * bacc_weight + cdd_score * (1-bacc_weight))
 
     return classifier_score
 

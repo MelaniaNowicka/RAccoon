@@ -160,7 +160,7 @@ def add_best_solutions(population, population_size, old_population, elite_fracti
     score_list = []
 
     for individual in old_population:
-        score_list.append(Decimal(individual.score))  # create list of current scores
+        score_list.append(individual.score)  # create list of current scores
 
     # sort population and scores
     individual_ids = range(0, len(old_population))
