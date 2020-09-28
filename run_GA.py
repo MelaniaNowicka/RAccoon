@@ -146,7 +146,7 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
                                   best_classifiers=best_classifiers)
 
     if elitism is True:
-        population.append(best_classifiers)
+        population.extend(best_classifiers)
 
     if print_results:
         print("average population score: ", avg_population_score)
