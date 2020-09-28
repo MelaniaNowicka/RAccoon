@@ -310,7 +310,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     else:
         evaluation_threshold = None
 
-    elitism = float(config_file["ALGORITHM PARAMETERS"]["Elitism"])
+    elitism = config_file.getboolean("ALGORITHM PARAMETERS", "Elitism")
     uniqueness = config_file.getboolean("OBJECTIVE FUNCTION", "Uniqueness")
     test_repeats = int(config_file["RUN PARAMETERS"]["SingleTestRepeats"])
 
