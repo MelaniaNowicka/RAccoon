@@ -59,7 +59,7 @@ def check_params(args):
                         help='fixed number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300,
                         help='population size')
-    parser.add_argument('--elite_frac', '--elite-frac', dest="elite_frac", type=float, default=0,
+    parser.add_argument('--elitism', '--elitism', dest="elitism", type=float, default=0,
                         help='copy fraction of current best solutions to the population')
     parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
                         help='List of pre-optimized rules')
@@ -78,11 +78,11 @@ def check_params(args):
     return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, \
            params.discretize_data, params.m_bin, params.a_bin, params.l_bin, \
            params.classifier_size, params.evaluation_threshold, params.bacc_weight, params.uniqueness, \
-           params.iterations, params.fixed_iterations, params.population_size, params.elite_frac, params.rule_list, \
+           params.iterations, params.fixed_iterations, params.population_size, params.elitism, params.rule_list, \
            params.p_opt_frac, params.crossover_probability, params.mutation_probability, params.tournament_size
 
 
-def run_iteration(dataset, features, feature_cdds, population, population_size, elite_fraction,
+def run_iteration(dataset, features, feature_cdds, population, population_size, elitism,
                   evaluation_threshold, bacc_weight, uniqueness, global_best_score, best_classifiers,
                   crossover_probability, mutation_probability, tournament_size, print_results):
 
@@ -131,9 +131,6 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     # MUTATION
     population = mutation.mutate(population, features, mutation_probability, evaluation_threshold)
 
-    if eval.is_higher(0.0, elite_fraction):
-        population = add_best_solutions(population, population_size, old_population, elite_fraction)
-
     # REMOVE RULE DUPLICATES
     for classifier in population:
         classifier.remove_duplicates()
@@ -147,34 +144,14 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
                                   uniqueness=uniqueness,
                                   global_best_score=global_best_score,
                                   best_classifiers=best_classifiers)
+
+    if elitism is True:
+        population.append(best_classifiers)
+
     if print_results:
         print("average population score: ", avg_population_score)
 
     return new_global_best_score
-
-
-# copy current best solutions to current population
-def add_best_solutions(population, population_size, old_population, elite_fraction):
-
-    fraction = int(population_size*elite_fraction)  # calculate fraction of best solutions
-    score_list = []
-
-    for individual in old_population:
-        score_list.append(individual.score)  # create list of current scores
-
-    # sort population and scores
-    individual_ids = range(0, len(old_population))
-    scores_sorted, individual_ids_sorted = zip(*sorted(zip(score_list, individual_ids), reverse=True))
-
-    counter = 0
-    # copy fraction of best solutions to current population
-    for idx in individual_ids_sorted:
-        if counter >= fraction:
-            break
-        population.append(old_population[idx].__copy__())
-        counter += 1
-
-    return population
 
 
 # run genetic algorithm
@@ -183,7 +160,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           iterations,  # number of iterations without improvement till termination
                           fixed_iterations,  # fixed number of iterations
                           population_size,  # size of a population
-                          elite_fraction,  # fraction of elite solutions
+                          elitism,  # fraction of elite solutions
                           rule_list,  # list of pre-optimized rules
                           popt_fraction,  # fraction of population that is pre-optimized
                           classifier_size,  # max size of a classifier
@@ -254,7 +231,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                                               feature_cdds=feature_cdds,
                                               population=population,
                                               population_size=population_size,
-                                              elite_fraction=elite_fraction,
+                                              elitism=elitism,
                                               evaluation_threshold=evaluation_threshold,
                                               bacc_weight=bacc_weight,
                                               uniqueness=uniqueness,
@@ -311,7 +288,7 @@ def process_and_run(args):
 
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
-        evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations, population_size, elite_fraction, \
+        evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations, population_size, elitism, \
         rule_list, popt_fraction, crossover_probability, mutation_probability, tournament_size = check_params(args)
 
     print("##PARAMETERS##")
@@ -363,7 +340,7 @@ def process_and_run(args):
     start_train = time.time()
     classifier, best_classifiers, updates, first_global, first_avg_pop = \
         run_genetic_algorithm(data_discretized, filter_data, iterations, fixed_iterations, population_size,
-                              elite_fraction, rule_list, popt_fraction, classifier_size, evaluation_threshold,
+                              elitism, rule_list, popt_fraction, classifier_size, evaluation_threshold,
                               feature_cdds, crossover_probability, mutation_probability, tournament_size,
                               bacc_weight, uniqueness, True)
 

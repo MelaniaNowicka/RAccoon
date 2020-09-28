@@ -18,7 +18,7 @@ random.seed(1)
 
 
 # train and test classifiers
-def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, elite, rules, uniqueness, repeats,
+def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, elitism, rules, uniqueness, repeats,
                    print_results):
 
     # parameter set
@@ -74,7 +74,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
                                            iterations=tc,
                                            fixed_iterations=None,
                                            population_size=pop,
-                                           elite_fraction=elite,
+                                           elitism=elitism,
                                            rule_list=rules,
                                            popt_fraction=0,
                                            classifier_size=classifier_size,
@@ -310,7 +310,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     else:
         evaluation_threshold = None
 
-    elite_fraction = float(config_file["ALGORITHM PARAMETERS"]["EliteFraction"])
+    elitism = float(config_file["ALGORITHM PARAMETERS"]["Elitism"])
     uniqueness = config_file.getboolean("OBJECTIVE FUNCTION", "Uniqueness")
     test_repeats = int(config_file["RUN PARAMETERS"]["SingleTestRepeats"])
 
@@ -349,7 +349,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
                                                                  config=config_file,
                                                                  classifier_size=classifier_size,
                                                                  evaluation_threshold=evaluation_threshold,
-                                                                 elite_fraction=elite_fraction,
+                                                                 elitism=elitism,
                                                                  uniqueness=uniqueness,
                                                                  rule_list=rules,
                                                                  test_repeats=test_repeats)
@@ -403,7 +403,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
                    parameter_set=best_parameters,
                    classifier_size=classifier_size,
                    evaluation_threshold=evaluation_threshold,
-                   elite=elite_fraction,
+                   elitism=elitism,
                    rules=rules,
                    uniqueness=uniqueness,
                    repeats=test_repeats,
