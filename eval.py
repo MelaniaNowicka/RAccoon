@@ -232,6 +232,8 @@ def update_best_classifier(new_classifier, best_classifiers):
         best_classifiers.solutions.append(new_classifier.__copy__())  # add new classifier to best classifiers
         best_classifiers.solutions_str.append(classifier_str)  # add new classifier to best classifiers
 
+    toolbox.remove_symmetric_solutions(best_classifiers)
+
     return best_classifiers
 
 

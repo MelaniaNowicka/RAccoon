@@ -230,3 +230,94 @@ def divide_into_cv_folds(dataset_file_name, dataset, k_folds, pairing, set_seed)
         fold = fold + 1
 
     return train_datasets, val_datasets
+
+
+def remove_symmetric_solutions(best_classifiers):
+
+    to_del = []  # solution ids to delete
+
+    for i in range(0, len(best_classifiers.solutions)-1):  # iterate over solutions
+        for j in range(i+1, len(best_classifiers.solutions)):
+            # check if classifiers have same thresholds
+            if best_classifiers.solutions[i].evaluation_threshold == best_classifiers.solutions[j].evaluation_threshold:
+                # check if solutions have same size comparing length of rule_sets
+                if len(best_classifiers.solutions[i].rule_set) == len(best_classifiers.solutions[j].rule_set):
+                    identical_rule_counter = 0  # set counter of identical rules
+                    for rule1 in best_classifiers.solutions[i].rule_set:  # iterate over rules in two compared solutions
+                        for rule2 in best_classifiers.solutions[j].rule_set:
+                            if sorted(rule1.neg_inputs) == sorted(rule2.neg_inputs):  # if neg inputs are equal
+                                if sorted(rule1.pos_inputs) == sorted(rule2.pos_inputs):  # if pos inputs are equal
+                                    if rule1.gate == rule2.gate:  # if gates are equal
+                                        identical_rule_counter += 1  # add identical rule
+                                        break
+                    # if all rules are identical
+                    if identical_rule_counter == len(best_classifiers.solutions[i].rule_set):
+                        to_del.append(j)  # add id to delete
+
+    if len(to_del) != 0:
+        print("DELETING")
+        for str in best_classifiers.solutions_str:
+            print(str)
+        print(to_del)
+
+        # sort indices in descending order for removal
+        to_del = list(set(to_del))
+        to_del.sort(reverse=True)
+        # remove duplicates
+        for i in to_del:
+            del best_classifiers.solutions[i]
+            del best_classifiers.solutions_str[i]
+
+        for str in best_classifiers.solutions_str:
+            print(str)
+
+
+def rank_features_by_frequency(solutions):
+
+    frequency_general = {}  # count occurences in total
+    frequency_pos = {}  # count occurences as positive inputs
+    frequency_neg = {}  # count occurences as negative inputs
+
+    features_total = 0
+
+    for solution in solutions:  # for all solutions
+        for rule in solution.rule_set:
+            for i in rule.pos_inputs:
+                if i not in frequency_pos.keys():
+                    frequency_pos[i] = 1
+                    frequency_general[i] = 1
+                else:
+                    frequency_pos[i] = frequency_pos[i] + 1
+                    frequency_general[i] = frequency_general[i] + 1
+
+            for i in rule.neg_inputs:
+                if i not in frequency_neg.keys():
+                    frequency_neg[i] = 1
+                    frequency_general[i] = 1
+                else:
+                    frequency_neg[i] = frequency_neg[i] + 1
+                    frequency_general[i] = frequency_general[i] + 1
+
+        features_total = features_total + len(solution.get_input_list())  # total number of features in all solutions
+
+    print("\n###FEATURE FREQUENCY ANALYSIS###")
+    print("TOTAL VALUES")
+    print("NUMBER OF FEATURES IN ALL SOLUTIONS IN TOTAL: ", features_total)
+    print("POSITIVE FEATURES: ")
+    for feature in sorted(frequency_pos, key=frequency_pos.get, reverse=True):
+        print(feature, ": ", frequency_pos[feature])
+    print("NEGATIVE FEATURES: ")
+    for feature in sorted(frequency_neg, key=frequency_neg.get, reverse=True):
+        print(feature, ": ", frequency_neg[feature])
+
+    print("\nRELATIVE FREQUENCY")
+    for feature in sorted(frequency_general, key=frequency_general.get, reverse=True):
+        print(feature, ": ", frequency_general[feature]/features_total)
+    print("POSITIVE FEATURES: ")
+    for feature in sorted(frequency_pos, key=frequency_pos.get, reverse=True):
+        print(feature, ": ", frequency_pos[feature]/features_total)
+    print("NEGATIVE FEATURES: ")
+    for feature in sorted(frequency_neg, key=frequency_neg.get, reverse=True):
+        print(feature, ": ", frequency_neg[feature]/features_total)
+
+
