@@ -1,5 +1,6 @@
 from datetime import datetime
 import configparser
+import logging
 import time
 import argparse
 import preproc
@@ -68,7 +69,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         start_test = time.time()
 
         # run the algorithm
-        classifier, best_classifiers, updates, first_global_best_score, first_avg_population_score \
+        classifier, best_classifiers, updates, first_avg_population_score \
             = run_GA.run_genetic_algorithm(train_data=training_fold,
                                            filter_data=False,
                                            iterations=tc,

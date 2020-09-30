@@ -1,9 +1,18 @@
 from decimal import *
 import preproc
+import toolbox
 import numpy
 import math
 import sys
 import log
+
+
+class BestSolutions:
+
+    def __init__(self, score, solutions, solutions_str):
+        self.score = score
+        self.solutions = solutions
+        self.solutions_str = solutions_str
 
 
 # compare floats - is close with 1e-5 tolerance
@@ -66,7 +75,7 @@ def calculate_cdd_score(inputs, feature_cdds, uniqueness):
 # balanced accuracy and cdd score
 def calculate_multi_objective_score(bacc, cdd_score, bacc_weight):
 
-    classifier_score = Decimal(bacc * bacc_weight + cdd_score * (1-bacc_weight))
+    classifier_score = bacc * bacc_weight + cdd_score * (1-bacc_weight)
 
     return classifier_score
 
@@ -207,17 +216,23 @@ def evaluate_classifier(classifier,
 
 
 # comparing new score to the best score
-def update_best_classifier(new_classifier, global_best_score, best_classifiers):
+def update_best_classifier(new_classifier, best_classifiers):
 
-    if is_close(global_best_score, new_classifier.score):  # if new score == the best
-        best_classifiers.append(new_classifier.__copy__())  # add new classifier to best classifiers
+    if is_close(best_classifiers.score, new_classifier.score):  # if new score == the best
+        classifier_str = log.convert_classifier_to_string(new_classifier)
+        if classifier_str not in best_classifiers.solutions_str:
+            best_classifiers.solutions.append(new_classifier.__copy__())  # add new classifier to best classifiers
+            best_classifiers.solutions_str.append(classifier_str)  # add new classifier to best classifiers
 
-    if is_higher(global_best_score, new_classifier.score):  # if new score is better
-        global_best_score = new_classifier.score  # assign new best score
-        best_classifiers.clear()  # clear the list of best classifiers
-        best_classifiers.append(new_classifier.__copy__())  # add new classifier
+    if is_higher(best_classifiers.score, new_classifier.score):  # if new score is better
+        best_classifiers.score = new_classifier.score  # assign new best score
+        best_classifiers.solutions.clear()  # clear the list of best classifiers
+        best_classifiers.solutions_str.clear()  # clear the list of best classifiers
+        classifier_str = log.convert_classifier_to_string(new_classifier)
+        best_classifiers.solutions.append(new_classifier.__copy__())  # add new classifier to best classifiers
+        best_classifiers.solutions_str.append(classifier_str)  # add new classifier to best classifiers
 
-    return global_best_score, best_classifiers
+    return best_classifiers
 
 
 # evaluation of the population
@@ -226,7 +241,6 @@ def evaluate_individuals(population,
                          bacc_weight,
                          feature_cdds,
                          uniqueness,
-                         global_best_score,
                          best_classifiers):
 
     # sum of bacc for the population
@@ -254,12 +268,12 @@ def evaluate_individuals(population,
         classifier.cdd_score = cdd_score
         classifier.additional_scores = additional_scores
 
-        global_best_score, best_classifiers = update_best_classifier(classifier, global_best_score, best_classifiers)
+        best_classifiers = update_best_classifier(classifier, best_classifiers)
 
         individual_scores.append(float(classifier_score))
 
     # calculate average score in population
     avg_population_score = numpy.average(individual_scores)
 
-    return global_best_score, avg_population_score, best_classifiers
+    return avg_population_score, best_classifiers
 
