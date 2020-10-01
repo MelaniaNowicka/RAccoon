@@ -25,18 +25,21 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     if elitism is True:
         temp_population = population.copy()
         for classifier in best_classifiers.solutions:
-            temp_population.extend(classifier.__copy__())
+            temp_population.append(classifier.__copy__())
 
     for i in range(0, int(population_size / 2)):  # iterate through population
 
         # select two parents
         if elitism is True:
             first_parent_id, second_parent_id = selection.select(temp_population, tournament_size)
+            # add new parents to selected parents
+            selected_parents.append(temp_population[first_parent_id].__copy__())
+            selected_parents.append(temp_population[second_parent_id].__copy__())
         else:
             first_parent_id, second_parent_id = selection.select(population, tournament_size)
-        # add new parents to selected parents
-        selected_parents.append(population[first_parent_id].__copy__())
-        selected_parents.append(population[second_parent_id].__copy__())
+            # add new parents to selected parents
+            selected_parents.append(population[first_parent_id].__copy__())
+            selected_parents.append(population[second_parent_id].__copy__())
 
     population.clear()  # empty population
 

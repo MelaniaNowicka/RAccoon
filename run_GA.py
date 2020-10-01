@@ -9,6 +9,7 @@ import time
 import argparse
 import numpy
 
+import genetic_algorithm
 import preproc
 import eval
 
@@ -132,10 +133,10 @@ def process_and_run(args):
     print("\nTRAINING...")
     start_train = time.time()
     classifier, best_classifiers, updates, first_global, first_avg_pop = \
-        run_genetic_algorithm(data_discretized, filter_data, iterations, fixed_iterations, population_size,
-                              elitism, rule_list, popt_fraction, classifier_size, evaluation_threshold,
-                              feature_cdds, crossover_probability, mutation_probability, tournament_size,
-                              bacc_weight, uniqueness, True)
+        genetic_algorithm.run_genetic_algorithm(data_discretized, filter_data, iterations, fixed_iterations,
+                                                population_size, elitism, rule_list, popt_fraction, classifier_size,
+                                                evaluation_threshold, feature_cdds, crossover_probability,
+                                                mutation_probability, tournament_size, bacc_weight, uniqueness, True)
 
     end_train = time.time()
     training_time = end_train - start_train

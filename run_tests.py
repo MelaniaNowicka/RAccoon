@@ -1,11 +1,10 @@
 from datetime import datetime
 import configparser
-import logging
+import genetic_algorithm
 import time
 import argparse
 import preproc
 import sys
-import run_GA
 import eval
 import popinit
 import tuner
@@ -70,7 +69,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 
         # run the algorithm
         classifier, best_classifiers, updates, first_avg_population_score \
-            = run_GA.run_genetic_algorithm(train_data=training_fold,
+            = genetic_algorithm.run_genetic_algorithm(train_data=training_fold,
                                            filter_data=False,
                                            iterations=tc,
                                            fixed_iterations=None,
