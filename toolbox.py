@@ -255,10 +255,6 @@ def remove_symmetric_solutions(best_classifiers):
                         to_del.append(j)  # add id to delete
 
     if len(to_del) != 0:
-        print("DELETING")
-        for str in best_classifiers.solutions_str:
-            print(str)
-        print(to_del)
 
         # sort indices in descending order for removal
         to_del = list(set(to_del))
@@ -267,10 +263,6 @@ def remove_symmetric_solutions(best_classifiers):
         for i in to_del:
             del best_classifiers.solutions[i]
             del best_classifiers.solutions_str[i]
-
-        for str in best_classifiers.solutions_str:
-            print(str)
-
 
 def rank_features_by_frequency(solutions):
 
@@ -300,7 +292,6 @@ def rank_features_by_frequency(solutions):
 
         features_total = features_total + len(solution.get_input_list())  # total number of features in all solutions
 
-    print("\n###FEATURE FREQUENCY ANALYSIS###")
     print("TOTAL VALUES")
     print("NUMBER OF FEATURES IN ALL SOLUTIONS IN TOTAL: ", features_total)
     print("POSITIVE FEATURES: ")

@@ -60,6 +60,8 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
     train_runtimes = []  # training run-times
     update_number = []  # number of score updates
 
+    classifier_list = []
+
     for i in range(0, repeats):  # repeat tests
 
         print("\nREPEAT: ", i+1)
@@ -89,6 +91,8 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 
         # measure time
         end_test = time.time()
+
+        classifier_list.append(classifier)
 
         train_runtimes.append(end_test-start_test)
         update_number.append(updates)
@@ -162,6 +166,10 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         rules_avg.append(number_of_rules)
 
     if print_results:
+        # rank features by frequency
+        print("\n###FEATURE FREQUENCY ANALYSIS###")
+        toolbox.rank_features_by_frequency(classifier_list)
+
         # average scores
         print("\n###AVERAGE SCORES###")
 
