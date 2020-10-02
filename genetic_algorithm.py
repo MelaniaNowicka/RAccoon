@@ -24,8 +24,8 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
 
     if elitism is True:
         temp_population = population.copy()
-        for classifier in best_classifiers.solutions:
-            temp_population.append(classifier.__copy__())
+        classifier_id = random.randrange(0, len(best_classifiers.solutions))
+        temp_population.append(best_classifiers.solutions[classifier_id])
 
     for i in range(0, int(population_size / 2)):  # iterate through population
 
@@ -213,5 +213,5 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     shortest_classifier = classifier_sizes.index(min(classifier_sizes))  # find shortest classifier
     log.write_final_scores(global_best_score, [best_classifiers.solutions[shortest_classifier]])  # shortest classifier
 
-    return best_classifiers.solutions[shortest_classifier], best_classifiers, updates, \
-           first_avg_population_score
+    return best_classifiers.solutions[shortest_classifier], best_classifiers, updates, first_avg_population_score
+

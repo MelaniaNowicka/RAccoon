@@ -219,7 +219,7 @@ def evaluate_classifier(classifier,
 def update_best_classifier(new_classifier, best_classifiers):
 
     if is_close(best_classifiers.score, new_classifier.score):  # if new score == the best
-        classifier_str = log.convert_classifier_to_string(new_classifier)
+        classifier_str = log.convert_classifier_to_string(new_classifier.__copy__())
         if classifier_str not in best_classifiers.solutions_str:
             best_classifiers.solutions.append(new_classifier.__copy__())  # add new classifier to best classifiers
             best_classifiers.solutions_str.append(classifier_str)  # add new classifier to best classifiers
@@ -228,11 +228,11 @@ def update_best_classifier(new_classifier, best_classifiers):
         best_classifiers.score = new_classifier.score  # assign new best score
         best_classifiers.solutions.clear()  # clear the list of best classifiers
         best_classifiers.solutions_str.clear()  # clear the list of best classifiers
-        classifier_str = log.convert_classifier_to_string(new_classifier)
+        classifier_str = log.convert_classifier_to_string(new_classifier.__copy__())
         best_classifiers.solutions.append(new_classifier.__copy__())  # add new classifier to best classifiers
         best_classifiers.solutions_str.append(classifier_str)  # add new classifier to best classifiers
 
-    toolbox.remove_symmetric_solutions(best_classifiers)
+    #toolbox.remove_symmetric_solutions(best_classifiers)
 
     return best_classifiers
 

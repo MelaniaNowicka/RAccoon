@@ -1,17 +1,19 @@
 from datetime import datetime
 import configparser
-import genetic_algorithm
 import time
 import argparse
 import preproc
 import sys
+import random
+import numpy
+import os
+import csv
+
+import genetic_algorithm
 import eval
 import popinit
 import tuner
 import toolbox
-import random
-import numpy
-import os
 
 numpy.random.seed(1)
 random.seed(1)
@@ -72,27 +74,30 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         # run the algorithm
         classifier, best_classifiers, updates, first_avg_population_score \
             = genetic_algorithm.run_genetic_algorithm(train_data=training_fold,
-                                           filter_data=False,
-                                           iterations=tc,
-                                           fixed_iterations=None,
-                                           population_size=pop,
-                                           elitism=elitism,
-                                           rule_list=rules,
-                                           popt_fraction=0,
-                                           classifier_size=classifier_size,
-                                           evaluation_threshold=evaluation_threshold,
-                                           feature_cdds=feature_cdd_fold,
-                                           crossover_probability=cp,
-                                           mutation_probability=mp,
-                                           tournament_size=ts,
-                                           bacc_weight=weight,
-                                           uniqueness=uniqueness,
-                                           print_results=print_results)
+                                                      filter_data=False,iterations=tc,
+                                                      fixed_iterations=None,
+                                                      population_size=pop,
+                                                      elitism=elitism,
+                                                      rule_list=rules,
+                                                      popt_fraction=0,
+                                                      classifier_size=classifier_size,
+                                                      evaluation_threshold=evaluation_threshold,
+                                                      feature_cdds=feature_cdd_fold,
+                                                      crossover_probability=cp,
+                                                      mutation_probability=mp,
+                                                      tournament_size=ts,
+                                                      bacc_weight=weight,
+                                                      uniqueness=uniqueness,
+                                                      print_results=print_results)
 
         # measure time
         end_test = time.time()
 
         classifier_list.append(classifier)
+
+        print("\n##ALL FOUND CLASSIFIERS##")
+        for classifier_str in best_classifiers.solutions_str:
+            print(classifier_str)
 
         train_runtimes.append(end_test-start_test)
         update_number.append(updates)

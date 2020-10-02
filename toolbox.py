@@ -1,5 +1,4 @@
 import preproc
-import tuner
 import pandas
 import random
 
@@ -263,6 +262,7 @@ def remove_symmetric_solutions(best_classifiers):
         for i in to_del:
             del best_classifiers.solutions[i]
             del best_classifiers.solutions_str[i]
+
 
 def rank_features_by_frequency(solutions):
 
