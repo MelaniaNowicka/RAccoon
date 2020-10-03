@@ -25,18 +25,18 @@ def read_data(dataset_filename):
     # reading the data
     # throws an exception when datafile not found
     try:
-        dataset = pandas.read_csv(dataset_filename, sep=';', header=None)
+        dataset = pandas.read_csv(dataset_filename, sep=';', header=0)
         # rename the header with the first row
         # must be done to check whether data contains duplicates of features
-        dataset = dataset.rename(columns=dataset.iloc[0], copy=False).iloc[1:].reset_index(drop=True)
-        header = dataset.columns.values.tolist()
+        #dataset = dataset.rename(columns=dataset.iloc[0], copy=False).iloc[1:].reset_index(drop=True)
+        #header = dataset.columns.values.tolist()
 
         # check whether sample IDs are unique
-        ids = dataset[header[0]]  # get sample IDs
-        if len(ids) > len(set(ids)):  # compare length of the set with the length of the ids list
-            print("Error: IDs of samples must be unique. Note, the first column must include IDs of samples and "
-                  "\nthe second their annotation. Annotate samples as follows: 0 - negative class, 1 - positive class.")
-            sys.exit(0)
+        #ids = dataset[header[0]]  # get sample IDs
+        #if len(ids) > len(set(ids)):  # compare length of the set with the length of the ids list
+            #print("Error: IDs of samples must be unique. Note, the first column must include IDs of samples and "
+                  #"\nthe second their annotation. Annotate samples as follows: 0 - negative class, 1 - positive class.")
+            #sys.exit(0)
 
     except IOError:
         print("Error: ", dataset_filename, " not found.")
