@@ -1,6 +1,7 @@
 import preproc
 import pandas
 import random
+import os
 
 random.seed(1)
 
@@ -135,7 +136,7 @@ def divide_into_train_test(dataset_filename, train_fraction, set_seed):
 
 
 # division of the data set into k folds
-def divide_into_cv_folds(dataset_file_name, dataset, k_folds, pairing, set_seed):
+def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set_seed):
 
     header = dataset.columns.values.tolist()
     samples, annotation, negatives, positives = preproc.get_data_info(dataset, header)
@@ -171,6 +172,7 @@ def divide_into_cv_folds(dataset_file_name, dataset, k_folds, pairing, set_seed)
             positive_folds.append(positive_data_fold.sort_index())  # add sorted fold to positive folds
             pos_used_ids = [x + negatives for x in neg_used_ids]  # calculate paired ids based on neg used ids to drop
             positive_samples_temp.drop(pos_used_ids, inplace=True)  # drop used samples by pos_used_ids
+            print("pairing!")
         else:  # if samples are not paired draw positive samples randomly
             if set_seed is True:
                 # draw n samples
@@ -218,12 +220,14 @@ def divide_into_cv_folds(dataset_file_name, dataset, k_folds, pairing, set_seed)
 
     for train_set, val_set in zip(train_datasets, val_datasets):  # iterate over pairs of sets
 
-        new_name = "_train_" + str(fold) + ".csv"  # train fold name
-        filename = dataset_file_name.replace(".csv", new_name)
+        new_name = "_cv_train_" + str(fold) + ".csv"  # train fold name
+        new_name = dataset_file_name.replace(".csv", new_name)
+        filename = "/".join([path, new_name])
         train_set.to_csv(filename, sep=";", index=False)
 
-        new_name = "_val_" + str(fold) + ".csv"  # validation fold name
-        filename = dataset_file_name.replace(".csv", new_name)
+        new_name = "_cv_val_" + str(fold) + ".csv"  # validation fold name
+        new_name = dataset_file_name.replace(".csv", new_name)
+        filename = "/".join([path, new_name])
         val_set.to_csv(filename, sep=";", index=False)
 
         fold = fold + 1
@@ -311,4 +315,71 @@ def rank_features_by_frequency(solutions):
     for feature in sorted(frequency_neg, key=frequency_neg.get, reverse=True):
         print(feature, ": ", frequency_neg[feature]/features_total)
 
+
+def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):
+
+    """
+
+    Pre-processes train and validation data.
+
+    Pre-processing includes reading, discretizing and filtering data according to binarization parameters.
+    Pre-processed data sets are saved to files.
+
+    Parameters
+    ----------
+    train_names : list
+        list of names of train data sets
+
+    val_names : list
+        list of names of validation data sets
+
+    m_segments : int
+        number of segments for discretization
+
+    bin_alpha : float
+        alpha parameter for discretization
+
+    bin_lambda : float
+        lambda parameter for discretization
+
+    """
+
+    train_datasets = []  # train data sets
+    val_datasets = []  # test data sets
+
+    for i in range(0, len(train_names)):  # iterate over data sets
+
+        # read data sets
+        dataset_t, annotation, negatives, positives, features = preproc.read_data(train_names[i])  # read train data
+        train_datasets.append(dataset_t)  # add train data to list of train data sets
+        dataset_v, annotation, negatives, positives, features = preproc.read_data(val_names[i])  # read val data
+        val_datasets.append(dataset_v)  # add val data to list of val data sets
+
+    # discretize train and validation data sets
+    train_datasets_bin, val_datasets_bin, feature_cdds \
+        = preproc.discretize_data_for_tests(train_datasets, val_datasets, m_segments, bin_alpha, bin_lambda, True)
+
+    # filter train data sets
+    train_datasets_bin_f = []
+    [train_datasets_bin_f.append(preproc.remove_irrelevant_features(dataset)[0]) for dataset in train_datasets_bin]
+
+    # save data sets to files
+    for i in range(0, len(train_names)):
+
+        name = str(train_names[i].replace(".csv", "_bin.csv"))  # create name for train data
+        header_t = list(train_datasets_bin_f[i].columns)
+        header_t = list([colname.replace("-", "x") for colname in header_t])
+        header_t = list([colname.replace(".", "y") for colname in header_t])
+        header_t = list([colname.replace(":", "z") for colname in header_t])
+        train_datasets_bin_f[i].columns = header_t
+        dataset_t = train_datasets_bin_f[i]
+        dataset_t.to_csv(name, sep=";", index=False)  # save discretized and filtered train data to file
+
+        name = str(val_names[i].replace(".csv", "_bin.csv"))  # create name for validation data
+        header_v = list(val_datasets_bin[i].columns)
+        header_v = list([colname.replace("-", "x") for colname in header_v])
+        header_v = list([colname.replace(".", "y") for colname in header_v])
+        header_v = list([colname.replace(":", "z") for colname in header_v])
+        val_datasets_bin[i].columns = header_v
+        val_datasets_bin[i].to_csv(name, sep=";", index=False)  # save discretized validation data to file
 

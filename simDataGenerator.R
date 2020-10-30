@@ -45,6 +45,8 @@ generateSimData <- function(n.genes, samples.per.cond, n.diffexp,
   
   #transform data
   annotation <- transformAnnotation(data.set@sample.annotations$condition)
+  IDs <- seq(1, ncol(data.set@count.matrix), by=1)
+  colnames(data.set@count.matrix) <- IDs
   data.set.to.write <- transformData(data.set.annotation = annotation, 
                                      data.set.counts =  data.set@count.matrix)
   
@@ -284,6 +286,15 @@ prepareSimulatedDataset <- function(n.genes,
   refSample <- returnRefSample(train.data.set)
 
   #############WRITE DATA TO FILES#############
+  
+  #write whole data set to file
+  train.data.set.to.write <- transformData(count.matrix, annotation)
+  
+  train.data.set.name = paste("train", n.genes, samples.per.cond, n.diffexp,fraction.upregulated, 
+                              random.outlier.high.prob, random.outlier.low.prob,
+                              single.outlier.high.prob, single.outlier.low.prob, 
+                              paste(fraction.non.overdispersed, ".csv", sep="", collapse = NULL), 
+                              sep = "_", collapse = NULL)
   
   #write train data set to file
   train.data.set.to.write <- transformData(train.annots, train.data.set)

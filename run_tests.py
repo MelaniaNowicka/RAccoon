@@ -95,10 +95,6 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 
         classifier_list.append(classifier)
 
-        print("\n##ALL FOUND CLASSIFIERS##")
-        for classifier_str in best_classifiers.solutions_str:
-            print(classifier_str)
-
         train_runtimes.append(end_test-start_test)
         update_number.append(updates)
 
@@ -162,6 +158,12 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         test_fdr_avg.append(test_additional_scores["fdr"])
 
         print("TEST BACC: ", test_bacc)
+
+        # show all found solutions
+        if print_results is True:
+            print("\n##ALL FOUND CLASSIFIERS##")
+            for classifier_str in best_classifiers.solutions_str:
+                print(classifier_str)
 
         # calculate classifier size
         number_of_inputs = len(classifier.get_input_list())
@@ -296,6 +298,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
     training_cv_datasets, validation_cv_datasets = \
         toolbox.divide_into_cv_folds(dataset_file_name=train_data_file_name,
+                                     path=path,
                                      dataset=training_data,
                                      k_folds=cv_folds,
                                      pairing=pairing,
@@ -342,12 +345,12 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     fold = 1
     for train_set, val_set in zip(training_cv_datasets_bin_filtered, validation_cv_datasets_bin):
 
-        new_name = "_train_" + str(fold) + "_bin.csv"
+        new_name = "_cv_train_" + str(fold) + "_bin.csv"
         new_name = file_name_train.replace(".csv", new_name)
         filename = "/".join([path, new_name])
         train_set.to_csv(filename, sep=";", index=False)
 
-        new_name = "_val_" + str(fold) + "_bin.csv"
+        new_name = "_cv_val_" + str(fold) + "_bin.csv"
         new_name = file_name_test.replace(".csv", new_name)
         filename = "/".join([path, new_name])
         val_set.to_csv(filename, sep=";", index=False)
