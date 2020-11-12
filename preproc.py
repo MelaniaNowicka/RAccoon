@@ -10,6 +10,33 @@ numpy.random.seed(1)
 # get the number of samples, annotation, number of negatives and positives in the data
 def get_data_info(dataset, header):
 
+    """
+
+    Extracts information about the data set.
+
+    The function returns the number of samples, data annotation, the number of positive and negative samples in the
+    data set.
+
+    Parameters
+    ----------
+    dataset : Pandas DataFrame
+        data set including sample ids, annotation and feature profiles
+    header : list
+        data frame header
+
+    Returns
+    -------
+    samples : int
+        number of samples
+    annotation : list
+        binary annotation of samples
+    negatives : int
+        number of negative samples in the data
+    positives : int
+        number of positive samples in the data
+
+    """
+
     samples = len(dataset.index)  # get number of samples
     annotation = list(dataset[header[1]])  # get annotation
     negatives = annotation.count(0)  # count negative samples
@@ -21,6 +48,35 @@ def get_data_info(dataset, header):
 # reading binarized data set
 # reading data set
 def read_data(dataset_filename):
+
+    """
+
+    Reads the data.
+
+    The function check the correctness of data set and returns the data set as a data frame, the number of samples,
+    data annotation, the number of positive and negative samples in data as well as a list of features.
+
+    Parameters
+    ----------
+    dataset_filename : str
+        data set file name
+
+    Returns
+    -------
+    dataset : str
+        path to a data set file
+    samples : int
+        number of samples
+    annotation : list
+        annotation of samples
+    negatives : int
+        number of negative samples in the data
+    positives : int
+        number of positive samples in the data
+    features : list
+        list of features in the data set
+
+    """
 
     # reading the data
     # throws an exception when datafile not found
@@ -77,6 +133,27 @@ def read_data(dataset_filename):
 # removal of irrelevant (non-regulated) features
 def remove_irrelevant_features(dataset):
 
+    """
+
+    Removes irrelevant features from the data set.
+
+    The function filters relevant features (expressing differences between the classes) and removes irrelevant ones
+    from the data set.
+
+    Parameters
+    ----------
+    dataset : Pandas DataFrame
+        data set
+
+    Returns
+    -------
+    dataset : Pandas DataFrame
+        updated data set
+    relevant_features : list
+        list of relevant features
+
+    """
+
     relevant_features = []  # list of relevant features
     irrelevant_features = []  # list of irrelevant features
 
@@ -111,6 +188,45 @@ def remove_irrelevant_features(dataset):
 # Wang, H.-Q.et al.(2014). Biology-constrained gene expression discretization for cancer classification.
 # Neurocomputing, 145, 30–36.
 def discretize_feature(feature_levels, annotation, negatives, positives, m_segments, alpha_param, lambda_param):
+
+    """
+
+    Discretizes single feature.
+
+    The function discretizes single feature according to
+    `Wang et al. (2014) <https://doi.org/10.1016/j.neucom.2014.04.064>`_. The implementation allows to discretize a
+    feature into two states (originally in Wang et al. into three states): the feature is either not regulated
+    (one class) or regulated (two classes). The function returns information about the number of features
+    that may be discretized into three states.
+
+    Parameters
+    ----------
+    feature_levels : list
+        feature levels
+    annotation : list
+        binary annotation of samples
+    negatives : int
+        number of negative samples
+    positives : int
+        number of positive samples
+    m_segments : int
+        number of discretization segments
+    alpha_param : float
+        binarization alpha
+    lambda_param : float
+        binarization lambda
+
+    Returns
+    -------
+    threshold : float
+        discretization threshold
+    global_cdd : float
+        feature class distribution diversity
+    pattern : int
+        discretization pattern (0 - one class, 1 - two classes, 2 - three classes)
+
+
+    """
 
     # sort miRNA expression levels and annotation
     feature_levels_sorted, annotation_sorted = zip(*sorted(zip(feature_levels, annotation)))
@@ -185,6 +301,36 @@ def discretize_feature(feature_levels, annotation, negatives, positives, m_segme
 
 # discretize train data set
 def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, print_results):
+
+    """
+
+    Discretizes all features in a training data set.
+
+    Parameters
+    ----------
+    train_dataset : str/Pandas DataFrame
+        path to train data file (str) or already read data set (Pandas DataFrame)
+    m_segments : int
+        number of discretization segments
+    alpha_param : float
+        binarization alpha
+    lambda_param : float
+        binarization lambda
+    print_results : bool
+        if True the discretization information is shown
+
+    Returns
+    -------
+    data_discretized : Pandas DataFrame
+        discretized training data
+    threshold : float
+        discretization threshold
+    global_cdd : float
+        feature class distribution diversity
+    pattern : int
+        discretization pattern (0 - one class, 1 - two classes, 2 - three classes)
+
+    """
 
     if isinstance(train_dataset, pandas.DataFrame):
         dataset = train_dataset.__copy__()
@@ -279,6 +425,24 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
 # discretize test data
 def discretize_test_data(test_dataset, thresholds):
 
+    """
+
+    Discretizes all features in a test data set according to the given thresholds.
+
+    Parameters
+    ----------
+    test_dataset : str/Pandas DataFrame
+        path to train data file (str) or already read data set (Pandas DataFrame)
+    thresholds : list
+        list of feature thresholds
+
+    Returns
+    -------
+    data_discretized : Pandas DataFrame
+        discretized test data
+
+    """
+
     # if the data set is a dataframe copy it
     if isinstance(test_dataset, pandas.DataFrame):
         dataset = test_dataset.__copy__()
@@ -325,6 +489,39 @@ def discretize_test_data(test_dataset, thresholds):
 # discretize several training and testing data sets (use lists: training_fold_list, testing_fold_list)
 def discretize_data_for_tests(training_fold_list, validation_fold_list, m_segments, alpha_param, lambda_param,
                               print_results):
+
+    """
+
+    Discretizes all training and validation data sets.
+
+    The function discretizes training and validation data sets according to `Wang et al. (2014)
+    <https://doi.org/10.1016/j.neucom.2014.04.064>`_.
+
+    Parameters
+    ----------
+    training_fold_list : list
+        list of training data sets
+    validation_fold_list : list
+        list of validation data sets
+    m_segments : int
+        number of discretization segments
+    alpha_param : float
+        binarization alpha
+    lambda_param : float
+        binarization lambda
+    print_results : bool
+        if True detailed discretization information is shown
+
+    Returns
+    -------
+    discretized_train_data : list
+        list of discretized training data sets
+    discretized_test_data : list
+        list of discretized validation data sets
+    feature_cdds : list
+        list of feature cdds
+
+    """
 
     discretized_train_data = []  # list of discretized train fractions
     discretized_test_data = []  # list of discretized test fractions

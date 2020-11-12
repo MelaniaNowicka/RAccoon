@@ -10,6 +10,24 @@ random.seed(1)
 # inputs are connected with AND
 class SingleRule:
 
+    """
+
+    Class representing a single rule.
+
+    Attributes
+    ----------
+    pos_inputs : list
+        list of positive inputs
+    neg_inputs : list
+        list of negative inputs
+    gate : int
+        0 - OR, 1 - AND
+
+    Methods
+    -------
+
+    """
+
     def __init__(self, pos_inputs, neg_inputs, gate):
         self.pos_inputs = pos_inputs  # non-negated inputs
         self.neg_inputs = neg_inputs  # negated inputs
@@ -33,6 +51,31 @@ class SingleRule:
 
 # classifier (individual)
 class Classifier:
+
+    """
+
+    Class representing a single classifier.
+
+    Attributes
+    ----------
+    rule_set : list
+        list of SingleRule objects
+    evaluation_threshold : float
+        classifier evaluation threshold
+    errors : dict
+        dictionary of errors (tp, tn, fp and fn)
+    error_rates : dict
+        dictionary of error rates (tpr, tnr, fpr and fnr)
+    score : float
+        classifier score
+    bacc : float
+        classifier balanced accuracy
+    cdd_score : float
+        classifier cdd score
+    additional_scores : dict
+        dictionary of additional scores (f1, mcc, ppv and fdr)
+
+    """
 
     def __init__(self, rule_set, evaluation_threshold, errors, error_rates, score, bacc, cdd_score, additional_scores):
         self.rule_set = rule_set  # list of rules
@@ -58,6 +101,16 @@ class Classifier:
     # get a list of inputs
     def get_input_list(self):
 
+        """
+        creates list of inputs in a classifier
+
+        Returns
+        _______
+        inputs : list
+            list of classifier inputs
+
+        """
+
         inputs = []
         for rule in self.rule_set:
             for input in rule.pos_inputs:  # add positive inputs
@@ -70,6 +123,14 @@ class Classifier:
 
     # remove repeating rules in classifiers
     def remove_duplicates(self):
+
+        """
+
+        removes duplicate rules in a classifier
+
+        """
+
+
         single_pos = []  # list of positive single-input rules and their ids
         single_neg = []  # list of negative single-input rules and their ids
         multi_input = []  # list of mixed rules with size > 1 and their ids
@@ -141,6 +202,24 @@ class Classifier:
 # temp_features consists of features that were not used in the classifier yet
 def initialize_single_rule(temp_features):
 
+    """
+
+    Initializes random single rule.
+
+    Parameters
+    ----------
+    temp_features : list
+        temporary list of features
+
+    Returns
+    -------
+    single_rule : SingleRule objects
+        single rule
+    temp_features : list
+        updated temporary list of features
+
+    """
+
     # size of a single rule (between 1 and 2 inputs)
     size = random.randint(1, 2)
 
@@ -175,6 +254,27 @@ def initialize_single_rule(temp_features):
 
 # initialization of a new classifier
 def initialize_classifier(classifier_size, evaluation_threshold, features):
+
+    """
+
+    Initializes random classifier.
+
+    Parameters
+    ----------
+    classifier_size : int
+        maximal classifier size
+    evaluation_threshold : float
+        classifier evaluation threshold
+    features : list
+        list of features
+
+
+    Returns
+    -------
+    classifier : Classifier object
+        classifier
+
+    """
 
     # size of a classifier
     size = random.randint(1, classifier_size)
@@ -211,6 +311,28 @@ def initialize_population(population_size,
                           evaluation_threshold,
                           classifier_size):
 
+    """
+
+    Initializes random population.
+
+    Parameters
+    ----------
+    population_size : int
+        population size
+    features : list
+        list of features
+    evaluation_threshold : float
+        classifier evaluation threshold
+    classifier_size : int
+        maximal classifier size
+
+    Returns
+    -------
+    population : list
+        list of Classifier objects
+
+    """
+
     population = []  # empty population
 
     # initialization of n=population_size classifiers
@@ -224,6 +346,22 @@ def initialize_population(population_size,
 # read rules from file
 def read_rules_from_file(rule_file):
 
+    """
+
+    Reads pre-optimized rules from a file.
+
+    Parameters
+    ----------
+    rule_file : str
+        path to a file including pre-optimized rules
+
+    Returns
+    -------
+    rules : list
+        list of rules
+
+    """
+
     # reading the data
     # throws an exception when datafile not found
     try:
@@ -236,7 +374,7 @@ def read_rules_from_file(rule_file):
     rules = []  # list of rules
 
     for i in range(0, len(data.index)):
-        new_rule = SingleRule([], [])  # create empty rule
+        new_rule = SingleRule([], [], 1)  # create empty rule
         rule = data.iloc[i]  # get rule from data
 
         # check rule's size
@@ -257,6 +395,9 @@ def read_rules_from_file(rule_file):
             else:
                 new_rule.pos_inputs.append(rule["feature2"])
 
+        if len(new_rule.pos_inputs) == 2:
+            new_rule.gate = 0
+
         rules.append(new_rule)  # add rule to the list of rules
 
     return rules
@@ -265,6 +406,32 @@ def read_rules_from_file(rule_file):
 # create population based on list of pre-optimized rules
 def initialize_population_from_rules(population_size, features, evaluation_threshold, rule_list, popt_fraction,
                                      classifier_size):
+
+    """
+
+    Initializes a fraction of population based on pre-optimized rules (the rest is initialized randomly).
+
+    Parameters
+    ----------
+    population_size : int
+        population size
+    features : list
+        list of features
+    evaluation_threshold : float
+        classifier evaluation threshold
+    rule_list : list
+        list of pre-optimized rules
+    popt_fraction : float
+        fraction of population initialized with pre-optimized rules
+    classifier_size : int
+        maximal classifier size
+
+    Returns
+    -------
+    population : list
+        list of Classifier objects
+
+    """
 
     population = []  # create empty population
 

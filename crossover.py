@@ -7,6 +7,30 @@ random.seed(1)
 # uniform crossover
 def uniform_crossover(first_parent_rule_set, second_parent_rule_set, first_child, second_child):
 
+    """
+
+    Performs uniform crossover on two parents and returns two children.
+
+    Parameters
+    ----------
+    first_parent_rule_set : list
+        list of rules (SingleRule objects) of first parent
+    second_parent_rule_set : list
+        list of rules (SingleRule objects) of second parent
+    first_child : Classifier object
+        empty first child classifier
+    second_child : Classifier object
+        empty second child classifier
+
+    Returns
+    -------
+    first_child : Classifier object
+        first child classifier after crossover
+    second_child : Classifier object
+        second child classifier after crossover
+
+    """
+
     for i in range(0, len(first_parent_rule_set)):  # iterate over first parent
         swap_mask = random.randint(0, 1)
         if swap_mask == 1:  # swap
@@ -25,6 +49,37 @@ def uniform_crossover(first_parent_rule_set, second_parent_rule_set, first_child
 # first parent:   [ ] [ ] [ ] [ ] [ ]
 # second parent:      [ ] [ ]
 def index_based_crossover(first_parent_rule_set, second_parent_rule_set, first_child, second_child):
+
+    """
+
+    Performs index-based crossover on two parents and returns two children.
+
+    Crossover index specifies the position of the second parent in relation to the first one and performs uniform
+    crossover on overlapping rules. Other rules are randomly added to either the first or second child e.g. index = 1:
+
+    first parent:   [ ] [ 1 ] [ ] [ ] [ ]
+
+    second parent:      [ x ] [ ]
+
+    Parameters
+    ----------
+    first_parent_rule_set : list
+        list of rules (SingleRule objects) of first parent
+    second_parent_rule_set : list
+        list of rules (SingleRule objects) of second parent
+    first_child : Classifier object
+        empty first child classifier
+    second_child : Classifier object
+        empty second child classifier
+
+    Returns
+    -------
+    first_child : Classifier object
+        first child classifier after crossover
+    second_child : Classifier object
+        second child classifier after crossover
+
+    """
 
     # difference between sizes of parents
     difference = len(first_parent_rule_set) - len(second_parent_rule_set)
@@ -58,6 +113,26 @@ def index_based_crossover(first_parent_rule_set, second_parent_rule_set, first_c
 
 # crossover
 def crossover_parents(first_parent, second_parent):
+
+    """
+
+    Performs crossover (uniform or index-based) on two parents and returns two children.
+
+    Parameters
+    ----------
+    first_parent : Classifier object
+        first parent classifier
+    second_parent : Classifier object
+        second parent classifier
+
+    Returns
+    -------
+    first_child : Classifier object
+        first child classifier after crossover
+    second_child : Classifier object
+        second child classifier after crossover
+
+    """
 
     # checking size of parents and assigning rule sets
     # first parent - consists of more rules, second parents - less

@@ -7,7 +7,6 @@ import sys
 import random
 import numpy
 import os
-import csv
 
 import genetic_algorithm
 import eval
@@ -22,6 +21,40 @@ random.seed(1)
 # train and test classifiers
 def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, elitism, rules, uniqueness, repeats,
                    print_results):
+
+    """
+
+    Trains classifier on training data and tests on testing data.
+
+    Parameters
+    ----------
+    data : list
+        list including train data set, test data set and feature cdds list
+    parameter_set : list
+        list of genetic algorithm parameters (iterations, population size, crossover probability, mutation probability
+        and tournament size)
+    classifier_size : int
+        maximal classifier size
+    evaluation_threshold : float
+        classifier evaluation threshold
+    elitism : bool
+        if True the best found solutions are added to the population in each selection operation
+    rules : list
+        list of pre-optimized rules
+    uniqueness : bool
+         if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
+         the number of input occurrences
+    repeats : int
+        number of single test repeats
+    print_results : bool
+        if True more information is shown
+
+    Returns
+    -------
+    test_bacc_avg : float
+        average test balanced accuracy
+
+    """
 
     # parameter set
     weight, tc, pop, cp, mp, ts = parameter_set
@@ -72,13 +105,13 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         start_test = time.time()
 
         # run the algorithm
-        classifier, best_classifiers, updates, first_avg_population_score \
+        classifier, best_classifiers, updates, first_global_best_score, first_avg_population_score \
             = genetic_algorithm.run_genetic_algorithm(train_data=training_fold,
-                                                      filter_data=False,iterations=tc,
+                                                      filter_data=False, iterations=tc,
                                                       fixed_iterations=None,
                                                       population_size=pop,
                                                       elitism=elitism,
-                                                      rule_list=rules,
+                                                      rules=rules,
                                                       popt_fraction=0,
                                                       classifier_size=classifier_size,
                                                       evaluation_threshold=evaluation_threshold,
@@ -230,6 +263,23 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 # run test
 def run_test(train_data_file_name, test_data_file_name, rules, config_file_name):
 
+    """
+
+    Runs complex training including data pre-processing, parameter tuning and training.
+
+    Parameters
+    ----------
+    train_data_file_name : str
+        path to training data set
+    test_data_file_name : str
+        path to test data set
+    rules : list
+        list of pre-optimized rules
+    config_file_name : str
+        name of configuration file
+
+    """
+
     # parse configuration file
     config_file = configparser.ConfigParser()
     config_file.read(config_file_name)
@@ -362,13 +412,13 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin_filtered,
                                                                  validation_cv_datasets=validation_cv_datasets_bin,
                                                                  feature_cdds=feature_cdds,
-                                                                 config=config_file,
+                                                                 config_file=config_file,
                                                                  classifier_size=classifier_size,
                                                                  evaluation_threshold=evaluation_threshold,
                                                                  elitism=elitism,
                                                                  uniqueness=uniqueness,
-                                                                 rule_list=rules,
-                                                                 test_repeats=test_repeats)
+                                                                 rules=rules,
+                                                                 repeats=test_repeats)
 
     w, tc, ps, cp, mp, ts = best_parameters
 

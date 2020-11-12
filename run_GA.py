@@ -18,7 +18,18 @@ random.seed(1)
 
 
 # algorithm parameters read from the command line
-def check_params(args):
+def parse_parameters(args):
+
+    """
+
+    Parses command line parameters.
+
+    Parameters
+    ----------
+    args : list
+        list of command line arguments
+
+    """
 
     # parameter parser
     parser = argparse.ArgumentParser(description='A genetic algorithm (GA) optimizing a set of miRNA-based cell '
@@ -54,12 +65,12 @@ def check_params(args):
                         help='fixed number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300,
                         help='population size')
-    parser.add_argument('--elitism', '--elitism', dest="elitism", type=float, default=0,
+    parser.add_argument('--elitism', '--elitism', dest="elitism", type=float, default=1,
                         help='copy fraction of current best solutions to the population')
     parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
-                        help='List of pre-optimized rules')
+                        help='list of pre-optimized rules')
     parser.add_argument('--poptfrac', '--p-opt-frac', dest="p_opt_frac", type=float, default=0.5,
-                        help='List of pre-optimized rules')
+                        help='pre-optimized fraction of population')
     parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.8, type=float,
                         help='probability of crossover')
     parser.add_argument('-m', '--mutation-probability', dest="mutation_probability", default=0.1, type=float,
@@ -70,20 +81,51 @@ def check_params(args):
     # parse arguments
     params = parser.parse_args(args)
 
-    return params.dataset_filename_train, params.dataset_filename_test, params.filter_data, \
-           params.discretize_data, params.m_bin, params.a_bin, params.l_bin, \
-           params.classifier_size, params.evaluation_threshold, params.bacc_weight, params.uniqueness, \
-           params.iterations, params.fixed_iterations, params.population_size, params.elitism, params.rule_list, \
-           params.p_opt_frac, params.crossover_probability, params.mutation_probability, params.tournament_size
+    parameters = [params.dataset_filename_train, params.dataset_filename_test, params.filter_data,
+                  params.discretize_data, params.m_bin, params.a_bin, params.l_bin,
+                  params.classifier_size, params.evaluation_threshold, params.bacc_weight,
+                  params.uniqueness, params.iterations, params.fixed_iterations, params.population_size,
+                  params.elitism, params.rule_list, params.p_opt_frac, params.crossover_probability,
+                  params.mutation_probability, params.tournament_size]
+
+    return parameters
 
 
 # process parameters and data and run algorithm
 def process_and_run(args):
 
+    """
+
+    Processes data and parameters and runs the algorithm.
+
+    Parameters
+    ----------
+    args : list
+        list of command line arguments
+
+    Returns
+    -------
+    train_bacc : float
+        training balanced accuracy
+    test_bacc : float
+        test balanced accuracy
+    updates : int
+        number of best score updates
+    training_time : float
+        training time
+    first_global : float
+        first global best score
+    first_avg_pop : float
+        first population average score
+
+    """
+
+    parameters = parse_parameters(args)
+
     # process parameters
     train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
         evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations, population_size, elitism, \
-        rule_list, popt_fraction, crossover_probability, mutation_probability, tournament_size = check_params(args)
+        rule_list, popt_fraction, crossover_probability, mutation_probability, tournament_size = parameters
 
     print("##PARAMETERS##")
     if filter_data == 't':
@@ -132,7 +174,7 @@ def process_and_run(args):
 
     print("\nTRAINING...")
     start_train = time.time()
-    classifier, best_classifiers, updates, first_global, first_avg_pop = \
+    classifier, best_classifiers, updates, first_best_score, first_avg_pop = \
         genetic_algorithm.run_genetic_algorithm(data_discretized, filter_data, iterations, fixed_iterations,
                                                 population_size, elitism, rule_list, popt_fraction, classifier_size,
                                                 evaluation_threshold, feature_cdds, crossover_probability,
@@ -187,11 +229,24 @@ def process_and_run(args):
     else:
         test_bacc = None
 
-    return train_bacc, test_bacc, updates, training_time, first_global, first_avg_pop
+    return train_bacc, test_bacc, updates, training_time, first_best_score, first_avg_pop
 
 
 # repeat GA run
 def repeat(repeats, args):
+
+    """
+
+    Processes data and parameters and runs the algorithm.
+
+    Parameters
+    ----------
+    repeats : int
+        number of single test repeats
+    args : list
+        list of command line arguments
+
+    """
 
     train_scores = []
     test_scores = []
@@ -204,12 +259,12 @@ def repeat(repeats, args):
 
     for i in range(0, repeats):
         print("\nREPEAT ", i+1)
-        train_bacc, test_bacc, updates, train_time, first_score, first_avg_pop = process_and_run(args)
+        train_bacc, test_bacc, updates, train_time, first_best_score, first_avg_pop = process_and_run(args)
         train_scores.append(train_bacc)
         test_scores.append(test_bacc)
         time.append(train_time)
         updates_list.append(updates)
-        first_scores.append(first_score)
+        first_scores.append(first_best_score)
         first_avg_population_scores.append(first_avg_pop)
 
     print("\nRESULTS")

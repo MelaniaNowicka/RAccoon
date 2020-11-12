@@ -8,6 +8,17 @@ random.seed(1)
 
 def write_config_to_log(config_file):
 
+    """
+
+    Writes all parameter values to log.
+
+    Parameters
+    ----------
+    config_file : ConfigParser object
+        configuration file
+
+    """
+
     print("###########READING CONFIG###########\n")
     print("CLASSIFIER PARAMETERS")
     print("Classifier Size: ", int(config_file['CLASSIFIER PARAMETERS']['ClassifierSize']))
@@ -64,6 +75,19 @@ def write_config_to_log(config_file):
 
 def compare_folds(fold1, fold2):
 
+    """
+
+    Compares two data folds by checking the sample ids and data points.
+
+    Parameters
+    ----------
+    fold1 : str
+        path to first data fold
+    fold2 : str
+        path to second data fold
+
+    """
+
     if isinstance(fold1, pandas.DataFrame) and isinstance(fold2, pandas.DataFrame):
         data1 = fold1.__copy__()
         data2 = fold2.__copy__()
@@ -80,6 +104,19 @@ def compare_folds(fold1, fold2):
 
 def compare_ids(train_fold, test_fold):
 
+    """
+
+    Compares training and test data folds for sample id uniqueness
+
+    Parameters
+    ----------
+    train_fold : str
+        path to train data fold
+    test_fold : str
+        path to test data fold
+
+    """
+
     dataset_train, annotation, negatives, positives, features = preproc.read_data(train_fold)
     dataset_val, annotation, negatives, positives, features = preproc.read_data(test_fold)
 
@@ -94,9 +131,31 @@ def compare_ids(train_fold, test_fold):
 
 
 # divide data into train and test
-def divide_into_train_test(dataset_filename, train_fraction, set_seed):
+def divide_into_train_test(dataset_file_name, train_fraction, set_seed):
 
-    dataset, annotation, negatives, positives, features = preproc.read_data(dataset_filename)
+    """
+
+    Divides a data set into training and test fraction.
+
+    Parameters
+    ----------
+    dataset_file_name : Pandas DataFrame
+        data set
+    train_fraction : float
+        fraction of samples in training data
+    set_seed : bool
+        if True sample() seed is set to 1
+
+    Returns
+    -------
+    training_data : dataframe
+        training data set
+    testing_data : dataframe
+        test data set
+
+    """
+
+    dataset, annotation, negatives, positives, features = preproc.read_data(dataset_file_name)
 
     data_size = len(dataset.index)
 
@@ -137,6 +196,35 @@ def divide_into_train_test(dataset_filename, train_fraction, set_seed):
 
 # division of the data set into k folds
 def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set_seed):
+
+    """
+
+    Divides a data set into k training and validation data folds.
+
+    Parameters
+    ----------
+    dataset_file_name : str
+        data set filename
+    path : str
+        path to data set file
+    dataset : Pandas DataFrame
+        data set
+    k_folds : int
+        number of cv folds
+    pairing : bool
+        if True samples are divided into training and validation folds by pairs (first negative and first positive
+        sample is treated as a pair)
+    set_seed : bool
+        if True sample() seed is set to 1
+
+    Returns
+    -------
+    training_data : list
+        list of train data folds
+    testing_data : list
+        list of validation data folds
+
+    """
 
     header = dataset.columns.values.tolist()
     samples, annotation, negatives, positives = preproc.get_data_info(dataset, header)
@@ -237,6 +325,17 @@ def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set
 
 def remove_symmetric_solutions(best_classifiers):
 
+    """
+
+    Removes symmetric solutions (solutions differing only in the order of gates and inputs).
+
+    Parameters
+    ----------
+    best_classifiers : BestSolutions object
+         includes all best solutions
+
+    """
+
     to_del = []  # solution ids to delete
 
     for i in range(0, len(best_classifiers.solutions)-1):  # iterate over solutions
@@ -269,6 +368,17 @@ def remove_symmetric_solutions(best_classifiers):
 
 
 def rank_features_by_frequency(solutions):
+
+    """
+
+    Ranks features in classifiers.
+
+    Parameters
+    ----------
+    solutions : list
+        list of classifiers
+
+    """
 
     frequency_general = {}  # count occurences in total
     frequency_pos = {}  # count occurences as positive inputs
@@ -328,10 +438,10 @@ def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):
     Parameters
     ----------
     train_names : list
-        list of names of train data sets
+        list of paths to train data sets
 
     val_names : list
-        list of names of validation data sets
+        list of paths to validation data sets
 
     m_segments : int
         number of segments for discretization
@@ -357,17 +467,21 @@ def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):
 
     # discretize train and validation data sets
     train_datasets_bin, val_datasets_bin, feature_cdds \
-        = preproc.discretize_data_for_tests(train_datasets, val_datasets, m_segments, bin_alpha, bin_lambda, True)
+        = preproc.discretize_data_for_tests(train_datasets, val_datasets, m_segments, bin_alpha, bin_lambda, False)
 
     # filter train data sets
     train_datasets_bin_f = []
+
+    # data filtering
     [train_datasets_bin_f.append(preproc.remove_irrelevant_features(dataset)[0]) for dataset in train_datasets_bin]
 
     # save data sets to files
     for i in range(0, len(train_names)):
-
-        name = str(train_names[i].replace(".csv", "_bin.csv"))  # create name for train data
+        # create name for train data
+        name = \
+            str(train_names[i].replace(".csv", "_"+str(m_segments)+"_"+str(bin_alpha)+"_"+str(bin_lambda)+"_bin.csv"))
         header_t = list(train_datasets_bin_f[i].columns)
+        # remove -, . and : from the header (ASP solver cannot parse such symbols)
         header_t = list([colname.replace("-", "x") for colname in header_t])
         header_t = list([colname.replace(".", "y") for colname in header_t])
         header_t = list([colname.replace(":", "z") for colname in header_t])
@@ -375,8 +489,10 @@ def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):
         dataset_t = train_datasets_bin_f[i]
         dataset_t.to_csv(name, sep=";", index=False)  # save discretized and filtered train data to file
 
-        name = str(val_names[i].replace(".csv", "_bin.csv"))  # create name for validation data
+        # create name for validation data
+        name = str(val_names[i].replace(".csv", "_"+str(m_segments)+"_"+str(bin_alpha)+"_"+str(bin_lambda)+"_bin.csv"))
         header_v = list(val_datasets_bin[i].columns)
+        # remove -, . and : from the header (ASP solver cannot parse such symbols)
         header_v = list([colname.replace("-", "x") for colname in header_v])
         header_v = list([colname.replace(".", "y") for colname in header_v])
         header_v = list([colname.replace(":", "z") for colname in header_v])

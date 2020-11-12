@@ -7,6 +7,26 @@ random.seed(1)
 # one parent selection function
 def select_parent(population, tournament_size, first_parent_id):
 
+    """
+
+    Selects single parent.
+
+    Parameters
+    ----------
+    population : list
+        list of Classifier objects
+    tournament_size : float
+        size of tournament
+    first_parent_id : int
+        if first parent id is selected block the id, otherwise pass -1
+
+    Returns
+    -------
+    best_candidate : int
+        id of the best candidate
+
+    """
+
     # create empty tournament
     tournament = []
 
@@ -29,6 +49,26 @@ def select_parent(population, tournament_size, first_parent_id):
 
 # tournament selection of parents for crossover
 def select(population, tournament_size):
+
+    """
+
+    Performs tournament selection of two parents from a population of classifiers.
+
+    Parameters
+    ----------
+    population : list
+        list of Classifier objects
+    tournament_size : float
+        tournament size
+
+    Returns
+    -------
+    first_parent_id : int
+        id of the first selected parent
+    second_parent_id : int
+        id of the second selected parent
+
+    """
 
     # select first parent, parents must have different ids (-1 - no id is blocked)
     first_parent_id = select_parent(population, tournament_size, -1)

@@ -7,6 +7,22 @@ random.seed(1)
 # mutate single rule
 def mutate_rule(rule, features):
 
+    """
+
+    Mutates single rule.
+
+    Mutation types: (0) feature-id swap, (1) add/remove NOT (1) and (2) remove input (cannot add input as the maximal
+    size is 2 inputs per rule).
+
+    Parameters
+    ----------
+    rule : SingleRule object
+        single rule
+    features : list
+        list of features in the data set
+
+    """
+
     # choose mutation type (0, 1, 2)
     # 0 - feature-id swap
     # 1 - add/remove NOT
@@ -147,6 +163,26 @@ def mutate_rule(rule, features):
 # mutate classifier
 def mutate_classifier(population, classifier, features, evaluation_threshold):
 
+    """
+
+    Mutates single classifier.
+
+    Mutation types: (0) copy rule from one classifier to another, (1) add rule, (2) remove rule and
+    (3) mutate threshold.
+
+    Parameters
+    ----------
+    population : list
+        list of classifiers (Classifier objects)
+    classifier : Classifier object
+        classifier
+    features : list
+        list of features
+    evaluation_threshold : float
+        classifier evaluation threshold
+
+    """
+
     if evaluation_threshold is None:
         mutation_type = random.randrange(0, 3)  # choose mutation type
     else:
@@ -197,6 +233,29 @@ def mutate_classifier(population, classifier, features, evaluation_threshold):
 
 # mutation
 def mutate(population, features, mutation_probability, evaluation_threshold):
+
+    """
+
+    Mutates classifiers in population.
+
+    Parameters
+    ----------
+    population : list
+        list of classifiers (Classifier objects)
+    features : list
+        list of features
+    mutation_probability : float
+        mutation probability
+    evaluation_threshold : float
+        classifier evaluation threshold
+
+    Returns
+    -------
+
+    population : list
+        mutated population
+
+    """
 
     # mutation for the population
     for classifier in population:

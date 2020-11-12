@@ -18,6 +18,49 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
                   evaluation_threshold, bacc_weight, uniqueness, best_classifiers,
                   crossover_probability, mutation_probability, tournament_size, print_results):
 
+    """
+
+    Runs a single genetic algorithm iteration.
+
+    Parameters
+    ----------
+    dataset : Pandas DataFrame
+        data set
+    features : list
+        list of features
+    feature_cdds : list
+        list of feature cdds
+    population : list
+        list of classifiers (Classifier objects)
+    population_size : int
+        population size
+    elitism : bool
+        if True the best found solutions are added to the population in each selection operation
+    evaluation_threshold : float
+        classifier evaluation threshold
+    bacc_weight : float
+        weight of balanced accuracy in the multi-objective score
+    uniqueness : bool
+         if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
+         the number of input
+    best_classifiers : BestSolutions object
+        includes best solutions
+    crossover_probability : float
+        crossover probability
+    mutation_probability : float
+        mutation probability
+    tournament_size : float
+        tournament size
+    print_results : bool
+         if True more information is shown, otherwise not all results are printed
+
+    Returns
+    -------
+    best_classifiers : BestSolutions object
+        includes all best classifiers
+
+    """
+
     # SELECTION
     selected_parents = []
     temp_population = []
@@ -100,7 +143,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           fixed_iterations,  # fixed number of iterations
                           population_size,  # size of a population
                           elitism,  # fraction of elite solutions
-                          rule_list,  # list of pre-optimized rules
+                          rules,  # list of pre-optimized rules
                           popt_fraction,  # fraction of population that is pre-optimized
                           classifier_size,  # max size of a classifier
                           evaluation_threshold,  # evaluation threshold
@@ -111,6 +154,61 @@ def run_genetic_algorithm(train_data,  # name of train datafile
                           bacc_weight,  # bacc weight
                           uniqueness,  # whether only unique inputs are taken into account in cdd score
                           print_results):
+
+    """
+
+    Runs the genetic algorithm.
+
+    Parameters
+    ----------
+    train_data : str/Pandas DataFrame
+        path to train data file (str) or already read data set (Pandas DataFrame)
+    filter_data : bool
+        if True non-relevant features are filtered out from the data
+    iterations : int
+        number of iterations without improvement until termination
+    fixed_iterations : int
+        fixed number of iterations until termination
+    population_size : int
+        population size
+    elitism : bool
+         if True the best found solutions are added to the population in each selection operation
+    rules : list
+        list of pre-optimized rules
+    popt_fraction : float
+        fraction of population that is pre-optimized
+    classifier_size : int
+        maximal classifier size
+    evaluation_threshold : float
+        classifier evaluation threshold
+    feature_cdds : list
+         list of feature cdds
+    crossover_probability : float
+        crossover probability
+    mutation_probability : float
+        mutation probability
+    tournament_size : float
+        tournament size
+    bacc_weight : float
+        weight of balanced accuracy in the multi-objective score
+    uniqueness : bool
+        if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
+        the number of input occurrences
+    print_results : bool
+        if True more information is shown, otherwise not all results are printed
+
+    Returns
+    -------
+    best_classifier : Classifier object
+        best classifier
+    best_classifiers : BestSolutions object
+        includes all best classifiers
+    updates : int
+        number of best score updates
+    first_avg_population_score : float
+        first population average score
+
+    """
 
     # initialize best solutions object
     best_classifiers = eval.BestSolutions(0.0, [], [])
@@ -131,12 +229,12 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         dataset, features = preproc.remove_irrelevant_features(dataset)
 
     # INITIALIZE POPULATION
-    if rule_list is None:
+    if rules is None:
         population = popinit.initialize_population(population_size, features, evaluation_threshold, classifier_size)
     else:
-        rule_list = popinit.read_rules_from_file(rule_list)
+        rules = popinit.read_rules_from_file(rules)
         population = popinit.initialize_population_from_rules(population_size, features, evaluation_threshold,
-                                                              rule_list, popt_fraction, classifier_size)
+                                                              rules, popt_fraction, classifier_size)
 
     # REMOVE RULE DUPLICATES
     for classifier in population:
@@ -151,6 +249,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         print("first global best score: ", best_classifiers.score)
         print("first average population score: ", first_avg_population_score)
 
+    first_global_best_score = best_classifiers.score
     global_best_score = best_classifiers.score
 
     iteration_counter = 0  # count iterations without change of scores
@@ -213,5 +312,6 @@ def run_genetic_algorithm(train_data,  # name of train datafile
     shortest_classifier = classifier_sizes.index(min(classifier_sizes))  # find shortest classifier
     log.write_final_scores(global_best_score, [best_classifiers.solutions[shortest_classifier]])  # shortest classifier
 
-    return best_classifiers.solutions[shortest_classifier], best_classifiers, updates, first_avg_population_score
+    best_classifier = best_classifiers.solutions[shortest_classifier]
+    return best_classifier, best_classifiers, updates, first_global_best_score, first_avg_population_score
 

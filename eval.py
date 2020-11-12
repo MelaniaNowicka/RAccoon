@@ -1,6 +1,5 @@
 from decimal import *
 import preproc
-import toolbox
 import numpy
 import math
 import sys
@@ -8,6 +7,24 @@ import log
 
 
 class BestSolutions:
+
+    """
+
+    Class representing best solutions.
+
+    BestSolutions class allows to store best found solutions as strings and as Classifier objects as well as it's
+    performance score.
+
+    Attributes
+    ----------
+    score : float
+        solution score (may be multi-objective score, balanced accuracy or cdd score)
+    solutions : list
+        list of solutions as Classifier objects
+    solutions_str : list
+        list of solutions as strings
+
+    """
 
     def __init__(self, score, solutions, solutions_str):
         self.score = score
@@ -17,6 +34,25 @@ class BestSolutions:
 
 # compare floats - is close with 1e-5 tolerance
 def is_close(x, y, tol=1e-5):
+
+    """
+
+    Compares floats - checks whether y is close to x with 1e-5 tolerance.
+
+    Parameters
+    ----------
+    x : float
+        first float
+    y : float
+        second float
+
+    Returns
+    -------
+    bool
+        True if y is close to x
+
+    """
+
     if abs(x - y) <= tol:
         return True
     else:
@@ -25,6 +61,25 @@ def is_close(x, y, tol=1e-5):
 
 # compare floats - is y is higher than x with 1e-5 tolerance
 def is_higher(x, y, tol=1e-5):
+
+    """
+
+    Compares floats - checks whether y is higher than x with 1e-5 tolerance.
+
+    Parameters
+    ----------
+    x : float
+        first float
+    y : float
+        second float
+
+    Returns
+    -------
+    bool
+        True if y is higher than x
+
+    """
+
     if y - x >= tol:
         return True
     else:
@@ -33,6 +88,28 @@ def is_higher(x, y, tol=1e-5):
 
 # calculate balanced accuracy score
 def calculate_balanced_accuracy(tp, tn, p, n):
+
+    """
+
+    Calculates balanced accuracy (bacc = (tp/p + tn/n)/2).
+
+    Parameters
+    ----------
+    tp : int
+        number of true positives
+    tn : int
+        number of true negatives
+    p : int
+        number of positives
+    n : int
+        number of negatives
+
+    Returns
+    -------
+    float
+        balanced accuracy
+
+    """
 
     try:
         balanced_accuracy = (tp/p + tn/n)/2
@@ -44,8 +121,29 @@ def calculate_balanced_accuracy(tp, tn, p, n):
 
 
 # calculate classifier cdd score
-# class distribution divergence score
+# class distribution diversity score
 def calculate_cdd_score(inputs, feature_cdds, uniqueness):
+
+    """
+
+    Calculates CDD (Class Diversity Diversity) score.
+
+    Parameters
+    ----------
+    inputs : list
+        list of classifier inputs
+    feature_cdds : list
+        list of feature cdd scores
+    uniqueness : bool
+        if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
+        the number of input occurrences
+
+    Returns
+    -------
+    float
+        classifier cdd score
+
+    """
 
     # sum up cdds for each miRNA in the classifier
     classifier_cdd_sum = 0
@@ -75,6 +173,26 @@ def calculate_cdd_score(inputs, feature_cdds, uniqueness):
 # balanced accuracy and cdd score
 def calculate_multi_objective_score(bacc, cdd_score, bacc_weight):
 
+    """
+
+    Calculates multi-objective classifier score (classifier_score = bacc * bacc_weight + cdd_score * (1-bacc_weight)).
+
+    Parameters
+    ----------
+    bacc : float
+        classifier balanced accuracy
+    cdd_score : float
+        classifier cdd score
+    bacc_weight : float
+        weight of balanced accuracy in the multi-objective score
+
+    Returns
+    -------
+    float
+        classifier multi objective score
+
+    """
+
     classifier_score = bacc * bacc_weight + cdd_score * (1-bacc_weight)
 
     return classifier_score
@@ -82,6 +200,28 @@ def calculate_multi_objective_score(bacc, cdd_score, bacc_weight):
 
 # calculate error rates
 def calculate_error_rates(tp, tn, p, n):
+
+    """
+
+    Calculates error rates (true positive rate, true negative rate, false positive rate and false negative rate).
+
+    Parameters
+    ----------
+    tp : int
+        number of true positives
+    tn : int
+        number of true negatives
+    p : int
+        number of positives
+    n : int
+        number of negatives
+
+    Returns
+    -------
+    dict
+        dictionary of error rates (tpr, tnr, fpr and fnr)
+
+    """
 
     try:
         tpr = tp/p  # true positive rate
@@ -100,6 +240,29 @@ def calculate_error_rates(tp, tn, p, n):
 
 # calculate other scores
 def calculate_additional_scores(tp, tn, fp, fn):
+
+    """
+
+    Calculates additional scores (F1, MCC, PPV and FDR).
+
+    Parameters
+    ----------
+    tp : int
+        number of true positives
+    tn : int
+        number of true negatives
+    fp : int
+        number of false positives
+    fn : int
+        number of false negatives
+
+
+    Returns
+    -------
+    dict
+        dictionary of additional scores (f1, mcc, ppv and fdr)
+
+    """
 
     try:
         f1 = 2*tp/(2*tp+fp+fn)  # f1 score
@@ -133,6 +296,47 @@ def evaluate_classifier(classifier,
                         feature_cdds,
                         uniqueness,
                         bacc_weight):
+
+    """
+
+    Evaluates classifier using data set and it's annotation and returns classifier scores.
+
+    Parameters
+    ----------
+    classifier : Classifier object
+        classifier
+    dataset : Pandas DataFrame object
+        data set
+    annotation : list
+        binary data annotation
+    negatives : int
+        number of negative samples
+    positives : int
+        number of positive samples
+    feature_cdds : list
+        list of feature cdd scores
+    uniqueness : bool
+        if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
+        the number of input occurrences
+    bacc_weight : float
+        weight of balanced accuracy in the multi-objective score
+
+    Returns
+    -------
+    classifier_score : float
+        classifier multi-objective score
+    bacc : float
+        classifier balanced accuracy
+    errors : dict
+        dictionary of errors (tp, tn, fp and fn)
+    error_rates : dict
+        dictionary of errors (tpr, tnr, fpr and fnr)
+    additional_scores : dict
+        dictionary of additional scores (f1, mcc, ppv and fdr)
+    cdd_score : float
+        classifier cdd score
+
+    """
 
     # get data info
     dataset = dataset.__copy__()
@@ -218,6 +422,24 @@ def evaluate_classifier(classifier,
 # comparing new score to the best score
 def update_best_classifier(new_classifier, best_classifiers):
 
+    """
+
+    Updates list of best classifiers.
+
+    Parameters
+    ----------
+    new_classifier : Classifier object
+        new evaluated classifier
+    best_classifiers : BestSolutions object
+        includes best solutions
+
+    Returns
+    -------
+    best_classifiers : BestSolutions object
+        updated best solutions
+
+    """
+
     if is_close(best_classifiers.score, new_classifier.score):  # if new score == the best
         classifier_str = log.convert_classifier_to_string(new_classifier.__copy__())
         if classifier_str not in best_classifiers.solutions_str:
@@ -244,6 +466,35 @@ def evaluate_individuals(population,
                          feature_cdds,
                          uniqueness,
                          best_classifiers):
+
+    """
+
+    Evaluates all classifiers in the population and returns list of best solutions.
+
+    Parameters
+    ----------
+    population : list
+        list of classifiers (Classifier objects)
+    dataset : Pandas DataFrame
+        data set
+    bacc_weight : float
+        weight of balanced accuracy in the multi-objective score
+    feature_cdds : list
+        list of feature cdd scores
+    uniqueness : bool
+        if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
+        the number of input occurrences
+    best_classifiers : BestSolutions object
+        includes all best classifiers
+
+    Returns
+    -------
+    avg_population_score : float
+        average population classifier score
+    best_classifiers : BestSolutions object
+        includes all best classifiers
+
+    """
 
     # sum of bacc for the population
     sum_bacc = 0.0

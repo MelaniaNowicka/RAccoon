@@ -1,5 +1,21 @@
 def convert_classifier_to_string(classifier):
 
+    """
+
+    Converts Classifier object to a string.
+
+    Parameters
+    __________
+    classifier : Classifier object
+        classifier as Classifier object
+
+    Returns
+    _______
+    classifier_str : str
+        classifier as a string
+
+    """
+
     classifier_str = ""
     rule_str_list = []
     for rule in classifier.rule_set:
@@ -27,6 +43,24 @@ def convert_classifier_to_string(classifier):
 
 
 def write_final_scores(best_bacc, best_classifiers):
+
+    """
+
+    Converts all best found classifiers to strings and returns a log message.
+
+    Parameters
+    __________
+    best_bacc : float
+        best balanced accuracy
+    best_classifiers : BestSolutions object
+        includes all best classifiers
+
+    Returns
+    _______
+    log_message : str
+        log message including best scores and classifiers as string
+
+    """
 
     # final score
     print("BEST DC SCORE:", best_bacc)
