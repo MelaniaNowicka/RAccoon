@@ -2,6 +2,25 @@
 
 A genetic algorithm to designing distributed cell classifier circuits. 
 
+## Requirements
+
+RAccoon has the following dependencies:
+
+- Python 3+
+
+Following packages needs to be installed:
+
+- pandas
+- scikit-learn
+- numpy
+
+## Installation
+
+To download the RAccoon from Github, do::
+
+    $ git clone https://github.com/MelaniaNowicka/RAccoon
+
+
 ## Data format
 
 Use the following format of the .csv file: the first column includes unique IDs of samples, the second column includes 
@@ -12,9 +31,9 @@ Continuous data:
 
 | ID | Annots | miR1 | miR2 |
 | -- | ------ | ---- | ---- |
-| 1 | 0 | 244 | 455 |
-| 2 | 1 | 12 | 7945 |
-| 3 | 1 | 7 | 2369 |
+| 1  | 0      | 244  | 455  |
+| 2  | 1      | 12   | 7945 |
+| 3  | 1      | 7    | 2369 |
 
 If you use continuous data, keep the discretization on.
 
@@ -22,9 +41,9 @@ Discretized data:
 
 | ID | Annots | miR1 | miR2 |
 | -- | ------ | ---- | ---- |
-| 1 | 0 | 1 | 0 |
-| 2 | 1 | 0 | 1 |
-| 3 | 1 | 0 | 1 |
+| 1  | 0      | 1    | 0    |
+| 2  | 1      | 0    | 1    |
+| 3  | 1      | 0    | 1    |
 
 ## Training and testing classifiers
 
@@ -114,12 +133,12 @@ as parameter tuning results
 
 **FINAL TEST** - results of the final tests (the classifiers are trained with tuned parameters and tested on test data)
 
-## simDataGenerator
+## simDataGenerator (R)
 
 simDataGenerator allows to generate a simulated GED data set with compcodeR package, preprocess it by splitting into 
 train/test data sets and normalize with TMM normalization method (edgeR). 
 
-***LIBRARIES REQUIRED: copcodeR, edgeR, matrixStats***
+***LIBRARIES REQUIRED: compcodeR, edgeR, matrixStats***
 
 Run *prepareSimulatedDataset()* with parameters:
 
