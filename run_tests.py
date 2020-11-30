@@ -297,6 +297,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     head_tail = os.path.split(path_test)
     path_test = head_tail[0]
     file_name_test = head_tail[1]
+    file_name_test = head_tail[1]
 
     if not os.path.exists(path):
         os.mkdir(path)
@@ -347,7 +348,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
 
     training_cv_datasets, validation_cv_datasets = \
-        toolbox.divide_into_cv_folds(dataset_file_name=train_data_file_name,
+        toolbox.divide_into_cv_folds(dataset_file_name=file_name_train,
                                      path=path,
                                      dataset=training_data,
                                      k_folds=cv_folds,

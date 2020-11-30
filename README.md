@@ -16,7 +16,7 @@ Following packages needs to be installed:
 
 ## Installation
 
-To download the RAccoon from Github, do::
+To download the RAccoon from Github, do:
 
     $ git clone https://github.com/MelaniaNowicka/RAccoon
 
