@@ -394,7 +394,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
     # save to files
     fold = 1
-    for train_set, val_set in zip(training_cv_datasets_bin_filtered, validation_cv_datasets_bin):
+    for train_set, val_set in zip(training_cv_datasets_bin, validation_cv_datasets_bin):
 
         new_name = "_cv_train_" + str(fold) + "_bin.csv"
         new_name = file_name_train.replace(".csv", new_name)
@@ -410,7 +410,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
     # parameter tuning
     print("\n***PARAMETER TUNING***")
-    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin_filtered,
+    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin,
                                                                  validation_cv_datasets=validation_cv_datasets_bin,
                                                                  feature_cdds=feature_cdds,
                                                                  config_file=config_file,
