@@ -8,10 +8,12 @@ import random
 import time
 import argparse
 import numpy
+import configparser
 
 import genetic_algorithm
 import preproc
 import eval
+import log
 
 numpy.random.seed(1)
 random.seed(1)
@@ -40,7 +42,13 @@ def parse_parameters(args):
     parser.add_argument('--train', '--dataset-filename-train', dest="dataset_filename_train",
                         help='train data set file name')
     parser.add_argument('--test', '--dataset-filename-test', dest="dataset_filename_test", default=None,
-                        help=' test data set file name')
+                        help='test data set file name')
+    parser.add_argument('--config', '--config', dest="config", type=str, default=None,
+                        help='config file name')
+    parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
+                        help='list of pre-optimized rules')
+    parser.add_argument('--repeats', '--repeats', dest="repeats", type=int, default=1,
+                        help='number of training repeats')
     parser.add_argument('--filter', '--filter-data', dest="filter_data", type=str, default='t',
                         help='filter data')
     parser.add_argument('--discretize', '--discretize-data', dest="discretize_data", type=str, default='t',
@@ -61,14 +69,12 @@ def parse_parameters(args):
                         help='uniqueness of inputs')
     parser.add_argument('-i', '--iterations', dest="iterations", type=int, default=30,
                         help='number of iterations without improvement')
-    parser.add_argument('-f', '--fixed-iterations', dest="fixed_iterations", type=int, default=None,
+    parser.add_argument('-f', '--fixed-iterations', dest="fixed_iterations", type=int, default=0,
                         help='fixed number of iterations')
     parser.add_argument('-p', '--population-size', dest="population_size", type=int, default=300,
                         help='population size')
     parser.add_argument('--elitism', '--elitism', dest="elitism", type=float, default=1,
                         help='copy fraction of current best solutions to the population')
-    parser.add_argument('--rules', '--rules', dest="rule_list", type=str, default=None,
-                        help='list of pre-optimized rules')
     parser.add_argument('--poptfrac', '--p-opt-frac', dest="p_opt_frac", type=float, default=0.5,
                         help='pre-optimized fraction of population')
     parser.add_argument('-x', '--crossover-probability', dest="crossover_probability", default=0.8, type=float,
@@ -81,14 +87,45 @@ def parse_parameters(args):
     # parse arguments
     params = parser.parse_args(args)
 
-    parameters = [params.dataset_filename_train, params.dataset_filename_test, params.filter_data,
-                  params.discretize_data, params.m_bin, params.a_bin, params.l_bin,
+    parameters = [params.dataset_filename_train, params.dataset_filename_test, params.rule_list, params.repeats,
+                  params.filter_data, params.discretize_data, params.m_bin, params.a_bin, params.l_bin,
                   params.classifier_size, params.evaluation_threshold, params.bacc_weight,
                   params.uniqueness, params.iterations, params.fixed_iterations, params.population_size,
-                  params.elitism, params.rule_list, params.p_opt_frac, params.crossover_probability,
+                  params.elitism, params.p_opt_frac, params.crossover_probability,
                   params.mutation_probability, params.tournament_size]
 
     return parameters
+
+
+# function to read parameters from config file
+def read_from_config(train_datafile, test_datafile, rule_file, config_file_name):
+
+    config_file = configparser.ConfigParser()
+    config_file.read(config_file_name)
+
+    filter_data = config_file.getboolean("DATA PREPROC", "Filtering")
+    discretize_data = config_file.getboolean("DATA PREPROC", "Discretization")
+    m_bin = int(config_file['BINARIZATION PARAMETERS']['MSegments'])
+    a_bin = float(config_file['BINARIZATION PARAMETERS']['AlphaBin'])
+    l_bin = float(config_file['BINARIZATION PARAMETERS']['LambdaBin'])
+    classifier_size = int(config_file['CLASSIFIER PARAMETERS']['ClassifierSize'])
+    evaluation_threshold = float(config_file['CLASSIFIER PARAMETERS']['Alpha'])
+    bacc_weight = float(config_file['OBJECTIVE FUNCTION']['Weight'])
+    uniqueness = config_file.getboolean("OBJECTIVE FUNCTION", "Uniqueness")
+    iterations = int(config_file['GA PARAMETERS']['Iterations'])
+    fixed_iterations = int(config_file['GA PARAMETERS']['FixedIterations'])
+    population_size = int(config_file['GA PARAMETERS']['PopulationSize'])
+    elitism = config_file.getboolean("GA PARAMETERS", "Discretization")
+    popt_fraction = float(config_file['GA PARAMETERS']['PoptFraction'])
+    crossover_probability = float(config_file['GA PARAMETERS']['CrossoverProbability'])
+    mutation_probability = float(config_file['GA PARAMETERS']['MutationProbability'])
+    tournament_size = float(config_file['GA PARAMETERS']['TournamentSize'])
+
+    args = [train_datafile, test_datafile, rule_file, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size,
+            evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations, population_size, elitism,
+            popt_fraction, crossover_probability, mutation_probability, tournament_size]
+
+    return args
 
 
 # process parameters and data and run algorithm
@@ -120,12 +157,9 @@ def process_and_run(args):
 
     """
 
-    parameters = parse_parameters(args)
-
-    # process parameters
-    train_datafile, test_datafile, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
+    train_datafile, test_datafile, rule_list, filter_data, discretize_data, m_bin, a_bin, l_bin, classifier_size, \
         evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations, population_size, elitism, \
-        rule_list, popt_fraction, crossover_probability, mutation_probability, tournament_size = parameters
+        popt_fraction, crossover_probability, mutation_probability, tournament_size = args
 
     print("##PARAMETERS##")
     if filter_data == 't':
@@ -233,7 +267,7 @@ def process_and_run(args):
 
 
 # repeat GA run
-def repeat(repeats, args):
+def repeat(args):
 
     """
 
@@ -248,14 +282,30 @@ def repeat(repeats, args):
 
     """
 
+    parameters = parse_parameters(args)
+    train_datafile = parameters[0]
+    test_datafile = parameters[1]
+    config = parameters[2]
+    rule_file = parameters[3]
+
+    if config is None:
+        # process parameters
+        train_datafile, test_datafile, rule_file, repeats, filter_data, discretize_data, m_bin, a_bin, l_bin, \
+        classifier_size, evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations, population_size, \
+        elitism, popt_fraction, crossover_probability, mutation_probability, tournament_size = parameters
+
+        args = [train_datafile, test_datafile, rule_file, filter_data, discretize_data, m_bin, a_bin, l_bin,
+                classifier_size, evaluation_threshold, bacc_weight, uniqueness, iterations, fixed_iterations,
+                population_size, elitism, popt_fraction, crossover_probability, mutation_probability, tournament_size]
+    else:
+        args = read_from_config(train_datafile, test_datafile, rule_file, config)
+
     train_scores = []
     test_scores = []
     time = []
     updates_list = []
     first_scores = []
     first_avg_population_scores = []
-
-    test_bacc = None
 
     for i in range(0, repeats):
         print("\nREPEAT ", i+1)
@@ -268,28 +318,52 @@ def repeat(repeats, args):
         first_avg_population_scores.append(first_avg_pop)
 
     print("\nRESULTS")
-    print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores, ddof=1))
-    if test_bacc is not None:
-        print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores, ddof=1))
-    print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", numpy.std(updates_list, ddof=1))
-    print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", numpy.std(time, ddof=1))
-    print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", numpy.std(first_scores, ddof=1))
-    print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores), " STDEV: ",
-          numpy.std(first_avg_population_scores, ddof=1))
+    if repeats > 1:
+        print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", numpy.std(train_scores, ddof=1))
+        if test_datafile is not None:
+            print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", numpy.std(test_scores, ddof=1))
+        print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", numpy.std(updates_list, ddof=1))
+        print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", numpy.std(time, ddof=1))
+        print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", numpy.std(first_scores, ddof=1))
+        print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores), " STDEV: ",
+            numpy.std(first_avg_population_scores, ddof=1))
 
-    if test_bacc is not None:
-        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores, ddof=1), ";",
-              numpy.average(test_scores), ";", numpy.std(test_scores, ddof=1), ";",
-              numpy.average(updates_list), ";", numpy.std(updates_list, ddof=1), ";",
-              numpy.average(time), ";", numpy.std(time, ddof=1), ";",
-              numpy.average(first_scores), ";", numpy.std(first_scores, ddof=1), ";",
-              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores, ddof=1))
+        if test_datafile is not None:
+            print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores, ddof=1), ";",
+                numpy.average(test_scores), ";", numpy.std(test_scores, ddof=1), ";",
+                numpy.average(updates_list), ";", numpy.std(updates_list, ddof=1), ";",
+                numpy.average(time), ";", numpy.std(time, ddof=1), ";",
+                numpy.average(first_scores), ";", numpy.std(first_scores, ddof=1), ";",
+                numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores, ddof=1))
+        else:
+            print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores, ddof=1), ";",
+                numpy.average(updates_list), ";", numpy.std(updates_list, ddof=1), ";",
+                numpy.average(time), ";", numpy.std(time, ddof=1), ";",
+                numpy.average(first_scores), ";", numpy.std(first_scores, ddof=1), ";",
+                numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores, ddof=1))
     else:
-        print("CSV;", numpy.average(train_scores), ";", numpy.std(train_scores, ddof=1), ";",
-              numpy.average(updates_list), ";", numpy.std(updates_list, ddof=1), ";",
-              numpy.average(time), ";", numpy.std(time, ddof=1), ";",
-              numpy.average(first_scores), ";", numpy.std(first_scores, ddof=1), ";",
-              numpy.average(first_avg_population_scores), ";", numpy.std(first_avg_population_scores, ddof=1))
+        print("AVG TRAIN: ", numpy.average(train_scores), " STDEV: ", 0.0)
+        if test_datafile is not None:
+            print("AVG TEST: ", numpy.average(test_scores), " STDEV: ", 0.0)
+        print("AVG UPDATES: ", numpy.average(updates_list), " STDEV: ", 0.0)
+        print("AVG TRAINING TIME: ", numpy.average(time), " STDEV: ", 0.0)
+        print("AVG FIRST BEST SCORE: ", numpy.average(first_scores), " STDEV: ", 0.0)
+        print("AVG INITIAL POPULATION SCORE: ", numpy.average(first_avg_population_scores), " STDEV: ",
+              0.0)
+
+        if test_datafile is not None:
+            print("CSV;", numpy.average(train_scores), ";", 0.0, ";",
+                  numpy.average(test_scores), ";", 0.0, ";",
+                  numpy.average(updates_list), ";", 0.0, ";",
+                  numpy.average(time), ";", 0.0, ";",
+                  numpy.average(first_scores), ";", 0.0, ";",
+                  numpy.average(first_avg_population_scores), ";", 0.0)
+        else:
+            print("CSV;", numpy.average(train_scores), ";", 0.0, ";",
+                  numpy.average(updates_list), ";", 0.0, ";",
+                  numpy.average(time), ";", 0.0, ";",
+                  numpy.average(first_scores), ";", 0.0, ";",
+                  numpy.average(first_avg_population_scores), ";", 0.0)
 
 
 if __name__ == "__main__":
@@ -299,7 +373,7 @@ if __name__ == "__main__":
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
 
-    repeat(10, sys.argv[1:])
+    repeat(sys.argv[1:])
 
     end = time.time()
     print("TIME: ", end - start)

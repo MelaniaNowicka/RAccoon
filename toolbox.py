@@ -1,6 +1,8 @@
 import preproc
 import pandas
 import random
+from matplotlib import pyplot
+import seaborn
 import os
 
 random.seed(1)
@@ -260,7 +262,6 @@ def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set
             positive_folds.append(positive_data_fold.sort_index())  # add sorted fold to positive folds
             pos_used_ids = [x + negatives for x in neg_used_ids]  # calculate paired ids based on neg used ids to drop
             positive_samples_temp.drop(pos_used_ids, inplace=True)  # drop used samples by pos_used_ids
-            print("pairing!")
         else:  # if samples are not paired draw positive samples randomly
             if set_seed is True:
                 # draw n samples
@@ -323,6 +324,8 @@ def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set
     return train_datasets, val_datasets
 
 
+# watch out, may be slow!
+# removes symmetric solutions (solutions differing only in the order of gates and inputs)
 def remove_symmetric_solutions(best_classifiers):
 
     """
@@ -367,7 +370,8 @@ def remove_symmetric_solutions(best_classifiers):
             del best_classifiers.solutions_str[i]
 
 
-def rank_features_by_frequency(solutions):
+# ranks features in classifiers
+def rank_features_by_frequency(solutions, path, file_name):
 
     """
 
@@ -415,15 +419,27 @@ def rank_features_by_frequency(solutions):
     for feature in sorted(frequency_neg, key=frequency_neg.get, reverse=True):
         print(feature, ": ", frequency_neg[feature])
 
+    header = {'feature': [], 'level': [], 'relative frequency': []}
+    frequency_data = pandas.DataFrame(data=header)
+
     print("\nRELATIVE FREQUENCY")
     for feature in sorted(frequency_general, key=frequency_general.get, reverse=True):
         print(feature, ": ", frequency_general[feature]/features_total)
     print("POSITIVE FEATURES: ")
     for feature in sorted(frequency_pos, key=frequency_pos.get, reverse=True):
         print(feature, ": ", frequency_pos[feature]/features_total)
+        row = [feature, "high", frequency_pos[feature]/features_total]
+        frequency_data.loc[len(frequency_data)] = row
     print("NEGATIVE FEATURES: ")
     for feature in sorted(frequency_neg, key=frequency_neg.get, reverse=True):
         print(feature, ": ", frequency_neg[feature]/features_total)
+        row = [feature, "low", frequency_neg[feature]/features_total]
+        frequency_data.loc[len(frequency_data)] = row
+
+    # plot relative frequencies
+    seaborn.color_palette("pastel")
+    freq_plot = seaborn.barplot(x="feature", y="relative frequency", hue="level", data=frequency_data, dodge=False)
+    pyplot.savefig("/".join([path, "_".join([file_name.replace(".csv", ""), "frequency_plot.png"])]))
 
 
 def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):

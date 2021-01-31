@@ -87,7 +87,10 @@ def write_final_scores(best_bacc, best_classifiers):
 
             classifier_str = classifier_str + rule_str
 
-        classifier_str = classifier_str + " | THRESHOLD: " + str(classifier.evaluation_threshold)
+        classifier.update_theta()
+        classifier_str = classifier_str + " | THRESHOLD: " + str(classifier.evaluation_threshold) \
+                         + " | THETA: " + str(classifier.theta)
+
         best_classifiers_messages.append(classifier_str)
 
     # removing duplicates

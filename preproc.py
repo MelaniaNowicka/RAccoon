@@ -171,7 +171,6 @@ def remove_irrelevant_features(dataset):
                 irrelevant_features.append(id)
             else:
                 relevant_features.append(id)
-
     # removing irrelevant miRNAs from the dataset
     dataset = dataset.drop(irrelevant_features, axis=1)
 

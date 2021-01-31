@@ -117,8 +117,9 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     # MUTATION
     population = mutation.mutate(population, features, mutation_probability, evaluation_threshold)
 
-    # REMOVE RULE DUPLICATES
+    # UPDATE THETA AND REMOVE RULE DUPLICATES
     for classifier in population:
+        classifier.update_theta()
         classifier.remove_duplicates()
 
     # EVALUATION OF THE POPULATION
@@ -236,8 +237,9 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         population = popinit.initialize_population_from_rules(population_size, features, evaluation_threshold,
                                                               rules, popt_fraction, classifier_size)
 
-    # REMOVE RULE DUPLICATES
+    # UPDATE THETA AND REMOVE RULE DUPLICATES
     for classifier in population:
+        classifier.update_theta()
         classifier.remove_duplicates()
 
     # EVALUATE INDIVIDUALS
@@ -278,7 +280,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         # CHECK IMPROVEMENT
         if eval.is_higher(global_best_score, best_classifiers.score):  # if there was improvement
             updates += 1  # add new update
-            if fixed_iterations is None:  # if there is no number of fixed iterations
+            if fixed_iterations == 0:  # if there is no number of fixed iterations
                 iteration_counter = 0  # reset iteration without improvement counter
             else:
                 iteration_counter = iteration_counter + 1  # else add iteration
@@ -292,7 +294,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
             iteration_counter = iteration_counter + 1
 
         # if the iteration_counter reaches the maximal number of allowed iterations stop the algorithm
-        if fixed_iterations is None:
+        if fixed_iterations == 0:
             if iteration_counter == iterations:
                 run_algorithm = False
         else:

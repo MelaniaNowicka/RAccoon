@@ -1,7 +1,7 @@
+from decimal import *
 import random
 import pandas
 import sys
-import log
 
 random.seed(1)
 
@@ -77,9 +77,11 @@ class Classifier:
 
     """
 
-    def __init__(self, rule_set, evaluation_threshold, errors, error_rates, score, bacc, cdd_score, additional_scores):
+    def __init__(self, rule_set, evaluation_threshold, theta, errors,
+                 error_rates, score, bacc, cdd_score, additional_scores):
         self.rule_set = rule_set  # list of rules
         self.evaluation_threshold = evaluation_threshold  # evaluation threshold alpha
+        self.theta = theta  # threshold in number of rules
         self.errors = errors  # dictionary of error (tp, tn, fp, fn)
         self.error_rates = error_rates  # dictionary of error rates (tpr, tnr, fpr, fnr)
         self.score = score  # classifier score (may be bacc, may be other)
@@ -95,8 +97,13 @@ class Classifier:
         for rule in self.rule_set:
             new_rule_set.append(rule.__copy__())
 
-        return Classifier(new_rule_set, self.evaluation_threshold, self.errors, self.error_rates, self.score,
-                          self.bacc, self.cdd_score, self.additional_scores)
+        return Classifier(new_rule_set, self.evaluation_threshold, self.theta, self.errors, self.error_rates,
+                          self.score, self.bacc, self.cdd_score, self.additional_scores)
+
+    # updates theta
+    def update_theta(self):
+        self.theta = int(Decimal(len(self.rule_set)*float(self.evaluation_threshold)).
+                         to_integral_value(rounding=ROUND_HALF_UP))
 
     # get a list of inputs
     def get_input_list(self):
@@ -129,7 +136,6 @@ class Classifier:
         removes duplicate rules in a classifier
 
         """
-
 
         single_pos = []  # list of positive single-input rules and their ids
         single_neg = []  # list of negative single-input rules and their ids
@@ -299,8 +305,8 @@ def initialize_classifier(classifier_size, evaluation_threshold, features):
         temp_evaluation_threshold = random.choice(thresholds)  # randomly choose threshold
 
     # initialization of a new classifier
-    classifier = Classifier(rule_set, evaluation_threshold=temp_evaluation_threshold, errors={}, error_rates={},
-                            score=0.0, bacc=0.0, additional_scores={}, cdd_score=0.0)
+    classifier = Classifier(rule_set, evaluation_threshold=temp_evaluation_threshold, theta=0, errors={},
+                            error_rates={}, score=0.0, bacc=0.0, additional_scores={}, cdd_score=0.0)
 
     return classifier
 

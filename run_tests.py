@@ -19,8 +19,8 @@ random.seed(1)
 
 
 # train and test classifiers
-def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, elitism, rules, uniqueness, repeats,
-                   print_results):
+def train_and_test(data, path, file_name, parameter_set, classifier_size, evaluation_threshold, elitism, rules,
+                   uniqueness, repeats, print_results):
 
     """
 
@@ -30,6 +30,8 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
     ----------
     data : list
         list including train data set, test data set and feature cdds list
+    path : str
+        path to output files
     parameter_set : list
         list of genetic algorithm parameters (iterations, population size, crossover probability, mutation probability
         and tournament size)
@@ -107,8 +109,9 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
         # run the algorithm
         classifier, best_classifiers, updates, first_global_best_score, first_avg_population_score \
             = genetic_algorithm.run_genetic_algorithm(train_data=training_fold,
-                                                      filter_data=False, iterations=tc,
-                                                      fixed_iterations=None,
+                                                      filter_data=False,
+                                                      iterations=tc,
+                                                      fixed_iterations=0,
                                                       population_size=pop,
                                                       elitism=elitism,
                                                       rules=rules,
@@ -208,7 +211,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
     if print_results:
         # rank features by frequency
         print("\n###FEATURE FREQUENCY ANALYSIS###")
-        toolbox.rank_features_by_frequency(classifier_list)
+        toolbox.rank_features_by_frequency(classifier_list, path, file_name)
 
         # average scores
         print("\n###AVERAGE SCORES###")
@@ -261,7 +264,7 @@ def train_and_test(data, parameter_set, classifier_size, evaluation_threshold, e
 
 
 # run test
-def run_test(train_data_file_name, test_data_file_name, rules, config_file_name):
+def run_test(train_data_file_name, test_data_file_name, rules, config_file_name, run_id):
 
     """
 
@@ -273,10 +276,12 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
         path to training data set
     test_data_file_name : str
         path to test data set
-    rules : list
+    rules : str
         list of pre-optimized rules
     config_file_name : str
         name of configuration file
+    run_id : str
+        id of run given by user
 
     """
 
@@ -291,6 +296,8 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     file_name_train = head_tail[1]
     date = datetime.now()
     dir_name = date.strftime("%Y-%m-%d_%H-%M-%S")
+    if run_id is not None:
+        dir_name = "_".join([run_id, dir_name])
     path = "/".join([path_train, dir_name])
 
     path_test = test_data_file_name
@@ -394,7 +401,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
     # save to files
     fold = 1
-    for train_set, val_set in zip(training_cv_datasets_bin, validation_cv_datasets_bin):
+    for train_set, val_set in zip(training_cv_datasets_bin_filtered, validation_cv_datasets_bin):
 
         new_name = "_cv_train_" + str(fold) + "_bin.csv"
         new_name = file_name_train.replace(".csv", new_name)
@@ -410,7 +417,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
 
     # parameter tuning
     print("\n***PARAMETER TUNING***")
-    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin,
+    best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin_filtered,
                                                                  validation_cv_datasets=validation_cv_datasets_bin,
                                                                  feature_cdds=feature_cdds,
                                                                  config_file=config_file,
@@ -466,7 +473,9 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name)
     print("SINGLE TEST REPEATS: ", test_repeats, "\n")
 
     #run test
-    train_and_test(data=(discretized_train_data_filtered, discretized_test_data[0], feature_cdds[0]),
+    train_and_test(data=[discretized_train_data_filtered, discretized_test_data[0], feature_cdds[0]],
+                   path=path,
+                   file_name=file_name_train,
                    parameter_set=best_parameters,
                    classifier_size=classifier_size,
                    evaluation_threshold=evaluation_threshold,
@@ -493,6 +502,8 @@ if __name__ == "__main__":
                         dest="dataset_filename_test", help='test data set file name')
     parser.add_argument('--rules', '--rule-file', type=str, default=None,
                         dest="rule_file", help='rules file name')
+    parser.add_argument('--run_id', '--run_id', type=str, default=None,
+                        dest="run_id", help='run id')
     parser.add_argument('--config', '--config_filename',
                         dest="config_filename", help='config file name')
 
@@ -501,9 +512,10 @@ if __name__ == "__main__":
     dataset_train = params.dataset_filename_train
     dataset_test = params.dataset_filename_test
     rule_list = params.rule_file
+    run_id = params.run_id
     config_filename = params.config_filename
 
-    run_test(dataset_train, dataset_test, rule_list, config_filename)
+    run_test(dataset_train, dataset_test, rule_list, config_filename, run_id)
 
     end_global = time.time()
     print("TIME (FULL TEST): ", end_global - start_global)

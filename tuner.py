@@ -219,12 +219,12 @@ def tune_parameters(training_cv_datasets, validation_cv_datasets, feature_cdds, 
         # train and test on each fold
         if processes > 1:  # if more than one processor is available
             with Pool(processes) as p:
-                val_bacc_cv = p.map(partial(run_tests.train_and_test, parameter_set=parameter_set,
+                val_bacc_cv = p.map(partial(run_tests.train_and_test, path="", file_name="", parameter_set=parameter_set,
                                             classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
                                             elite=elitism, rules=rules, uniqueness=uniqueness,
                                             repeats=repeats, print_results=False), cv_datasets)
         else:
-            val_bacc_cv = list(map(partial(run_tests.train_and_test, parameter_set=parameter_set,
+            val_bacc_cv = list(map(partial(run_tests.train_and_test, path="", file_name="", parameter_set=parameter_set,
                                            classifier_size=classifier_size, evaluation_threshold=evaluation_threshold,
                                            elitism=elitism, rules=rules, uniqueness=uniqueness,
                                            repeats=repeats, print_results=False), cv_datasets))
