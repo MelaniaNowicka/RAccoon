@@ -444,10 +444,15 @@ def rank_features_by_frequency(solutions, path, file_name):
         frequency_data.loc[len(frequency_data)] = row
 
     # plot relative frequencies
+    colors = ["#14645aff", "#bfcd53ff"]
+    seaborn.set_palette(seaborn.color_palette(colors))
     seaborn.color_palette("pastel")
     freq_plot = seaborn.barplot(x="feature", y="relative frequency", hue="level", data=frequency_data, dodge=False)
     pyplot.xticks(rotation=90)
-    pyplot.savefig("/".join([path, "_".join([file_name.replace(".csv", ""), "frequency_plot.png"])]))
+    pyplot.tight_layout()
+    pyplot.xlabel("")
+    pyplot.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    pyplot.savefig("/".join([path, "_".join([file_name.replace(".csv", ""), "frequency_plot.png"])]), bbox_inches="tight")
 
 
 def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):
