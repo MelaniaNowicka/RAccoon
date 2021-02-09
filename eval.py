@@ -45,6 +45,8 @@ def is_close(x, y, tol=1e-5):
         first float
     y : float
         second float
+    tol : float
+        tolerance
 
     Returns
     -------
@@ -72,6 +74,8 @@ def is_higher(x, y, tol=1e-5):
         first float
     y : float
         second float
+    tol : float
+        tolerance
 
     Returns
     -------
@@ -132,8 +136,8 @@ def calculate_cdd_score(inputs, feature_cdds, uniqueness):
     ----------
     inputs : list
         list of classifier inputs
-    feature_cdds : list
-        list of feature cdd scores
+    feature_cdds : dict
+        dict of feature cdd scores
     uniqueness : bool
         if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
         the number of input occurrences
@@ -159,7 +163,6 @@ def calculate_cdd_score(inputs, feature_cdds, uniqueness):
             sys.exit(0)
 
     # calculate cdd score
-    classifier_cdd_score = 0
     try:
         classifier_cdd_score = classifier_cdd_sum / len(inputs)
     except ZeroDivisionError:
@@ -313,8 +316,8 @@ def evaluate_classifier(classifier,
         number of negative samples
     positives : int
         number of positive samples
-    feature_cdds : list
-        list of feature cdd scores
+    feature_cdds : dict
+        dict of feature cdd scores
     uniqueness : bool
         if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
         the number of input occurrences
@@ -353,20 +356,20 @@ def evaluate_classifier(classifier,
     for rule in classifier.rule_set:  # evaluate every rule in the classifier
 
         columns = []
-        for input in rule.pos_inputs:  # add positive inputs
-            columns.append(dataset[input].tolist())  # get all feature levels across samples
+        for inp in rule.pos_inputs:  # add positive inputs
+            columns.append(dataset[inp].tolist())  # get all feature levels across samples
 
-        for input in rule.neg_inputs:  # add negative inputs
-            columns.append([not x for x in dataset[input].tolist()])  # get all feature levels across samples, negate
+        for inp in rule.neg_inputs:  # add negative inputs
+            columns.append([not x for x in dataset[inp].tolist()])  # get all feature levels across samples, negate
 
         rule_output = []
 
-        if rule.gate == 0:
+        if rule.gate == 0:  # if gate is OR
             # rule output across samples, fill with '0' as 0 OR 0 gives 0, 0 OR 1 gives 1
             rule_output = [0] * len(annotation)
             for column in columns:  # go through columns
                 rule_output = [i or j for i, j in zip(rule_output, column)]  # perform AND
-        elif rule.gate == 1:
+        elif rule.gate == 1:  # if gate is AND
             # rule output across samples, fill with '1' as 1 AND 1 gives 1, 1 AND 0 gives 0
             rule_output = [1] * len(annotation)
             for column in columns:  # go through columns
@@ -454,7 +457,7 @@ def update_best_classifier(new_classifier, best_classifiers):
         best_classifiers.solutions.append(new_classifier.__copy__())  # add new classifier to best classifiers
         best_classifiers.solutions_str.append(classifier_str)  # add new classifier to best classifiers
 
-    #toolbox.remove_symmetric_solutions(best_classifiers)
+    # toolbox.remove_symmetric_solutions(best_classifiers)
 
     return best_classifiers
 
@@ -479,8 +482,8 @@ def evaluate_individuals(population,
         data set
     bacc_weight : float
         weight of balanced accuracy in the multi-objective score
-    feature_cdds : list
-        list of feature cdd scores
+    feature_cdds : dict
+        dict of feature cdds
     uniqueness : bool
         if True only unique inputs in a classifier are counted, otherwise the input cdd score is multiplied by
         the number of input occurrences
@@ -496,15 +499,11 @@ def evaluate_individuals(population,
 
     """
 
-    # sum of bacc for the population
-    sum_bacc = 0.0
-
     # get data info
     header = dataset.columns.values.tolist()
     samples, annotation, negatives, positives = preproc.get_data_info(dataset, header)
 
     individual_scores = []  # store scores of individuals
-    update = False  # check whether there was best score update
 
     # evaluate all classifiers in the population
     for classifier in population:
@@ -529,4 +528,3 @@ def evaluate_individuals(population,
     avg_population_score = numpy.average(individual_scores)
 
     return avg_population_score, best_classifiers
-

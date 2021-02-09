@@ -3,7 +3,6 @@ import pandas
 import random
 from matplotlib import pyplot
 import seaborn
-import os
 
 random.seed(1)
 
@@ -39,6 +38,7 @@ def write_config_to_log(config_file):
     print("Lambda Bin: ", float(config_file['BINARIZATION PARAMETERS']['LambdaBin']))
 
     print("\nPARAMETER TUNING")
+    print("Tune parameters: ", config_file.getboolean("PARAMETER TUNING", "Tuning"))
     print("Number Of Sets: ", int(config_file['PARAMETER TUNING']['NumberOfSets']))
     print("Tune Weights: ", config_file.getboolean("PARAMETER TUNING", "TuneWeights"))
     print("Iteration Lower Bound: ", int(config_file['PARAMETER TUNING']['IterationLowerBound']))
@@ -59,6 +59,13 @@ def write_config_to_log(config_file):
     print("Weight Lower Bound: ", int(config_file['PARAMETER TUNING']['WeightLowerBound']))
     print("Weight Upper Bound: ", int(config_file['PARAMETER TUNING']['WeightUpperBound']))
     print("Weight Step: ", int(config_file['PARAMETER TUNING']['WeightStep']))
+
+    print("\nGA PARAMETERS")
+    print("Iterations: ", int(config_file['GA PARAMETERS']['Iterations']))
+    print("Population Size: ", int(config_file['GA PARAMETERS']['PopulationSize']))
+    print("Crossover Probability: ", float(config_file['GA PARAMETERS']['CrossoverProbability']))
+    print("Mutation Probability: ", float(config_file['GA PARAMETERS']['MutationProbability']))
+    print("Tournament Size: ", float(config_file['GA PARAMETERS']['TournamentSize']))
 
     print("\nRUN PARAMETERS")
     print("Single Test Repeats: ", int(config_file['RUN PARAMETERS']['SingleTestRepeats']))
@@ -439,6 +446,7 @@ def rank_features_by_frequency(solutions, path, file_name):
     # plot relative frequencies
     seaborn.color_palette("pastel")
     freq_plot = seaborn.barplot(x="feature", y="relative frequency", hue="level", data=frequency_data, dodge=False)
+    pyplot.xticks(rotation=90)
     pyplot.savefig("/".join([path, "_".join([file_name.replace(".csv", ""), "frequency_plot.png"])]))
 
 

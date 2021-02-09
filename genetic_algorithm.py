@@ -29,7 +29,7 @@ def run_iteration(dataset, features, feature_cdds, population, population_size, 
     features : list
         list of features
     feature_cdds : list
-        list of feature cdds
+        list of feature cdds dicts
     population : list
         list of classifiers (Classifier objects)
     population_size : int
@@ -174,16 +174,16 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         population size
     elitism : bool
          if True the best found solutions are added to the population in each selection operation
-    rules : list
-        list of pre-optimized rules
+    rules : str
+        name of rule file or None
     popt_fraction : float
         fraction of population that is pre-optimized
     classifier_size : int
         maximal classifier size
     evaluation_threshold : float
         classifier evaluation threshold
-    feature_cdds : list
-         list of feature cdds
+    feature_cdds : dict
+         dict of feature cdds
     crossover_probability : float
         crossover probability
     mutation_probability : float
@@ -213,7 +213,6 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     # initialize best solutions object
     best_classifiers = eval.BestSolutions(0.0, [], [])
-    global_best_score = best_classifiers.score
 
     # check if data comes from file or data frame
     if isinstance(train_data, pandas.DataFrame):
@@ -316,4 +315,3 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     best_classifier = best_classifiers.solutions[shortest_classifier]
     return best_classifier, best_classifiers, updates, first_global_best_score, first_avg_population_score
-

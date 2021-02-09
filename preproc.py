@@ -2,7 +2,7 @@ import sys
 import pandas
 import numpy
 import math
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 numpy.random.seed(1)
 
@@ -84,15 +84,15 @@ def read_data(dataset_filename):
         dataset = pandas.read_csv(dataset_filename, sep=';', header=0)
         # rename the header with the first row
         # must be done to check whether data contains duplicates of features
-        #dataset = dataset.rename(columns=dataset.iloc[0], copy=False).iloc[1:].reset_index(drop=True)
-        #header = dataset.columns.values.tolist()
+        # dataset = dataset.rename(columns=dataset.iloc[0], copy=False).iloc[1:].reset_index(drop=True)
+        # header = dataset.columns.values.tolist()
 
         # check whether sample IDs are unique
-        #ids = dataset[header[0]]  # get sample IDs
-        #if len(ids) > len(set(ids)):  # compare length of the set with the length of the ids list
-            #print("Error: IDs of samples must be unique. Note, the first column must include IDs of samples and "
-                  #"\nthe second their annotation. Annotate samples as follows: 0 - negative class, 1 - positive class.")
-            #sys.exit(0)
+        # ids = dataset[header[0]]  # get sample IDs
+        # if len(ids) > len(set(ids)):  # compare length of the set with the length of the ids list
+        # print("Error: IDs of samples must be unique. Note, the first column must include IDs of samples and "
+        # "\nthe second their annotation. Annotate samples as follows: 0 - negative class, 1 - positive class.")
+        # sys.exit(0)
 
     except IOError:
         print("Error: ", dataset_filename, " not found.")
@@ -165,12 +165,12 @@ def remove_irrelevant_features(dataset):
 
     # if feature levels sum up to 0 or the number of samples in the dataset - feature is irrelevant (non-regulated)
     # (in other words: the whole column is filled in with 0s or 1s)
-    for id, sum in column_sum.items():
-        if id not in [header[0], header[1]]:  # skip IDs and annotation
-            if sum == 0 or sum == len(dataset.index):
-                irrelevant_features.append(id)
+    for ind, lvl_sum in column_sum.items():
+        if ind not in [header[0], header[1]]:  # skip IDs and annotation
+            if lvl_sum == 0 or lvl_sum == len(dataset.index):
+                irrelevant_features.append(ind)
             else:
-                relevant_features.append(id)
+                relevant_features.append(ind)
     # removing irrelevant miRNAs from the dataset
     dataset = dataset.drop(irrelevant_features, axis=1)
 
@@ -322,12 +322,12 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
     -------
     data_discretized : Pandas DataFrame
         discretized training data
-    threshold : float
-        discretization threshold
-    global_cdd : float
-        feature class distribution diversity
-    pattern : int
-        discretization pattern (0 - one class, 1 - two classes, 2 - three classes)
+    features : list
+        list of features
+    thresholds : list
+        list of discretization thresholds
+    cdds : dict
+        dictionary of features : cdds
 
     """
 
@@ -340,8 +340,8 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
         dataset, annotation, negatives, positives, features = read_data(train_dataset)
 
     # create a new name for a discretized data set
-    new_file = str(train_dataset.replace(".csv", "")) + "_discretized_" + str(m_segments) \
-               + "_" + str(alpha_param) + "_" + str(lambda_param)
+    base = str(train_dataset.replace(".csv", ""))
+    new_file = base + "_discretized_" + str(m_segments) + "_" + str(alpha_param) + "_" + str(lambda_param)
 
     # get feature IDs
     features = dataset.columns.values.tolist()[2:]
@@ -518,7 +518,7 @@ def discretize_data_for_tests(training_fold_list, validation_fold_list, m_segmen
     discretized_test_data : list
         list of discretized validation data sets
     feature_cdds : list
-        list of feature cdds
+        list of feature cdd dicts
 
     """
 
@@ -547,4 +547,3 @@ def discretize_data_for_tests(training_fold_list, validation_fold_list, m_segmen
         discretized_test_data.append(test_data_discretized)  # add discretized fold to the list
 
     return discretized_train_data, discretized_test_data, feature_cdds
-

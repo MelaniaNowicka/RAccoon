@@ -229,7 +229,6 @@ def tune_parameters(training_cv_datasets, validation_cv_datasets, feature_cdds, 
                                            elitism=elitism, rules=rules, uniqueness=uniqueness,
                                            repeats=repeats, print_results=False), cv_datasets))
 
-
         # calculate average bacc scores for folds and std
         val_bacc_avg = numpy.average(val_bacc_cv)
         val_std_avg = numpy.std(val_bacc_cv, ddof=1)

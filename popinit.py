@@ -39,12 +39,12 @@ class SingleRule:
         new_neg_inputs = []
 
         # copy positive inputs
-        for input in self.pos_inputs:
-            new_pos_inputs.append(input)
+        for inp in self.pos_inputs:
+            new_pos_inputs.append(inp)
 
         # copy negative inputs
-        for input in self.neg_inputs:
-            new_neg_inputs.append(input)
+        for inp in self.neg_inputs:
+            new_neg_inputs.append(inp)
 
         return SingleRule(new_pos_inputs, new_neg_inputs, self.gate)
 
@@ -120,11 +120,11 @@ class Classifier:
 
         inputs = []
         for rule in self.rule_set:
-            for input in rule.pos_inputs:  # add positive inputs
-                inputs.append(input)
+            for inp in rule.pos_inputs:  # add positive inputs
+                inputs.append(inp)
 
-            for input in rule.neg_inputs:  # add negative inputs
-                inputs.append(input)
+            for inp in rule.neg_inputs:  # add negative inputs
+                inputs.append(inp)
 
         return inputs
 
@@ -200,8 +200,8 @@ class Classifier:
         to_del = list(set(to_del))
         to_del.sort(reverse=True)
         # remove duplicates
-        for id in to_del:
-            del self.rule_set[id]
+        for ind in to_del:
+            del self.rule_set[ind]
 
 
 # initialization of a single rule
@@ -376,7 +376,6 @@ def read_rules_from_file(rule_file):
         print("Error: No such file or directory.")
         sys.exit(0)
 
-    header = data.columns.values.tolist()  # get the header
     rules = []  # list of rules
 
     for i in range(0, len(data.index)):
@@ -459,8 +458,8 @@ def initialize_population_from_rules(population_size, features, evaluation_thres
             temp_evaluation_threshold = evaluation_threshold
 
         # create a classifier
-        classifier = Classifier(rule_set, evaluation_threshold=temp_evaluation_threshold, errors={}, error_rates={},
-                                score={}, bacc={}, additional_scores={}, cdd_score={})
+        classifier = Classifier(rule_set, evaluation_threshold=temp_evaluation_threshold, theta=0,
+                                errors={}, error_rates={}, score={}, bacc={}, additional_scores={}, cdd_score={})
 
         population.append(classifier)  # add classifier to the population
 
