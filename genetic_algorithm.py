@@ -213,6 +213,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
 
     # initialize best solutions object
     best_classifiers = eval.BestSolutions(0.0, [], [])
+    global_best_score = best_classifiers.score
 
     # check if data comes from file or data frame
     if isinstance(train_data, pandas.DataFrame):
