@@ -391,31 +391,31 @@ def rank_features_by_frequency(solutions, path, file_name):
 
     """
 
-    frequency_general = {}  # count occurences in total
-    frequency_pos = {}  # count occurences as positive inputs
-    frequency_neg = {}  # count occurences as negative inputs
+    frequency_general = {}  # count occurrences in total
+    frequency_pos = {}  # count occurrences as positive inputs
+    frequency_neg = {}  # count occurrences as negative inputs
 
     features_total = 0
 
     for solution in solutions:  # for all solutions
-        for rule in solution.rule_set:
-            for i in rule.pos_inputs:
-                if i not in frequency_pos.keys():
-                    frequency_pos[i] = 1
-                    frequency_general[i] = 1
+        for rule in solution.rule_set:  # for all rules
+            for inp in rule.pos_inputs:  # for all positive inputs
+                if inp not in frequency_pos.keys():  # check whether the input key is already in the dict
+                    frequency_pos[inp] = 1  # add key
+                    frequency_general[inp] = 1
                 else:
-                    frequency_pos[i] = frequency_pos[i] + 1
-                    frequency_general[i] = frequency_general[i] + 1
+                    frequency_pos[inp] += 1
+                    frequency_general[inp] += 1
 
-            for i in rule.neg_inputs:
-                if i not in frequency_neg.keys():
-                    frequency_neg[i] = 1
-                    frequency_general[i] = 1
+            for inp in rule.neg_inputs:  # for all negative inputs
+                if inp not in frequency_neg.keys():
+                    frequency_neg[inp] = 1
+                    frequency_general[inp] = 1
                 else:
-                    frequency_neg[i] = frequency_neg[i] + 1
-                    frequency_general[i] = frequency_general[i] + 1
+                    frequency_neg[inp] += 1
+                    frequency_general[inp] += 1
 
-        features_total = features_total + len(solution.get_input_list())  # total number of features in all solutions
+        features_total += len(solution.get_input_list())  # total number of features in all solutions
 
     print("TOTAL VALUES")
     print("NUMBER OF FEATURES IN ALL SOLUTIONS IN TOTAL: ", features_total)
@@ -426,7 +426,7 @@ def rank_features_by_frequency(solutions, path, file_name):
     for feature in sorted(frequency_neg, key=frequency_neg.get, reverse=True):
         print(feature, ": ", frequency_neg[feature])
 
-    header = {'feature': [], 'level': [], 'relative frequency': []}
+    header = {'feature': [], 'level': [], 'relative_frequency': []}
     frequency_data = pandas.DataFrame(data=header)
 
     print("\nRELATIVE FREQUENCY")
@@ -447,12 +447,14 @@ def rank_features_by_frequency(solutions, path, file_name):
     colors = ["#14645aff", "#bfcd53ff"]
     seaborn.set_palette(seaborn.color_palette(colors))
     seaborn.color_palette("pastel")
-    freq_plot = seaborn.barplot(x="feature", y="relative frequency", hue="level", data=frequency_data, dodge=False)
+    ax = seaborn.barplot(x=frequency_data.index, y="relative_frequency", hue="level", data=frequency_data, dodge=False)
+    ax.set_xticklabels(frequency_data["feature"])
     pyplot.xticks(rotation=90)
     pyplot.tight_layout()
     pyplot.xlabel("")
     pyplot.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    pyplot.savefig("/".join([path, "_".join([file_name.replace(".csv", ""), "frequency_plot.png"])]), bbox_inches="tight")
+    pyplot.savefig("/".join([path, "_".join([file_name.replace(".csv", ""), "frequency_plot.png"])]),
+                   bbox_inches="tight")
 
 
 def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):

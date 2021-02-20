@@ -490,9 +490,6 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
     print("CLASSIFIER SIZE: ", classifier_size)
     print("SINGLE TEST REPEATS: ", test_repeats, "\n")
 
-    numpy.random.seed(1)
-    random.seed(1)
-    
     # run test
     train_and_test(data=[discretized_train_data_filtered, discretized_test_data[0], feature_cdds[0]],
                    path=path,
