@@ -179,6 +179,10 @@ def remove_irrelevant_features(dataset):
     print("Number of relevant features according to a given threshold: ", str(len(relevant_features)))
     print("Number of irrelevant features according to a given threshold: ", str(len(irrelevant_features)))
 
+    if len(relevant_features) == 0:
+        print("No relevant features found in the data set!")
+        sys.exit()
+
     return dataset, relevant_features
 
 
