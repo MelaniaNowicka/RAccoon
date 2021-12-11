@@ -3,6 +3,7 @@ import pandas
 import random
 from matplotlib import pyplot
 import seaborn
+import os
 
 random.seed(1)
 
@@ -251,7 +252,7 @@ def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set
     train_datasets = []  # list of train folds
     val_datasets = []   # list of test folds
 
-    if pairing is True:
+    if pairing is True:  # create a copy of positive samples
         positive_samples_temp = dataset.iloc[negatives:samples].copy()
 
     for fold in range(1, k_folds):  # k-1 times draw positive and negative samples
@@ -261,6 +262,7 @@ def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set
             negative_data_fold = negative_samples.sample(n=negative_samples_to_draw, random_state=1)
         else:
             negative_data_fold = negative_samples.sample(n=negative_samples_to_draw)
+
         negative_folds.append(negative_data_fold.sort_index())  # add sorted fold to negative folds
         neg_used_ids = negative_data_fold.index.values  # list used ids
 
@@ -318,12 +320,12 @@ def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set
 
         new_name = "_cv_train_" + str(fold) + ".csv"  # train fold name
         new_name = dataset_file_name.replace(".csv", new_name)
-        filename = "/".join([path, new_name])
+        filename = os.path.join(path, new_name)
         train_set.to_csv(filename, sep=";", index=False)
 
         new_name = "_cv_val_" + str(fold) + ".csv"  # validation fold name
         new_name = dataset_file_name.replace(".csv", new_name)
-        filename = "/".join([path, new_name])
+        filename = os.path.join(path, new_name)
         val_set.to_csv(filename, sep=";", index=False)
 
         fold = fold + 1
@@ -377,6 +379,7 @@ def remove_symmetric_solutions(best_classifiers):
             del best_classifiers.solutions_str[i]
 
 
+# ranks features in classifiers
 # ranks features in classifiers
 def rank_features_by_frequency(solutions, path, file_name):
 

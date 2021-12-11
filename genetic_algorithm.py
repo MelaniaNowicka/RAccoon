@@ -174,7 +174,7 @@ def run_genetic_algorithm(train_data,  # name of train datafile
         population size
     elitism : bool
          if True the best found solutions are added to the population in each selection operation
-    rules : str
+    rules : list
         name of rule file or None
     popt_fraction : float
         fraction of population that is pre-optimized

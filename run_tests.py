@@ -2,13 +2,13 @@ from datetime import datetime
 import configparser
 import time
 import argparse
-import preproc
 import sys
 import random
 import numpy
 import os
 
 import genetic_algorithm
+import preproc
 import eval
 import popinit
 import tuner
@@ -33,10 +33,10 @@ def train_and_test(data, path, file_name, parameter_set, classifier_size, evalua
     path : str
         path to output files
     file_name : str
-        name of a file
+        name of a file (based on which the further file names are created)
     parameter_set : list
-        list of genetic algorithm parameters (iterations, population size, crossover probability, mutation probability
-        and tournament size)
+        list of genetic algorithm parameters and objective function weight ([weight, iterations, population size,
+        crossover probability, mutation probability, tournament size])
     classifier_size : int
         maximal classifier size
     evaluation_threshold : float
@@ -264,9 +264,8 @@ def train_and_test(data, path, file_name, parameter_set, classifier_size, evalua
 
     return test_bacc_avg
 
-
 # run test
-def run_test(train_data_file_name, test_data_file_name, rules, config_file_name, run_id):
+def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
 
     """
 
@@ -274,9 +273,9 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
 
     Parameters
     ----------
-    train_data_file_name : str
+    train_data_path : str
         path to training data set
-    test_data_file_name : str
+    test_data_path : str
         path to test data set
     rules : str
         list of pre-optimized rules
@@ -287,43 +286,44 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
 
     """
 
-    # parse configuration file
+    # PARSE AND WRITE CONFIG TO LOG
     config_file = configparser.ConfigParser()
     config_file.read(config_file_name)
+    toolbox.write_config_to_log(config_file)
 
+    # CREATE OUTPUT DIRECTORY
     # create new directory
-    path_train = train_data_file_name
-    head_tail = os.path.split(path_train)
-    path_train = head_tail[0]
-    file_name_train = head_tail[1]
+    path_splitted = os.path.split(train_data_path)  # split path
+    path_train = path_splitted[0]  # assign path
+    file_name_train = path_splitted[1]  # assign file name
     date = datetime.now()
     dir_name = date.strftime("%Y-%m-%d_%H-%M-%S")
     if run_id is not None:
         dir_name = "_".join([run_id, dir_name])
     path = "/".join([path_train, dir_name])
 
-    path_test = test_data_file_name
-    head_tail = os.path.split(path_test)
-    file_name_test = head_tail[1]
+    # get test data name
+    path_test = test_data_path
+    path_splitted = os.path.split(path_test)
+    file_name_test = path_splitted[1]
 
+    # create output directory
     if not os.path.exists(path):
         os.mkdir(path)
         print("Directory ", path, " was created.\n")
     else:
         print("Directory ", path, " already exists.")
 
-    toolbox.write_config_to_log(config_file)
-
     # READING/CREATING TRAINING AND TESTING DATA
     # create test data if not given
-    if test_data_file_name is None:
+    if test_data_path is None:
         train_fraction = int(config_file['DATA DIVISION']['TrainingFraction'])
         set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
 
         # division into training and testing data
         print("###########READING DATA###########")
         print("\n***DIVISION INTO TRAINING AND TESTING DATA SETS***")
-        training_data, testing_data = toolbox.divide_into_train_test(train_data_file_name, train_fraction, set_seed)
+        training_data, testing_data = toolbox.divide_into_train_test(train_data_path, train_fraction, set_seed)
 
         # save to files
         new_name = "_train_" + str(train_fraction) + ".csv"
@@ -340,11 +340,11 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
         print("###########READING DATA###########")
         # read data
         print("\nTRAIN DATA")
-        training_data, train_annotation, train_positives, train_negatives, train_features = \
-            preproc.read_data(train_data_file_name)
+        training_data, train_annotation, train_negatives, train_positives, train_features = \
+            preproc.read_data(train_data_path)
         print("\nTEST DATA")
-        testing_data, test_annotation, test_positives, test_negatives, test_features = \
-            preproc.read_data(test_data_file_name)
+        testing_data, test_annotation, test_negatives, test_positives, test_features = \
+            preproc.read_data(test_data_path)
 
     # READ PARAMETERS
     # classifier parameters
@@ -367,6 +367,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
     lambda_bin = float(config_file["BINARIZATION PARAMETERS"]["LambdaBin"])
 
     tuning = config_file.getboolean("PARAMETER TUNING", "Tuning")
+
     if tuning:
         # PARAMETER TUNING - CROSS-VALIDATION
         print("\n###########PARAMETER TUNING###########")
@@ -411,7 +412,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
         for train_set, val_set in zip(training_cv_datasets_bin_filtered, validation_cv_datasets_bin):
 
             new_name = "_cv_train_" + str(fold) + "_bin.csv"
-            new_name = file_name_train.replace(".csv", new_name)
+            new_name = file_name_train.replace(".csyp", new_name)
             filename = "/".join([path, new_name])
             train_set.to_csv(filename, sep=";", index=False)
 
@@ -424,16 +425,17 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
 
         # parameter tuning
         print("\n***PARAMETER TUNING***")
-        best_parameters, best_bacc, best_std = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin_filtered,
-                                                                     validation_cv_datasets=validation_cv_datasets_bin,
-                                                                     feature_cdds=feature_cdds,
-                                                                     config_file=config_file,
-                                                                     classifier_size=classifier_size,
-                                                                     evaluation_threshold=evaluation_threshold,
-                                                                     elitism=elitism,
-                                                                     uniqueness=uniqueness,
-                                                                     rules=rules,
-                                                                     repeats=test_repeats)
+        best_parameters, best_bacc, best_std \
+            = tuner.tune_parameters(training_cv_datasets=training_cv_datasets_bin_filtered,
+                                    validation_cv_datasets=validation_cv_datasets_bin,
+                                    feature_cdds=feature_cdds,
+                                    config_file=config_file,
+                                    classifier_size=classifier_size,
+                                    evaluation_threshold=evaluation_threshold,
+                                    elitism=elitism,
+                                    uniqueness=uniqueness,
+                                    rules=rules,
+                                    repeats=test_repeats)
 
         w, tc, ps, cp, mp, ts = best_parameters
 
@@ -506,7 +508,7 @@ def run_test(train_data_file_name, test_data_file_name, rules, config_file_name,
 
 if __name__ == "__main__":
 
-    start_global = time.time()
+    start_global = time.time()  # get time
 
     print('A genetic algorithm (GA) optimizing a set of miRNA-based distributed cell classifiers \n'
           'for in situ cancer classification. Written by Melania Nowicka, FU Berlin, 2019.\n')
@@ -525,7 +527,7 @@ if __name__ == "__main__":
     parser.add_argument('--config', '--config_filename',
                         dest="config_filename", help='config file name')
 
-    params = parser.parse_args(sys.argv[1:])
+    params = parser.parse_args(sys.argv[1:])  # parse arguments
 
     dataset_train = params.dataset_filename_train
     dataset_test = params.dataset_filename_test
@@ -533,6 +535,7 @@ if __name__ == "__main__":
     run_id = params.run_id
     config_filename = params.config_filename
 
+    # run tests
     run_test(dataset_train, dataset_test, rule_list, config_filename, run_id)
 
     end_global = time.time()

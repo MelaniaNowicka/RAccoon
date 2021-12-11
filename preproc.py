@@ -246,6 +246,7 @@ def discretize_feature(feature_levels, annotation, negatives, positives, m_segme
             segment_threshold = Decimal(min(feature_levels)) + Decimal(segment_step) * m
 
         segment_thresholds.append(segment_threshold)  # store segment threshold
+
         # add all the levels between min level and threshold to the segment
         segment = [i for i in feature_levels_sorted if Decimal(i) <= Decimal(segment_threshold)]
 
@@ -272,7 +273,7 @@ def discretize_feature(feature_levels, annotation, negatives, positives, m_segme
     index = 0
 
     # one state miRNAs
-    if global_cdd < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:  # critetion 1
+    if global_cdd < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:  # criterion 1
         threshold = None
         pattern = 0
 
@@ -340,8 +341,8 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
         dataset, annotation, negatives, positives, features = read_data(train_dataset)
 
     # create a new name for a discretized data set
-    base = str(train_dataset.replace(".csv", ""))
-    new_file = base + "_discretized_" + str(m_segments) + "_" + str(alpha_param) + "_" + str(lambda_param)
+    base_name = str(train_dataset.replace(".csv", ""))
+    new_file = base_name + "_discretized_" + str(m_segments) + "_" + str(alpha_param) + "_" + str(lambda_param)
 
     # get feature IDs
     features = dataset.columns.values.tolist()[2:]
@@ -403,14 +404,14 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
         for feature in relevant_features:
             print(feature, " : ", cdds[feature])
 
-    cdd_list = [cdds[feature] for feature in relevant_features]
+    cdds_relevant_features = [cdds[feature] for feature in relevant_features]
 
     print("\nDISCRETIZATION RESULTS")
     print("ONE STATE FEATURES: ", one_state_features)
     print("TWO STATE FEATURES: ", two_states_features)
     print("OTHER PATTERN FEATURES: ", other_pattern_features)
-    print("AVG CDD: ", numpy.average(cdd_list))
-    print("STD CDD: ", numpy.std(cdd_list, ddof=1))
+    print("AVG CDD: ", numpy.average(cdds_relevant_features))
+    print("STD CDD: ", numpy.std(cdds_relevant_features, ddof=1))
     print("AVG CDD ALL: ", numpy.average(list(cdds.values())))
     print("STD CDD ALL: ", numpy.std(list(cdds.values()), ddof=1))
 
@@ -537,9 +538,9 @@ def discretize_data_for_tests(training_fold_list, validation_fold_list, m_segmen
         # discretize train data and return thresholds
         train_data_discretized, features, thresholds, cdds \
             = discretize_train_data(training_fold, m_segments, alpha_param, lambda_param, print_results)
-
         discretized_train_data.append(train_data_discretized)  # add discretized fold to the list
-        feature_cdds.append(cdds)  # add feature cdds
+        # add feature cdds
+        feature_cdds.append(cdds)
 
         # discretize test data according to thresholds
         test_data_discretized = discretize_test_data(testing_fold, thresholds)
@@ -547,3 +548,4 @@ def discretize_data_for_tests(training_fold_list, validation_fold_list, m_segmen
         discretized_test_data.append(test_data_discretized)  # add discretized fold to the list
 
     return discretized_train_data, discretized_test_data, feature_cdds
+
