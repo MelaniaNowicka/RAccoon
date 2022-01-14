@@ -3,6 +3,7 @@ import pandas
 import numpy
 import math
 from decimal import Decimal
+from os import path
 
 numpy.random.seed(1)
 
@@ -553,3 +554,31 @@ def discretize_data_for_tests(training_fold_list, validation_fold_list, m_segmen
 
     return discretized_train_data, discretized_test_data, feature_cdds
 
+
+# random removal of k negative and k positive samples
+def remove_samples_randomly(dataset_path, k, set_seed):
+
+    dataset, annotation, negatives, positives, features = read_data(dataset_path)
+
+    negative_samples = dataset.iloc[:negatives].copy()  # copy negative samples
+    positive_samples = dataset.iloc[negatives:negatives+positives].copy()  # copy positive samples
+
+    negative_samples_to_draw = negatives - k
+    positive_samples_to_draw = positives - k
+
+    if set_seed is True:
+        # draw k samples
+        k_negative_samples = negative_samples.sample(n=negative_samples_to_draw, random_state=1)
+        k_positive_samples = positive_samples.sample(n=positive_samples_to_draw, random_state=1)
+    else:
+        k_negative_samples = negative_samples.sample(n=negative_samples_to_draw)
+        k_positive_samples = positive_samples.sample(n=positive_samples_to_draw)
+
+    reduced_dataset = k_negative_samples.append(k_positive_samples)
+    reduced_dataset.sort_values("ID")
+
+    head, tail = path.split(dataset_path)
+    dataset_name = tail.replace(".csv", "_reduced_to_"+str(len(reduced_dataset))+".csv")
+    reduced_dataset.to_csv(path.join(head, dataset_name), sep=";", index=False)
+
+    return reduced_dataset

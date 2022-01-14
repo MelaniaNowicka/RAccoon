@@ -264,6 +264,7 @@ def train_and_test(data, path, file_name, parameter_set, classifier_size, evalua
 
     return test_bacc_avg
 
+
 # run test
 def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
 

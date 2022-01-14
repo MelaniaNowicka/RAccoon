@@ -1,9 +1,13 @@
 import preproc
+import popinit
+import eval
 import pandas
+import numpy
 import random
 from matplotlib import pyplot
 import seaborn
 import os
+import csv
 
 random.seed(1)
 
@@ -532,4 +536,121 @@ def preproc_data(train_names, val_names, m_segments, bin_alpha, bin_lambda):
         header_v = list([colname.replace(":", "z") for colname in header_v])
         val_datasets_bin[i].columns = header_v
         val_datasets_bin[i].to_csv(name, sep=";", index=False)  # save discretized validation data to file
+
+
+def read_classifier(classifier, threshold):
+
+    rules = classifier.split('  ')
+
+    rule_set = []
+
+    for r in rules:
+
+        neg_inputs = []
+        pos_inputs = []
+
+        temp_rule = r.replace('[', '').replace(']', '')
+        temp_rule = temp_rule.replace('(', '').replace(')', '')
+
+        if 'AND' in temp_rule:
+            temp_inputs = temp_rule.split('AND')
+            for i in temp_inputs:
+                if 'NOT' in i:
+                    temp_input = i.replace('NOT', '')
+                    neg_inputs.append(temp_input.strip())
+                else:
+                    temp_input = i
+                    pos_inputs.append(temp_input.strip())
+
+            rule = popinit.SingleRule(pos_inputs, neg_inputs, 1)
+            rule_set.append(rule)
+
+        elif 'OR' in temp_rule:
+            temp_inputs = temp_rule.split('OR')
+            pos_inputs = [i.strip() for i in temp_inputs]
+            neg_inputs = []
+            rule = popinit.SingleRule(pos_inputs, neg_inputs, 0)
+            rule_set.append(rule)
+
+        else:
+            if 'NOT' in temp_rule:
+                temp_rule = temp_rule.replace('NOT', '')
+                pos_inputs = []
+                neg_inputs = [temp_rule.strip()]
+                rule = popinit.SingleRule(pos_inputs, neg_inputs, 1)
+                rule_set.append(rule)
+            else:
+                pos_inputs = [temp_rule]
+                neg_inputs = []
+                rule = popinit.SingleRule(pos_inputs, neg_inputs, 1)
+                rule_set.append(rule)
+
+    classifier = popinit.Classifier(rule_set, evaluation_threshold=threshold, theta=0, errors={}, error_rates={},
+                                    score=0, bacc=0, cdd_score=0, additional_scores={})
+    return classifier
+
+
+def read_classifiers_from_file(path):
+
+    file_reader = csv.reader(open(path, 'r'), delimiter=';')
+
+    classifier_population = []
+
+    for row in file_reader:
+        classifier, threshold = row
+        classifier_formatted = read_classifier(classifier, threshold)
+        classifier_population.append(classifier_formatted)
+
+    return classifier_population
+
+
+def evaluate_classifiers_from_external_file(path_to_classifiers, path_to_data):
+
+    classifier_population = read_classifiers_from_file(path_to_classifiers)
+    dataset, annotation, negatives, positives, features = preproc.read_data(path_to_data)
+
+    test_bacc_avg = []
+    test_tpr_avg = []
+    test_tnr_avg = []
+    test_fpr_avg = []
+    test_fnr_avg = []
+    test_f1_avg = []
+    test_mcc_avg = []
+    test_ppv_avg = []
+    test_fdr_avg = []
+
+    for classifier in classifier_population:
+        classifier_score, bacc, errors, error_rates, additional_scores, cdd_score = \
+            eval.evaluate_classifier(classifier, dataset, annotation, negatives, positives, [], True, 1.0)
+
+        classifier.bacc = bacc
+        classifier.errors = errors
+        classifier.error_rates = error_rates
+        classifier.additional_scores = additional_scores
+        classifier.cdd_score = cdd_score
+        classifier.score = classifier_score
+
+        test_bacc_avg.append(bacc)
+
+        test_tpr_avg.append(error_rates["tpr"])
+        test_tnr_avg.append(error_rates["tnr"])
+        test_fpr_avg.append(error_rates["fpr"])
+        test_fnr_avg.append(error_rates["fnr"])
+
+        test_f1_avg.append(additional_scores["f1"])
+        test_mcc_avg.append(additional_scores["mcc"])
+        test_ppv_avg.append(additional_scores["ppv"])
+        test_fdr_avg.append(additional_scores["fdr"])
+
+    print("\nTEST AVERAGE RESULTS")
+    print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
+    print("TEST AVG STDEV: ", numpy.std(test_bacc_avg, ddof=1))
+    print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
+    print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
+    print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
+    print("TEST AVG FNR: ", numpy.average(test_fnr_avg))
+    print("TEST AVG F1: ", numpy.average(test_f1_avg))
+    print("TEST AVG MCC: ", numpy.average(test_mcc_avg))
+    print("TEST AVG PV: ", numpy.average(test_ppv_avg))
+    print("TEST AVG FDR: ", numpy.average(test_fdr_avg))
 
