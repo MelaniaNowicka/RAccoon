@@ -26,16 +26,16 @@ def mutate_rule(rule, features):
     # choose mutation type (0, 1, 2)
     # 0 - feature-id swap
     # 1 - add/remove NOT
-    # 2 - remove input (cannot add input as the maximal size is 2 inputs per rule)
+    # 2 - add/remove input (cannot add input if the maximal size is 2 inputs per rule)
     mutation_type = random.randint(0, 2)
     temp_features = features.copy()  # copy features to a temporary list
 
     # remove inputs that are in the rule
-    for input in rule.pos_inputs:  # remove positive inputs
-        temp_features.remove(input)
+    for inp in rule.pos_inputs:  # remove positive inputs
+        temp_features.remove(inp)
 
-    for input in rule.neg_inputs:  # remove negative inputs
-        temp_features.remove(input)
+    for inp in rule.neg_inputs:  # remove negative inputs
+        temp_features.remove(inp)
 
     mutated = False  # rule is unchanged
 
@@ -61,19 +61,22 @@ def mutate_rule(rule, features):
                     rule.neg_inputs.append(temp_features[new_mirna_id])  # add new mirna to positive inputs
                     del rule.neg_inputs[input_id]  # delete old miRNA
 
-            if mutation_type == 1:  # add/remove NOT
-                input_type = random.randrange(0, 2)  # choose input type
+            if mutation_type == 1:  # add/remove NOT if possible
 
-                if input_type == 0:  # positive inputs
-                    input_id = random.randrange(0, pos_inputs_len)  # choose input to add NOT
-                    rule.neg_inputs.append(rule.pos_inputs[input_id])  # move input to negative inputs
-                    del rule.pos_inputs[input_id]  # delete old positive input
+                if rule.gate == 1:  # only for AND gates!!!
+                    input_type = random.randrange(0, 2)  # choose input type
 
-                if input_type == 1:  # negative inputs
-                    input_id = random.randrange(0, neg_inputs_len)  # choose input to remove NOT
-                    rule.pos_inputs.append(rule.neg_inputs[input_id])  # move input to positive inputs
-                    del rule.neg_inputs[input_id]  # delete old negative input
-                    rule.gate = random.randint(0, 1)
+                    if input_type == 0:  # positive inputs
+                        input_id = random.randrange(0, pos_inputs_len)  # choose input to add NOT
+                        rule.neg_inputs.append(rule.pos_inputs[input_id])  # move input to negative inputs
+                        del rule.pos_inputs[input_id]  # delete old positive input
+
+                    if input_type == 1:  # negative inputs
+                        input_id = random.randrange(0, neg_inputs_len)  # choose input to remove NOT
+                        rule.pos_inputs.append(rule.neg_inputs[input_id])  # move input to positive inputs
+                        del rule.neg_inputs[input_id]  # delete old negative input
+                else:
+                    raise ValueError(f'Unfeasible rule found: {rule.to_string()}')
 
             if mutation_type == 2:  # remove miRNA (cannot add miRNA as the maximal size is 2 inputs per rule)
                 input_type = random.randrange(0, 2)  # choose input type
@@ -85,6 +88,8 @@ def mutate_rule(rule, features):
                 if input_type == 1:  # negative inputs
                     input_id = random.randrange(0, neg_inputs_len)  # choose input to remove miRNA
                     del rule.neg_inputs[input_id]  # remove miRNA
+
+                rule.gate = 1  # change rule gate to 1 as 1-input gates are always ANDs
 
             mutated = True
 
@@ -133,7 +138,7 @@ def mutate_rule(rule, features):
                 rule.pos_inputs.append(temp_features[new_mirna_id])  # add new miRNA to positive inputs
                 del rule.pos_inputs[input_id]  # delete old miRNA
 
-            if mutation_type == 1:  # add NOT
+            if mutation_type == 1:  # add NOT, note, the gate must be adjusted after adding negated input
                 input_id = random.randrange(0, pos_inputs_len)  # choose input to add NOT
                 rule.neg_inputs.append(rule.pos_inputs[input_id])  # move input to negative inputs
                 del rule.pos_inputs[input_id]  # delete old miRNA
@@ -142,15 +147,20 @@ def mutate_rule(rule, features):
             if mutation_type == 2:  # add/remove miRNA
 
                 if pos_inputs_len == 1:  # cannot remove miRNA as a rule cannot be empty
-                    add_pos_or_neg = random.randrange(0, 2)   # choose which input to add
+                    if rule.gate == 1:
+                        add_pos_or_neg = random.randrange(0, 2)   # choose which input to add
 
-                    if add_pos_or_neg == 0:  # add positive input
-                        new_mirna_id = random.randrange(0, len(temp_features))  # choose new miRNA
-                        rule.pos_inputs.append(temp_features[new_mirna_id])  # add new miRNA to positive inputs
-                        rule.gate = random.randint(0, 1)  # choose gate
-                    if add_pos_or_neg == 1:  # add negative input
-                        new_mirna_id = random.randrange(0, len(temp_features))  # choose new miRNA
-                        rule.neg_inputs.append(temp_features[new_mirna_id])  # add new miRNA to negative inputs
+                        if add_pos_or_neg == 0:  # add positive input
+                            new_mirna_id = random.randrange(0, len(temp_features))  # choose new miRNA
+                            rule.pos_inputs.append(temp_features[new_mirna_id])  # add new miRNA to positive inputs
+                            rule.gate = random.randint(0, 1)  # choose gate (2 positive inputs - either OR or AND)
+
+                        if add_pos_or_neg == 1:  # add negative input
+                            new_mirna_id = random.randrange(0, len(temp_features))  # choose new miRNA
+                            rule.neg_inputs.append(temp_features[new_mirna_id])  # add new miRNA to negative inputs
+                            rule.gate = 1  # added negative input - only AND gate possible
+                    else:
+                        raise ValueError(f'Unfeasible rule found: {rule.to_string()}')
 
                 if pos_inputs_len != 1:  # remove input (cannot add miRNAs)
                     input_id = random.randrange(0, pos_inputs_len)  # choose input to remove

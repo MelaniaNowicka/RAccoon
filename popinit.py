@@ -48,6 +48,24 @@ class SingleRule:
 
         return SingleRule(new_pos_inputs, new_neg_inputs, self.gate)
 
+    def to_string(self):
+
+        rule_str = ""
+
+        for inp in sorted(self.pos_inputs):
+            rule_str = rule_str + "(" + inp + ")"
+        for inp in sorted(self.neg_inputs):
+            rule_str = rule_str + "(NOT " + inp + ")"
+
+        rule_str = " [" + rule_str + "] "
+
+        if self.gate == 0:
+            rule_str = rule_str.replace(")(", ") OR (")
+        elif self.gate == 1:
+            rule_str = rule_str.replace(")(", ") AND (")
+
+        return rule_str
+
 
 # classifier (individual)
 class Classifier:
@@ -145,6 +163,9 @@ class Classifier:
 
         # separating by rule type
         for i in range(0, len(self.rule_set)):
+            # first, check the rule feasibility
+            if not check_rule_feasibility(self.rule_set[i]):
+                raise ValueError(f'Unfeasible rule found: {self.rule_set[i].to_string()}')
             # collecting negative single-input rules
             if len(self.rule_set[i].pos_inputs) == 0 and len(self.rule_set[i].neg_inputs) == 1:
                 single_neg.append((self.rule_set[i], i))
@@ -179,14 +200,16 @@ class Classifier:
                     if len(multi_input[i][0].pos_inputs) == 2 and len(multi_input[j][0].pos_inputs) == 2:
                         pos_list1 = sorted(multi_input[i][0].pos_inputs)
                         pos_list2 = sorted(multi_input[j][0].pos_inputs)
-                        if pos_list1 == pos_list2:  # if inputs are identical
+                        # if inputs and gates are identical
+                        if pos_list1 == pos_list2 and multi_input[i][0].gate == multi_input[j][0].gate:
                             to_del.append(multi_input[j][1])  # add rule's id for removal
 
                     # for rules with two negative inputs
                     elif len(multi_input[i][0].neg_inputs) == 2 and len(multi_input[j][0].neg_inputs) == 2:
                         neg_list1 = sorted(multi_input[i][0].neg_inputs)
                         neg_list2 = sorted(multi_input[j][0].neg_inputs)
-                        if neg_list1 == neg_list2:  # if inputs are identical
+                        # if inputs and gates are identical
+                        if neg_list1 == neg_list2 and multi_input[i][0].gate == multi_input[j][0].gate:
                             to_del.append(multi_input[j][1])  # add rule's id for removal
 
                     # for rules with mixed inputs
@@ -194,7 +217,8 @@ class Classifier:
                         if len(multi_input[j][0].pos_inputs) == 1 and len(multi_input[j][0].neg_inputs) == 1:
                             if multi_input[i][0].pos_inputs == multi_input[j][0].pos_inputs:  # if inputs are identical
                                 if multi_input[i][0].neg_inputs == multi_input[j][0].neg_inputs:
-                                    to_del.append(multi_input[j][1])  # add rule's id for removal
+                                    if multi_input[i][0].gate == multi_input[j][0].gate:
+                                        to_del.append(multi_input[j][1])  # add rule's id for removal
 
         # sort indices in descending order for removal
         to_del = list(set(to_del))
@@ -202,6 +226,25 @@ class Classifier:
         # remove duplicates
         for ind in to_del:
             del self.rule_set[ind]
+
+
+def check_rule_feasibility(rule):
+
+    # check if a 1-input rule has an AND assigned as in initialize_single_rule()
+    if (len(rule.pos_inputs) + len(rule.neg_inputs)) == 1 and rule.gate == 0:
+        return False
+    # check if rule is not empty
+    elif (len(rule.pos_inputs) + len(rule.neg_inputs)) == 0:
+        return False
+    # check if a 2-input rule with at least one negative input has AND assigned as in biological restrictions
+    # Note, OR cannot have negative inputs assigned!
+    elif len(rule.neg_inputs) >= 1 and rule.gate == 0:
+        return False
+    # check if rule has at most 2 inputs
+    elif (len(rule.pos_inputs) + len(rule.neg_inputs)) > 2:
+        return False
+    else:
+        return True
 
 
 # initialization of a single rule
@@ -229,9 +272,9 @@ def initialize_single_rule(temp_features):
     # size of a single rule (between 1 and 2 inputs)
     size = random.randint(1, 2)
 
-    if size == 2:
-        gate = random.randint(0, 1)
-    else:
+    if size == 2:  # if size is 2
+        gate = random.randint(0, 1)  # randomly choose the assigned gate: 0 - OR, 1 - AND
+    else:  # otherwise assign AND (1)
         gate = 1
 
     pos_inputs = []  # list of positive inputs
@@ -239,10 +282,14 @@ def initialize_single_rule(temp_features):
 
     for i in range(0, size):  # drawing features for a rule (without replacement) respecting size
 
-        input_sign = random.randint(0, 1)  # randomly choosing input sign (0 - negative, 1 - positive)
+        if gate == 1:  # if AND gate - the input signs may differ
+            input_sign = random.randint(0, 1)  # randomly choosing input sign (0 - negative, 1 - positive)
+        else:  # if OR gate - only positive inputs may be assigned
+            input_sign = 1
+
         feature_id = random.randrange(0, len(temp_features))  # randomly choosing feature ID
 
-        # checking the input sign to assign inputs to positive or negative group
+        # checking the input sign to assign inputs to a positive or negative group
         if input_sign == 0:
             neg_inputs.append(temp_features[feature_id])
 

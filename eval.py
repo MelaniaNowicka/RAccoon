@@ -360,7 +360,7 @@ def evaluate_classifier(classifier,
             columns.append(dataset[inp].tolist())  # get all feature levels across samples
 
         for inp in rule.neg_inputs:  # add negative inputs
-            columns.append([not x for x in dataset[inp].tolist()])  # get all feature levels across samples, negate
+            columns.append([not x for x in dataset[inp].tolist()])  # get all feature levels across samples, negated
 
         rule_output = []
 
@@ -368,7 +368,7 @@ def evaluate_classifier(classifier,
             # rule output across samples, fill with '0' as 0 OR 0 gives 0, 0 OR 1 gives 1
             rule_output = [0] * len(annotation)
             for column in columns:  # go through columns
-                rule_output = [i or j for i, j in zip(rule_output, column)]  # perform AND
+                rule_output = [i or j for i, j in zip(rule_output, column)]  # perform OR
         elif rule.gate == 1:  # if gate is AND
             # rule output across samples, fill with '1' as 1 AND 1 gives 1, 1 AND 0 gives 0
             rule_output = [1] * len(annotation)
