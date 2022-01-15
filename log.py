@@ -19,21 +19,8 @@ def convert_classifier_to_string(classifier):
     classifier_str = ""
     rule_str_list = []
     for rule in classifier.rule_set:
-        rule_str = ""
 
-        for input in sorted(rule.pos_inputs):
-            rule_str = rule_str + "(" + input + ")"
-        for input in sorted(rule.neg_inputs):
-            rule_str = rule_str + "(NOT " + input + ")"
-
-        rule_str = " [" + rule_str + "] "
-
-        if rule.gate == 0:
-            rule_str = rule_str.replace(")(", ") OR (")
-        elif rule.gate == 1:
-            rule_str = rule_str.replace(")(", ") AND (")
-
-        rule_str_list.append(rule_str)
+        rule_str_list.append(rule.to_string())
 
     classifier_str = classifier_str.join(sorted(rule_str_list))
 
