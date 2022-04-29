@@ -394,6 +394,8 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
         print("\nTRAIN DATA")
         training_data, train_annotation, train_negatives, train_positives, train_features = \
             preproc.read_data(train_data_path)
+        print("\nTEST DATA")
+        print("\nNone")
         testing_data = None
 
     elif test_data_path is not None:
@@ -477,7 +479,7 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
             train_set.to_csv(filename, sep=";", index=False)
 
             new_name = "_cv_val_" + str(fold) + "_bin.csv"
-            new_name = file_name_test.replace(".csv", new_name)
+            new_name = file_name_train.replace(".csv", new_name)
             filename = "/".join([path, new_name])
             val_set.to_csv(filename, sep=";", index=False)
 
@@ -567,7 +569,7 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
                        print_results=True)
     else:
         discretized_train_data, features, thresholds, feature_cdds = \
-            preproc.discretize_train_data(train_dataset=[training_data],
+            preproc.discretize_train_data(train_dataset=training_data,
                                           m_segments=m_segments,
                                           alpha_param=alpha_bin,
                                           lambda_param=lambda_bin,
@@ -576,11 +578,11 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
         new_name = "_train_bin.csv"
         new_name = file_name_train.replace(".csv", new_name)
         filename_train = "/".join([path, new_name])
-        discretized_train_data[0].to_csv(filename_train, sep=";", index=False)
+        discretized_train_data.to_csv(filename_train, sep=";", index=False)
 
         # remove irrelevant miRNAs
         discretized_train_data_filtered, relevant_features = preproc.remove_irrelevant_features(
-            discretized_train_data[0])
+            discretized_train_data)
 
         # save to files
         new_name = "_train_bin_filtered.csv"
@@ -623,7 +625,7 @@ if __name__ == "__main__":
     print("Log date: ", datetime.now().isoformat(), "\n")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train', '--dataset-filename-train',
+    parser.add_argument('--train', '--dataset-filename-train', type=str,
                         dest="dataset_filename_train", help='train data set file name')
     parser.add_argument('--test', '--dataset-filename-test', default=None,
                         dest="dataset_filename_test", help='test data set file name')
