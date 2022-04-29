@@ -353,9 +353,10 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
     path = "/".join([path_train, dir_name])
 
     # get test data name
-    path_test = test_data_path
-    path_splitted = os.path.split(path_test)
-    file_name_test = path_splitted[1]
+    if test_data_path is not None:
+        path_test = test_data_path
+        path_splitted = os.path.split(path_test)
+        file_name_test = path_splitted[1]
 
     # create output directory
     if not os.path.exists(path):
