@@ -18,6 +18,75 @@ numpy.random.seed(1)
 random.seed(1)
 
 
+def show_average_results(train_scores, test_scores, inputs_and_rules, runtimes_and_updates, classifier_list, path,
+                         file_name):
+
+    # rank features by frequency
+    print("\n###FEATURE FREQUENCY ANALYSIS###")
+    toolbox.rank_features_by_frequency(classifier_list, path, file_name)
+
+    train_bacc_avg, train_cdd_avg, train_tpr_avg, train_tnr_avg, train_fpr_avg, train_fnr_avg, train_f1_avg, \
+        train_mcc_avg, train_ppv_avg, train_fdr_avg = train_scores
+
+    # average scores
+    print("\n###AVERAGE SCORES###")
+
+    # calculate train average scores
+    print("\nTRAIN AVERAGE RESULTS")
+    print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
+    print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg, ddof=1))
+    print("TRAIN AVG CDD: ", numpy.average(train_cdd_avg))
+    print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
+    print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
+    print("TRAIN AVG FPR: ", numpy.average(train_fpr_avg))
+    print("TRAIN AVG FNR: ", numpy.average(train_fnr_avg))
+    print("TRAIN AVG F1: ", numpy.average(train_f1_avg))
+    print("TRAIN AVG MCC: ", numpy.average(train_mcc_avg))
+    print("TRAIN AVG PPV: ", numpy.average(train_ppv_avg))
+    print("TRAIN AVG FDR: ", numpy.average(train_fdr_avg))
+
+    if test_scores is not None:
+        test_bacc_avg, test_tpr_avg, test_tnr_avg, test_fpr_avg, test_fnr_avg, test_f1_avg, test_mcc_avg, test_ppv_avg,\
+            test_fdr_avg = test_scores
+
+    if test_scores is not None:
+
+        # calculate test average scores
+        print("\nTEST AVERAGE RESULTS")
+        print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
+        print("TEST AVG STDEV: ", numpy.std(test_bacc_avg, ddof=1))
+        print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
+        print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
+        print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
+        print("TEST AVG FNR: ", numpy.average(test_fnr_avg))
+        print("TEST AVG F1: ", numpy.average(test_f1_avg))
+        print("TEST AVG MCC: ", numpy.average(test_mcc_avg))
+        print("TEST AVG PV: ", numpy.average(test_ppv_avg))
+        print("TEST AVG FDR: ", numpy.average(test_fdr_avg))
+
+    inputs_avg, rules_avg = inputs_and_rules
+
+    # calculate size averages
+    print("\nAVERAGE SIZE")
+    print("AVERAGE NUMBER OF INPUTS: ", numpy.average(inputs_avg))
+    print("AVERAGE NUMBER OF RULES: ", numpy.average(rules_avg))
+    print("MEDIAN OF INPUTS: ", numpy.median(inputs_avg))
+    print("MEDIAN OF RULES: ", numpy.median(rules_avg))
+
+    train_runtimes, update_number = runtimes_and_updates
+    print("\nRUNTIME")
+    print("RUN-TIME PER TRAINING: ", numpy.average(train_runtimes))
+    print("UPDATES PER TRAINING:", numpy.average(update_number))
+
+    if test_scores is not None:
+        print("CSV;", numpy.average(train_bacc_avg), ";", numpy.std(train_bacc_avg, ddof=1), ";",
+              numpy.average(test_bacc_avg), ";", numpy.std(test_bacc_avg, ddof=1), ";",
+              numpy.average(rules_avg), ";", numpy.average(inputs_avg))
+    else:
+        print("CSV;", numpy.average(train_bacc_avg), ";", numpy.std(train_bacc_avg, ddof=1), ";",
+              numpy.average(rules_avg), ";", numpy.average(inputs_avg))
+
+
 # train and test classifiers
 def train_and_test(data, path, file_name, parameter_set, classifier_size, evaluation_threshold, elitism, rules,
                    uniqueness, repeats, print_results):
@@ -198,124 +267,43 @@ def train_and_test(data, path, file_name, parameter_set, classifier_size, evalua
 
             print("TEST BACC: ", test_bacc)
 
-            # show all found solutions
-            if print_results is True:
-                print("\n##ALL FOUND CLASSIFIERS##")
-                for classifier_str in best_classifiers.solutions_str:
-                    print(classifier_str)
+        # show all found solutions
+        if print_results is True:
+            print("\n##ALL FOUND CLASSIFIERS##")
+            for classifier_str in best_classifiers.solutions_str:
+                print(classifier_str)
 
-            # calculate classifier size
-            number_of_inputs = len(classifier.get_input_list())
-            number_of_rules = len(classifier.rule_set)
+        # calculate classifier size
+        number_of_inputs = len(classifier.get_input_list())
+        number_of_rules = len(classifier.rule_set)
 
-            inputs_avg.append(number_of_inputs)
-            rules_avg.append(number_of_rules)
+        inputs_avg.append(number_of_inputs)
+        rules_avg.append(number_of_rules)
 
-            if print_results:
-                # rank features by frequency
-                print("\n###FEATURE FREQUENCY ANALYSIS###")
-                toolbox.rank_features_by_frequency(classifier_list, path, file_name)
+    if print_results:
 
-                # average scores
-                print("\n###AVERAGE SCORES###")
-
-                # calculate train average scores
-                print("\nTRAIN AVERAGE RESULTS")
-                print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
-                print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg, ddof=1))
-                print("TRAIN AVG CDD: ", numpy.average(train_cdd_avg))
-                print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
-                print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
-                print("TRAIN AVG FPR: ", numpy.average(train_fpr_avg))
-                print("TRAIN AVG FNR: ", numpy.average(train_fnr_avg))
-                print("TRAIN AVG F1: ", numpy.average(train_f1_avg))
-                print("TRAIN AVG MCC: ", numpy.average(train_mcc_avg))
-                print("TRAIN AVG PPV: ", numpy.average(train_ppv_avg))
-                print("TRAIN AVG FDR: ", numpy.average(train_fdr_avg))
-
-                # calculate test average scores
-                print("\nTEST AVERAGE RESULTS")
-                print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
-                print("TEST AVG STDEV: ", numpy.std(test_bacc_avg, ddof=1))
-                print("TEST AVG TPR: ", numpy.average(test_tpr_avg))
-                print("TEST AVG TNR: ", numpy.average(test_tnr_avg))
-                print("TEST AVG FPR: ", numpy.average(test_fpr_avg))
-                print("TEST AVG FNR: ", numpy.average(test_fnr_avg))
-                print("TEST AVG F1: ", numpy.average(test_f1_avg))
-                print("TEST AVG MCC: ", numpy.average(test_mcc_avg))
-                print("TEST AVG PV: ", numpy.average(test_ppv_avg))
-                print("TEST AVG FDR: ", numpy.average(test_fdr_avg))
-
-                # calculate size averages
-                print("\nAVERAGE SIZE")
-                print("AVERAGE NUMBER OF INPUTS: ", numpy.average(inputs_avg))
-                print("AVERAGE NUMBER OF RULES: ", numpy.average(rules_avg))
-                print("MEDIAN OF INPUTS: ", numpy.median(inputs_avg))
-                print("MEDIAN OF RULES: ", numpy.median(rules_avg))
-
-                print("\nRUNTIME")
-                print("RUN-TIME PER TRAINING: ", numpy.average(train_runtimes))
-                print("UPDATES PER TRAINING:", numpy.average(update_number))
-
-                print("CSV;", numpy.average(train_bacc_avg), ";", numpy.std(train_bacc_avg, ddof=1), ";",
-                      numpy.average(test_bacc_avg), ";", numpy.std(test_bacc_avg, ddof=1), ";",
-                      numpy.average(rules_avg), ";", numpy.average(inputs_avg))
-
-            test_bacc_avg = numpy.average(test_bacc_avg)
-
-            return test_bacc_avg
+        train_scores = [train_bacc_avg, train_cdd_avg, train_tpr_avg, train_tnr_avg, train_fpr_avg, train_fnr_avg,
+                        train_f1_avg, train_mcc_avg, train_ppv_avg, train_fdr_avg]
+        if testing_fold is not None:
+            test_scores = [test_bacc_avg, test_tpr_avg, test_tnr_avg, test_fpr_avg, test_fnr_avg, test_f1_avg,
+                           test_mcc_avg, test_ppv_avg, test_fdr_avg]
         else:
-            # show all found solutions
-            if print_results is True:
-                print("\n##ALL FOUND CLASSIFIERS##")
-                for classifier_str in best_classifiers.solutions_str:
-                    print(classifier_str)
+            test_scores = None
+        inputs_and_rules = [inputs_avg, rules_avg]
+        runtimes_and_updates = [train_runtimes, update_number]
 
-            # calculate classifier size
-            number_of_inputs = len(classifier.get_input_list())
-            number_of_rules = len(classifier.rule_set)
+        show_average_results(train_scores, test_scores, inputs_and_rules, runtimes_and_updates, classifier_list, path,
+                             file_name)
+    if testing_fold is not None:
+        test_bacc_avg = numpy.average(test_bacc_avg)
+    else:
+        test_bacc_avg = None
 
-            inputs_avg.append(number_of_inputs)
-            rules_avg.append(number_of_rules)
-
-            if print_results:
-                # rank features by frequency
-                print("\n###FEATURE FREQUENCY ANALYSIS###")
-                toolbox.rank_features_by_frequency(classifier_list, path, file_name)
-
-                # average scores
-                print("\n###AVERAGE SCORES###")
-
-                # calculate train average scores
-                print("\nTRAIN AVERAGE RESULTS")
-                print("TRAIN AVG BACC: ", numpy.average(train_bacc_avg))
-                print("TRAIN AVG STDEV: ", numpy.std(train_bacc_avg, ddof=1))
-                print("TRAIN AVG CDD: ", numpy.average(train_cdd_avg))
-                print("TRAIN AVG TPR: ", numpy.average(train_tpr_avg))
-                print("TRAIN AVG TNR: ", numpy.average(train_tnr_avg))
-                print("TRAIN AVG FPR: ", numpy.average(train_fpr_avg))
-                print("TRAIN AVG FNR: ", numpy.average(train_fnr_avg))
-                print("TRAIN AVG F1: ", numpy.average(train_f1_avg))
-                print("TRAIN AVG MCC: ", numpy.average(train_mcc_avg))
-                print("TRAIN AVG PPV: ", numpy.average(train_ppv_avg))
-                print("TRAIN AVG FDR: ", numpy.average(train_fdr_avg))
-
-                # calculate size averages
-                print("\nAVERAGE SIZE")
-                print("AVERAGE NUMBER OF INPUTS: ", numpy.average(inputs_avg))
-                print("AVERAGE NUMBER OF RULES: ", numpy.average(rules_avg))
-                print("MEDIAN OF INPUTS: ", numpy.median(inputs_avg))
-                print("MEDIAN OF RULES: ", numpy.median(rules_avg))
-
-                print("\nRUNTIME")
-                print("RUN-TIME PER TRAINING: ", numpy.average(train_runtimes))
-                print("UPDATES PER TRAINING:", numpy.average(update_number))
-
-            return None
+    return test_bacc_avg
 
 
 # run test
-def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
+def run_test(train_data_path, test_data_path, rules, config_file_name, test_run_id):
 
     """
 
@@ -331,7 +319,7 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
         list of pre-optimized rules
     config_file_name : str
         name of configuration file
-    run_id : str
+    test_run_id : str
         id of run given by user
 
     """
@@ -348,11 +336,14 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
     file_name_train = path_splitted[1]  # assign file name
     date = datetime.now()
     dir_name = date.strftime("%Y-%m-%d_%H-%M-%S")
-    if run_id is not None:
-        dir_name = "_".join([run_id, dir_name])
+
+    # use user-defined name
+    if test_run_id is not None:
+        dir_name = "_".join([test_run_id, dir_name])
     path = "/".join([path_train, dir_name])
 
     # get test data name
+    file_name_test = ''
     if test_data_path is not None:
         path_test = test_data_path
         path_splitted = os.path.split(path_test)
@@ -366,10 +357,12 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
         print("Directory ", path, " already exists.")
 
     # READING/CREATING TRAINING AND TESTING DATA
-    # create test data if not given
     train_fraction = int(config_file['DATA DIVISION']['TrainingFraction'])
-    if test_data_path is None and train_fraction != 100:
+    training_data = None
+    testing_data = None
 
+    # create test data if not given and train_fraction was not set to 100
+    if test_data_path is None and train_fraction != 100:
         set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
 
         # division into training and testing data
@@ -388,6 +381,7 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
         filename = "/".join([path, new_name])
         testing_data.to_csv(filename, sep=";", index=False)
 
+    # in case that test data is not available and train_fraction is set to 100% read only training data
     elif test_data_path is None and train_fraction == 100:
         print("###########READING DATA###########")
         # read data
@@ -398,6 +392,7 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, run_id):
         print("\nNone")
         testing_data = None
 
+    # in case that test data is available read training and testing data sets
     elif test_data_path is not None:
         print("###########READING DATA###########")
         # read data
