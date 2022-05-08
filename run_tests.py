@@ -49,8 +49,6 @@ def show_average_results(train_scores, test_scores, inputs_and_rules, runtimes_a
         test_bacc_avg, test_tpr_avg, test_tnr_avg, test_fpr_avg, test_fnr_avg, test_f1_avg, test_mcc_avg, test_ppv_avg,\
             test_fdr_avg = test_scores
 
-    if test_scores is not None:
-
         # calculate test average scores
         print("\nTEST AVERAGE RESULTS")
         print("TEST AVG BACC: ", numpy.average(test_bacc_avg))
@@ -526,7 +524,8 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, test_run_
         discretized_train_data[0].to_csv(filename_train, sep=";", index=False)
 
         # remove irrelevant miRNAs
-        discretized_train_data_filtered, relevant_features = preproc.remove_irrelevant_features(discretized_train_data[0])
+        discretized_train_data_filtered, relevant_features = \
+            preproc.remove_irrelevant_features(discretized_train_data[0])
 
         # save to files
         new_name = "_train_bin_filtered.csv"
