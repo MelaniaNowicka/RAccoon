@@ -301,7 +301,7 @@ def train_and_test(data, path, file_name, parameter_set, classifier_size, evalua
 
 
 # run test
-def run_test(train_data_path, test_data_path, rules, config_file_name, test_run_id):
+def run_test(train_data_path, test_data_path, val_data_path, rules, config_file_name, test_run_id):
 
     """
 
@@ -338,7 +338,7 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, test_run_
     # use user-defined name
     if test_run_id is not None:
         dir_name = "_".join([test_run_id, dir_name])
-    path = "/".join([path_train, dir_name])
+    path = os.path.join(path_train, dir_name)
 
     # get test data name
     file_name_test = ''
@@ -427,18 +427,23 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, test_run_
         # PARAMETER TUNING - CROSS-VALIDATION
         print("\n###########PARAMETER TUNING###########")
 
-        print("\n***CROSSVALIDATION DATA DIVISION***")
-        cv_folds = int(config_file['DATA DIVISION']['CVFolds'])
-        pairing = config_file.getboolean("DATA DIVISION", "Pairing")
-        set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
+        if val_data_path is None:
+            print("\n***CROSSVALIDATION DATA DIVISION***")
+            cv_folds = int(config_file['DATA DIVISION']['CVFolds'])
+            pairing = config_file.getboolean("DATA DIVISION", "Pairing")
+            set_seed = config_file.getboolean("DATA DIVISION", "SetSeed")
 
-        training_cv_datasets, validation_cv_datasets = \
-            toolbox.divide_into_cv_folds(dataset_file_name=file_name_train,
-                                         path=path,
-                                         dataset=training_data,
-                                         k_folds=cv_folds,
-                                         pairing=pairing,
-                                         set_seed=set_seed)
+            training_cv_datasets, validation_cv_datasets = \
+                toolbox.divide_into_cv_folds(dataset_file_name=file_name_train,
+                                             path=path,
+                                             dataset=training_data,
+                                             k_folds=cv_folds,
+                                             pairing=pairing,
+                                             set_seed=set_seed)
+        else:
+            val_file = preproc.read_data(val_data_path)[0]
+            training_cv_datasets = [training_data]
+            validation_cv_datasets = [val_file]
 
         # discretize cv folds
         print("\n***DATA DISCRETIZATION***")
@@ -623,6 +628,8 @@ if __name__ == "__main__":
                         dest="dataset_filename_train", help='train data set file name')
     parser.add_argument('--test', '--dataset-filename-test', default=None,
                         dest="dataset_filename_test", help='test data set file name')
+    parser.add_argument('--val', '--dataset-filename-val', default=None,
+                        dest="dataset_filename_val", help='val data set file name')
     parser.add_argument('--rules', '--rule-file', type=str, default=None,
                         dest="rule_file", help='rules file name')
     parser.add_argument('--run_id', '--run_id', type=str, default=None,
@@ -634,12 +641,13 @@ if __name__ == "__main__":
 
     dataset_train = params.dataset_filename_train
     dataset_test = params.dataset_filename_test
+    dataset_val = params.dataset_filename_val
     rule_list = params.rule_file
     run_id = params.run_id
     config_filename = params.config_filename
 
     # run tests
-    run_test(dataset_train, dataset_test, rule_list, config_filename, run_id)
+    run_test(dataset_train, dataset_test, dataset_val, rule_list, config_filename, run_id)
 
     end_global = time.time()
     print("TIME (FULL TEST): ", end_global - start_global)

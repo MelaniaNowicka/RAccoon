@@ -5,6 +5,10 @@ import math
 from decimal import Decimal
 from os import path
 
+import warnings
+
+warnings.simplefilter(action='ignore', category=pandas.errors.PerformanceWarning)
+
 numpy.random.seed(1)
 
 
