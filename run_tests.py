@@ -338,7 +338,7 @@ def run_test(train_data_path, test_data_path, rules, config_file_name, test_run_
     # use user-defined name
     if test_run_id is not None:
         dir_name = "_".join([test_run_id, dir_name])
-    path = "/".join([path_train, dir_name])
+    path = os.path.join(path_train, dir_name)
 
     # get test data name
     file_name_test = ''

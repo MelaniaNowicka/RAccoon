@@ -296,7 +296,7 @@ def divide_into_cv_folds(dataset_file_name, path, dataset, k_folds, pairing, set
 
     for fold in range(0, k_folds):  # create k validation folds
 
-        val_fold = negative_folds[fold].append(positive_folds[fold])  # merge negative and positive samples
+        val_fold = pandas.concat([negative_folds[fold], positive_folds[fold]])  # merge negative and positive samples
         val_datasets.append(val_fold)  # add to list of validation folds
 
         print("VALIDATION FOLD ", fold+1, len(val_fold.index.values))
