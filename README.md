@@ -8,11 +8,7 @@ RAccoon has the following dependencies:
 
 - Python 3+
 
-Following packages needs to be installed:
-
-- pandas
-- scikit-learn
-- numpy
+Check requirements.txt for required packages.
 
 ## Installation
 
@@ -50,18 +46,25 @@ Discretized data:
 To train a classifier on train data run: 
 
 ```
-python run_GA.py --train train_data.csv 
+python raccoon.py --train train_data.csv 
 ```
 
 Use exemplary data to try it: *train_data.csv*, *test_data.csv*.
 
-Description of parameters:
+Description of parameters used from command line:
 
 ***--train*** - training data set in the .csv format (obligatory)
 
 ***--test*** - testing data set in the .csv format (default: None)
 
 Training and test data should be formatted according to the description in the Data format section.
+
+***--config*** - config file name
+
+Here, you can use most of the following parameters using config file instead of the command line. 
+Check the exemplary config file [here](https://github.com/MelaniaNowicka/RAccoon/blob/master/config_training.ini). 
+
+***--rules*** - path to a file of pre-optimized rules (default: None)
 
 ***--filter*** - filtering non-relevant features (default: t, f to turn off)
 
@@ -99,8 +102,6 @@ the classifiers.
 
 ***--elitism*** - if True the best found solutions are added to the population in each selection operation (default: True) 
 
-***--rules*** - path to a file of pre-optimized rules (default: None)
-
 ***--poptfrac*** - pre-optimized fraction of population, the rest of solutions is generated randomly (default: 0.5)
 
 ***-x*** - crossover probability (default: 0.8)
@@ -120,7 +121,7 @@ python run_tests.py --train train_data.csv --test test_data.csv --config config.
 Use exemplary data to try it: *train_data.csv, test_data.csv*.
 
 You may change all the parameters in config.ini. Description may be found 
-[here](https://github.com/MelaniaNowicka/RAccoon/blob/master/config.ini).
+[here](https://github.com/MelaniaNowicka/RAccoon/blob/master/config_tuning.ini).
 
 Output log description:
 
