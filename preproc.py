@@ -235,77 +235,83 @@ def discretize_feature(feature_levels, annotation, negatives, positives, m_segme
 
 
     """
+    # check if feature is not binary
+    if set(feature_levels).difference({0, 1}) == set():
+        threshold = None
+        global_cdd = 0
+        pattern = None
+        return threshold, global_cdd, pattern
+    else:
+        # sort miRNA expression levels and annotation
+        feature_levels_sorted, annotation_sorted = zip(*sorted(zip(feature_levels, annotation)))
 
-    # sort miRNA expression levels and annotation
-    feature_levels_sorted, annotation_sorted = zip(*sorted(zip(feature_levels, annotation)))
+        # calculate segment step
+        segment_step = (max(feature_levels) - min(feature_levels)) / m_segments
 
-    # calculate segment step
-    segment_step = (max(feature_levels) - min(feature_levels)) / m_segments
+        # class diversity distributions
+        cdds = []
+        segment_thresholds = []
 
-    # class diversity distributions
-    cdds = []
-    segment_thresholds = []
+        # calculate segment thresholds
+        for m in range(1, m_segments+1):
 
-    # calculate segment thresholds
-    for m in range(1, m_segments+1):
+            if m == m_segments:  # if this is the last segment
+                segment_threshold = Decimal(max(feature_levels))  # add max level as threshold
+            else:  # otherwise calculate the segment threshold
+                segment_threshold = Decimal(min(feature_levels)) + Decimal(segment_step) * m
 
-        if m == m_segments:  # if this is the last segment
-            segment_threshold = Decimal(max(feature_levels))  # add max level as threshold
-        else:  # otherwise calculate the segment threshold
-            segment_threshold = Decimal(min(feature_levels)) + Decimal(segment_step) * m
+            segment_thresholds.append(segment_threshold)  # store segment threshold
 
-        segment_thresholds.append(segment_threshold)  # store segment threshold
+            # add all the levels between min level and threshold to the segment
+            segment = [i for i in feature_levels_sorted if Decimal(i) <= Decimal(segment_threshold)]
 
-        # add all the levels between min level and threshold to the segment
-        segment = [i for i in feature_levels_sorted if Decimal(i) <= Decimal(segment_threshold)]
+            neg_class = annotation_sorted[0:len(segment)].count(0)  # calculate number of negative samples in segment
+            pos_class = annotation_sorted[0:len(segment)].count(1)  # calculate number of positive samples in segment
 
-        neg_class = annotation_sorted[0:len(segment)].count(0)  # calculate number of negative samples in segment
-        pos_class = annotation_sorted[0:len(segment)].count(1)  # calculate number of positive samples in segment
+            cdd = neg_class / negatives - pos_class / positives  # calculate cdd
+            cdds.append(cdd)  # store cdd
 
-        cdd = neg_class / negatives - pos_class / positives  # calculate cdd
-        cdds.append(cdd)  # store cdd
+        # max and min cdd
+        cdd_max = max(cdds)
+        cdd_min = min(cdds)
 
-    # max and min cdd
-    cdd_max = max(cdds)
-    cdd_min = min(cdds)
+        # absolute max and min cdds
+        cdd_max_abs = math.fabs(max(cdds))
+        cdd_min_abs = math.fabs(min(cdds))
 
-    # absolute max and min cdds
-    cdd_max_abs = math.fabs(max(cdds))
-    cdd_min_abs = math.fabs(min(cdds))
+        # calculate global cdd
+        global_cdd = math.fabs(cdd_max-cdd_min)
 
-    # calculate global cdd
-    global_cdd = math.fabs(cdd_max-cdd_min)
-
-    # assign threshold = None
-    threshold = None
-    pattern = 0
-    index = 0
-
-    # one state miRNAs
-    if global_cdd < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:  # criterion 1
+        # assign threshold = None
         threshold = None
         pattern = 0
+        index = 0
 
-    # two states miRNAs
-    if global_cdd >= alpha_param:  # criterion 2
-        if max(cdd_max_abs, cdd_min_abs) >= lambda_param:
-            if min(cdd_max_abs, cdd_min_abs) < lambda_param:
+        # one state miRNAs
+        if global_cdd < alpha_param or max(cdd_max_abs, cdd_min_abs) < lambda_param:  # criterion 1
+            threshold = None
+            pattern = 0
 
-                pattern = 1
-                if cdd_max_abs > cdd_min_abs:
-                    index = cdds.index(cdd_max)
+        # two states miRNAs
+        if global_cdd >= alpha_param:  # criterion 2
+            if max(cdd_max_abs, cdd_min_abs) >= lambda_param:
+                if min(cdd_max_abs, cdd_min_abs) < lambda_param:
 
-                if cdd_max_abs <= cdd_min_abs:
-                    index = cdds.index(cdd_min)
+                    pattern = 1
+                    if cdd_max_abs > cdd_min_abs:
+                        index = cdds.index(cdd_max)
 
-                threshold = segment_thresholds[index]  # find threshold
+                    if cdd_max_abs <= cdd_min_abs:
+                        index = cdds.index(cdd_min)
 
-    # complicated patterns
-    if global_cdd >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:  # criterion 3
-        threshold = None
-        pattern = 2
+                    threshold = segment_thresholds[index]  # find threshold
 
-    return threshold, global_cdd, pattern
+        # complicated patterns
+        if global_cdd >= alpha_param and min(cdd_max_abs, cdd_min_abs) >= lambda_param:  # criterion 3
+            threshold = None
+            pattern = 2
+
+        return threshold, global_cdd, pattern
 
 
 # discretize train data set
@@ -369,6 +375,7 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
     one_state_features = 0
     two_states_features = 0
     other_pattern_features = 0
+    already_discrete = 0
 
     relevant_features = []  # list of relevant features
     feature_discretized = 0
@@ -398,6 +405,10 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
             other_pattern_features += 1
             feature_discretized = [1 for i in feature_levels]  # set all values to 1
 
+        if pattern is None:
+            feature_discretized = feature_levels  # leave alone
+            already_discrete += 1
+
         # add threshold to list of thresholds and global cdd to list of global cdds
         thresholds.append(threshold)
         global_cdds.append(global_cdd)
@@ -405,7 +416,7 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
         # add discretized feature to the data
         data_discretized[feature] = feature_discretized
 
-    # create a dictrionary of features and cdds
+    # create a dictionary of features and cdds
     cdds = dict(zip(features, global_cdds))
 
     if print_results is True:
@@ -419,6 +430,7 @@ def discretize_train_data(train_dataset, m_segments, alpha_param, lambda_param, 
     print("ONE STATE FEATURES: ", one_state_features)
     print("TWO STATE FEATURES: ", two_states_features)
     print("OTHER PATTERN FEATURES: ", other_pattern_features)
+    print("ALREADY DISCRETE FEATURES: ", already_discrete)
     print("AVG CDD: ", numpy.average(cdds_relevant_features))
     print("STD CDD: ", numpy.std(cdds_relevant_features, ddof=1))
     print("AVG CDD ALL: ", numpy.average(list(cdds.values())))
@@ -479,11 +491,14 @@ def discretize_test_data(test_dataset, thresholds):
         # get single feature gene expression levels
         feature_levels = dataset[feature].tolist()
 
-        if threshold_dict[feature] is None:  # if there is no threshold
-            feature_discretized = [0 for i in feature_levels]  # discretize into one state
+        if set(feature_levels).difference({0, 1}) == set():
+            feature_discretized = feature_levels
         else:
-            # discretize features according to thresholds
-            feature_discretized = [0 if i < threshold_dict[feature] else 1 for i in feature_levels]
+            if threshold_dict[feature] is None:  # if there is no threshold
+                feature_discretized = [0 for i in feature_levels]  # discretize into one state
+            else:
+                # discretize features according to thresholds
+                feature_discretized = [0 if i < threshold_dict[feature] else 1 for i in feature_levels]
 
         # add discretized miRNAs to the data
         data_discretized[feature] = feature_discretized

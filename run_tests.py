@@ -417,6 +417,7 @@ def run_test(train_data_path, test_data_path, val_data_path, rules, config_file_
     test_repeats = int(config_file["RUN PARAMETERS"]["SingleTestRepeats"])
 
     # binarization parameters
+    binarize = config_file.getboolean("BINARIZATION PARAMETERS", "Binarize")
     m_segments = int(config_file["BINARIZATION PARAMETERS"]["MSegments"])
     alpha_bin = float(config_file["BINARIZATION PARAMETERS"]["AlphaBin"])
     lambda_bin = float(config_file["BINARIZATION PARAMETERS"]["LambdaBin"])
@@ -445,18 +446,23 @@ def run_test(train_data_path, test_data_path, val_data_path, rules, config_file_
             training_cv_datasets = [training_data]
             validation_cv_datasets = [val_file]
 
-        # discretize cv folds
-        print("\n***DATA DISCRETIZATION***")
+        if binarize:
+            # discretize cv folds
+            print("\n***DATA DISCRETIZATION***")
 
-        training_cv_datasets_bin, validation_cv_datasets_bin, feature_cdds = \
-            preproc.discretize_data_for_tests(training_fold_list=training_cv_datasets,
-                                              validation_fold_list=validation_cv_datasets,
-                                              m_segments=m_segments,
-                                              alpha_param=alpha_bin,
-                                              lambda_param=lambda_bin,
-                                              print_results=False)
+            training_cv_datasets_bin, validation_cv_datasets_bin, feature_cdds = \
+                preproc.discretize_data_for_tests(training_fold_list=training_cv_datasets,
+                                                  validation_fold_list=validation_cv_datasets,
+                                                  m_segments=m_segments,
+                                                  alpha_param=alpha_bin,
+                                                  lambda_param=lambda_bin,
+                                                  print_results=False)
+        else:
+            training_cv_datasets_bin = training_cv_datasets
+            validation_cv_datasets_bin = validation_cv_datasets
+            feature_cdds = []
 
-        # read rules from file
+            # read rules from file
         if rules is not None:
             rules = popinit.read_rules_from_file(rules)
 
@@ -512,21 +518,28 @@ def run_test(train_data_path, test_data_path, val_data_path, rules, config_file_
         best_parameters = [w, tc, ps, cp, mp, ts]
 
     print("\n###########FINAL TEST###########")
-    print("\n***DATA DISCRETIZATION***")
-    # binarize training and testing data sets
-    if testing_data is not None:
-        discretized_train_data, discretized_test_data, feature_cdds = \
-            preproc.discretize_data_for_tests(training_fold_list=[training_data],
-                                              validation_fold_list=[testing_data],
-                                              m_segments=m_segments,
-                                              alpha_param=alpha_bin,
-                                              lambda_param=lambda_bin,
-                                              print_results=True)
 
-        new_name = "_train_bin.csv"
-        new_name = file_name_train.replace(".csv", new_name)
-        filename_train = "/".join([path, new_name])
-        discretized_train_data[0].to_csv(filename_train, sep=";", index=False)
+    if testing_data is not None:
+        if binarize:
+            print("\n***DATA DISCRETIZATION***")
+        # binarize training and testing data sets
+            discretized_train_data, discretized_test_data, feature_cdds = \
+                preproc.discretize_data_for_tests(training_fold_list=[training_data],
+                                                  validation_fold_list=[testing_data],
+                                                  m_segments=m_segments,
+                                                  alpha_param=alpha_bin,
+                                                  lambda_param=lambda_bin,
+                                                  print_results=True)
+
+            new_name = "_train_bin.csv"
+            new_name = file_name_train.replace(".csv", new_name)
+            filename_train = "/".join([path, new_name])
+            discretized_train_data[0].to_csv(filename_train, sep=";", index=False)
+
+        else:
+            discretized_train_data = [training_data]
+            discretized_test_data = [testing_data]
+            feature_cdds = []
 
         # remove irrelevant miRNAs
         discretized_train_data_filtered, relevant_features = \
@@ -567,17 +580,23 @@ def run_test(train_data_path, test_data_path, val_data_path, rules, config_file_
                        repeats=test_repeats,
                        print_results=True)
     else:
-        discretized_train_data, features, thresholds, feature_cdds = \
-            preproc.discretize_train_data(train_dataset=training_data,
-                                          m_segments=m_segments,
-                                          alpha_param=alpha_bin,
-                                          lambda_param=lambda_bin,
-                                          print_results=True)
+        if binarize:
+            discretized_train_data, features, thresholds, feature_cdds = \
+                preproc.discretize_train_data(train_dataset=training_data,
+                                              m_segments=m_segments,
+                                              alpha_param=alpha_bin,
+                                              lambda_param=lambda_bin,
+                                              print_results=True)
 
-        new_name = "_train_bin.csv"
-        new_name = file_name_train.replace(".csv", new_name)
-        filename_train = "/".join([path, new_name])
-        discretized_train_data.to_csv(filename_train, sep=";", index=False)
+            new_name = "_train_bin.csv"
+            new_name = file_name_train.replace(".csv", new_name)
+            filename_train = "/".join([path, new_name])
+            discretized_train_data.to_csv(filename_train, sep=";", index=False)
+        else:
+            discretized_train_data = training_data
+            features = []
+            thresholds = []
+            feature_cdds = []
 
         # remove irrelevant miRNAs
         discretized_train_data_filtered, relevant_features = preproc.remove_irrelevant_features(
