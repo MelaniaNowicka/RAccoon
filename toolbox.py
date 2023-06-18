@@ -38,6 +38,7 @@ def write_config_to_log(config_file):
     print("Set Seed: ", config_file.getboolean("DATA DIVISION", "SetSeed"))
 
     print("\nBINARIZATION PARAMETERS")
+    print("Binarize: ", config_file.getboolean('BINARIZATION PARAMETERS', 'Binarize'))
     print("M Segments: ", int(config_file['BINARIZATION PARAMETERS']['MSegments']))
     print("Alpha Bin: ", float(config_file['BINARIZATION PARAMETERS']['AlphaBin']))
     print("Lambda Bin: ", float(config_file['BINARIZATION PARAMETERS']['LambdaBin']))

@@ -8,7 +8,9 @@ RAccoon has the following dependencies:
 
 - Python 3+
 
-Check requirements.txt for required packages.
+Check requirements.txt for required packages or use:
+
+    $ conda create --name <env_name> --file requirements.txt
 
 ## Installation
 
@@ -116,9 +118,14 @@ the classifiers.
 Run the analysis using:
 
 ```
-python run_tests.py --train train_data.csv --test test_data.csv --config config.ini
+python run_tests.py --train train_data.csv --config config_tuning.ini [--val validation_data.csv --test test_data.csv --rules rule_file.csv --run_id name_of_the_run]
 ```
+
 Use exemplary data to try it: *train_data.csv, test_data.csv*.
+
+```
+python run_tests.py --train train_data.csv --test test_data.csv --config config_tuning.ini
+```
 
 You may change all the parameters in config.ini. Description may be found 
 [here](https://github.com/MelaniaNowicka/RAccoon/blob/master/config_tuning.ini).
